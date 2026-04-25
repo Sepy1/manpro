@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full dark">
 
 <head>
     <meta charset="utf-8">
@@ -14,36 +14,8 @@
     <!-- Alpine.js -->
     {{-- <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script> --}}
 
-    <!-- Theme Store -->
     <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.store('theme', {
-                init() {
-                    this.theme = 'dark';
-                    localStorage.setItem('theme', 'dark');
-                    this.updateTheme();
-                },
-                theme: 'dark',
-                toggle() {
-                    this.theme = 'dark';
-                    localStorage.setItem('theme', 'dark');
-                    this.updateTheme();
-                },
-                updateTheme() {
-                    const html = document.documentElement;
-                    const body = document.body;
-                    if (this.theme === 'dark') {
-                        html.classList.add('dark');
-                        body.classList.remove('bg-slate-100', 'text-slate-800');
-                        body.classList.add('dark', 'bg-gray-900');
-                    } else {
-                        html.classList.remove('dark');
-                        body.classList.remove('dark', 'bg-gray-900');
-                        body.classList.add('bg-slate-100', 'text-slate-800');
-                    }
-                }
-            });
-
             Alpine.store('sidebar', {
                 // Initialize based on screen size
                 isExpanded: window.innerWidth >= 1280, // true for desktop, false for mobile
@@ -75,18 +47,16 @@
         });
     </script>
 
-    <!-- Apply dark mode immediately to prevent flash -->
     <script>
         (function() {
             localStorage.setItem('theme', 'dark');
             document.documentElement.classList.add('dark');
-            document.body.classList.remove('bg-slate-100', 'text-slate-800');
-            document.body.classList.add('dark', 'bg-gray-900');
+            document.body.classList.add('dark');
         })();
     </script>
 </head>
 
-<body class="h-screen overflow-hidden" x-data="{ loaded: true, navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
+<body class="h-screen overflow-hidden dark bg-gray-900 text-gray-100" x-data="{ loaded: true, navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
 const checkMobile = () => {
     if (window.innerWidth < 1280) {
         $store.sidebar.setMobileOpen(false);

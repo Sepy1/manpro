@@ -59,6 +59,67 @@
             </p>
         </div>
 
+        <form method="GET" action="{{ route('admin.daftar-project.index') }}" class="mb-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Project</label>
+                    <input
+                        type="text"
+                        name="project_name"
+                        value="{{ $filters['project_name'] ?? '' }}"
+                        placeholder="Cari nama project..."
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Step</label>
+                    <input
+                        type="text"
+                        name="step_name"
+                        value="{{ $filters['step_name'] ?? '' }}"
+                        placeholder="Cari nama step..."
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">PIC</label>
+                    <input
+                        type="text"
+                        name="pic"
+                        value="{{ $filters['pic'] ?? '' }}"
+                        placeholder="Cari PIC project/step..."
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Periode Mulai</label>
+                    <input
+                        type="date"
+                        name="period_start"
+                        value="{{ $filters['period_start'] ?? '' }}"
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Periode Selesai</label>
+                    <input
+                        type="date"
+                        name="period_end"
+                        value="{{ $filters['period_end'] ?? '' }}"
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
+                    Cari
+                </button>
+                <a href="{{ route('admin.daftar-project.index') }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/10">
+                    Reset
+                </a>
+            </div>
+        </form>
+
         <div class="min-h-0 flex-1 overflow-auto">
             <table class="min-w-full table-fixed border-collapse">
                 <thead>

@@ -78,18 +78,57 @@ class ProjectController extends Controller
         ));
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $projects = Project::with([
+        $projectName = trim((string) $request->string('project_name'));
+        $stepName = trim((string) $request->string('step_name'));
+        $pic = trim((string) $request->string('pic'));
+        $periodStart = $request->input('period_start');
+        $periodEnd = $request->input('period_end');
+
+        $projects = Project::query()
+            ->with([
                 'user',
                 'steps' => fn ($query) => $query->orderBy('sort_order'),
             ])
+            ->when($projectName !== '', function ($query) use ($projectName) {
+                $query->where('name', 'like', "%{$projectName}%");
+            })
+            ->when($stepName !== '', function ($query) use ($stepName) {
+                $query->whereHas('steps', function ($stepQuery) use ($stepName) {
+                    $stepQuery->where('step_name', 'like', "%{$stepName}%");
+                });
+            })
+            ->when($pic !== '', function ($query) use ($pic) {
+                $query->where(function ($nested) use ($pic) {
+                    $nested->where('pic', 'like', "%{$pic}%")
+                        ->orWhereHas('steps', function ($stepQuery) use ($pic) {
+                            $stepQuery->where('pic', 'like', "%{$pic}%");
+                        });
+                });
+            })
+            ->when($periodStart, function ($query) use ($periodStart) {
+                $query->whereDate('period_start', '>=', $periodStart);
+            })
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->whereDate('period_end', '<=', $periodEnd);
+            })
             ->latest()
-            ->paginate(8);
+            ->paginate(8)
+            ->withQueryString();
 
-        return view('pages.dashboard.daftar-project', compact('projects'));
+        return view('pages.dashboard.daftar-project', [
+            'projects' => $projects,
+            'filters' => [
+                'project_name' => $projectName,
+                'step_name' => $stepName,
+                'pic' => $pic,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+            ],
+        ]);
     }
 
     public function create(): View
