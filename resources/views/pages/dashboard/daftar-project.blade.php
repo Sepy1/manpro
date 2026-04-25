@@ -2,10 +2,13 @@
 
 @section('admin-content')
     <x-common.page-breadcrumb pageTitle="Daftar Project" />
+    @php
+        $openProjectFromQuery = request()->integer('open_project');
+    @endphp
 
     <div
         x-data="{
-            openProjectId: null,
+            openProjectId: @js($openProjectFromQuery > 0 ? $openProjectFromQuery : null),
             showProjectModal: false,
             showStepModal: false,
             projectAction: '',

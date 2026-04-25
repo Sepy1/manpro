@@ -45,6 +45,10 @@
                 this.statusLabel = label;
                 this.showStatusModal = true;
             },
+            goToDaftarProject(projectId) {
+                const baseUrl = @js(route('admin.daftar-project.index'));
+                window.location.href = `${baseUrl}?open_project=${projectId}`;
+            },
             openTodoProjectModal(el) {
                 this.todoProjectAction = el.dataset.action;
                 this.todoProjectForm = {
@@ -306,17 +310,39 @@
                         isEnd: dateIso === project.deadline,
                     }));
                 },
+                init() {
+                    // Force default filter to current month/year on every page load.
+                    const now = new Date();
+                    this.selectedMonth = now.getMonth() + 1;
+                    this.selectedYear = now.getFullYear();
+                    this.$nextTick(() => {
+                        if (this.$refs.monthFilter) this.$refs.monthFilter.value = String(this.selectedMonth);
+                        if (this.$refs.yearFilter) this.$refs.yearFilter.value = String(this.selectedYear);
+                    });
+                },
             }">
             <div class="flex h-full min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Timeline Projects</h3>
                     <div class="flex items-center gap-2">
-                        <select x-model.number="selectedMonth" class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700">
+                        <select
+                            x-ref="monthFilter"
+                            :value="selectedMonth"
+                            @change="selectedMonth = Number($event.target.value)"
+                            autocomplete="off"
+                            class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700"
+                        >
                             <template x-for="(monthName, idx) in monthNames" :key="monthName">
                                 <option :value="idx + 1" x-text="monthName"></option>
                             </template>
                         </select>
-                        <select x-model.number="selectedYear" class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700">
+                        <select
+                            x-ref="yearFilter"
+                            :value="selectedYear"
+                            @change="selectedYear = Number($event.target.value)"
+                            autocomplete="off"
+                            class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700"
+                        >
                             <template x-for="year in yearOptions" :key="year">
                                 <option :value="year" x-text="year"></option>
                             </template>
@@ -490,7 +516,14 @@
                         </template>
                         <template x-for="project in filteredProjects" :key="project.id">
                             <tr class="border-b border-gray-100 dark:border-gray-800">
-                                <td class="truncate px-3 py-3 text-sm font-medium text-gray-800 dark:text-white/90" x-text="project.name"></td>
+                                <td class="truncate px-3 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                                    <button
+                                        type="button"
+                                        class="truncate text-left text-brand-600 hover:underline dark:text-brand-400"
+                                        @click="goToDaftarProject(project.id)"
+                                        x-text="project.name"
+                                    ></button>
+                                </td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="project.status.replace('_',' ')"></td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="project.period_start || '-'"></td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="project.period_end || '-'"></td>
