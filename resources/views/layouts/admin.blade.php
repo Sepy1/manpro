@@ -1,12 +1,12 @@
 @extends('layouts.fullscreen-layout')
 
 @section('content')
-    <div class="min-h-screen xl:flex">
+    <div class="h-screen overflow-hidden xl:flex">
         @include('layouts.sidebar')
         @include('layouts.backdrop')
 
         <div
-            class="flex min-h-0 flex-1 flex-col transition-all duration-300 ease-in-out"
+            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out"
             :class="{
                 'xl:ml-[290px]': $store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen,
                 'xl:ml-[90px]': !$store.sidebar.isExpanded && !$store.sidebar.isHovered
@@ -16,7 +16,7 @@
 
             <main
                 @class([
-                    'flex min-h-0 flex-1 flex-col p-4 text-slate-800 md:p-6 dark:text-gray-100',
+                    'flex min-h-0 flex-1 flex-col overflow-hidden p-4 text-slate-800 md:p-6 dark:text-gray-100',
                     'w-full max-w-none' => request()->routeIs('admin.dashboard') || request()->routeIs('admin.insert-project.*') || request()->routeIs('admin.daftar-project.*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard') && !request()->routeIs('admin.insert-project.*') && !request()->routeIs('admin.daftar-project.*'),
                 ])

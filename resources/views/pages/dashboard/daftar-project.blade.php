@@ -41,7 +41,7 @@
                 this.showStepModal = true;
             },
         }"
-        class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
+        class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
     >
         @if (session('status'))
             <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
@@ -56,7 +56,7 @@
             </p>
         </div>
 
-        <div>
+        <div class="min-h-0 flex-1 overflow-auto">
             <table class="min-w-full table-fixed border-collapse">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-800">
