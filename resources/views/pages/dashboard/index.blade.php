@@ -310,13 +310,13 @@
             <div class="flex h-full min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Timeline Projects</h3>
-                    <div class="flex items-center gap-1.5">
-                        <select x-model.number="selectedMonth" class="rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700">
+                    <div class="flex items-center gap-2">
+                        <select x-model.number="selectedMonth" class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700">
                             <template x-for="(monthName, idx) in monthNames" :key="monthName">
                                 <option :value="idx + 1" x-text="monthName"></option>
                             </template>
                         </select>
-                        <select x-model.number="selectedYear" class="rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700">
+                        <select x-model.number="selectedYear" class="rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm font-medium dark:border-gray-700">
                             <template x-for="year in yearOptions" :key="year">
                                 <option :value="year" x-text="year"></option>
                             </template>
