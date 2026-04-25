@@ -18,16 +18,16 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'Admin User',
-            'email' => 'admin@example.com',
+            'email' => 'it@bkkjateng.co.id',
             'role' => 'admin',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('bkkjtg123'),
         ]);
 
         User::factory()->create([
             'name' => 'Regular User',
-            'email' => 'user@example.com',
+            'email' => 'user1512412@bkkjateng.co.id',
             'role' => 'user',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('asd31d123d%!@#'),
         ]);
 
         $this->call(TiProjectSeeder::class);
