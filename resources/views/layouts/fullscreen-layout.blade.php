@@ -87,7 +87,7 @@ document.addEventListener('click', (event) => {
     event.preventDefault();
     navigating = true;
     const shell = document.getElementById('page-transition-root');
-    shell?.classList.add('opacity-0', 'scale-[0.995]');
+    shell?.classList.add('blur-sm', 'opacity-70');
     setTimeout(() => { window.location.href = link.href; }, 140);
 });">
 
@@ -95,7 +95,7 @@ document.addEventListener('click', (event) => {
     <x-common.preloader/>
     {{-- preloader end --}}
 
-    <div id="page-transition-root" class="transition-all duration-200 ease-out opacity-100 scale-100">
+    <div id="page-transition-root" class="transition-[filter,opacity] duration-200 ease-out opacity-100 blur-0">
         @yield('content')
     </div>
 
