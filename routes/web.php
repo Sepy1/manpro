@@ -25,7 +25,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/insert-project', [ProjectController::class, 'store'])->name('insert-project.store');
     Route::get('/daftar-project', [ProjectController::class, 'index'])->name('daftar-project.index');
     Route::put('/daftar-project/{project}', [ProjectController::class, 'updateProject'])->name('daftar-project.update');
+    Route::delete('/daftar-project/{project}', [ProjectController::class, 'deleteProject'])->name('daftar-project.delete');
+    Route::post('/daftar-project/{project}/step', [ProjectController::class, 'storeStep'])->name('daftar-project.step.store');
     Route::put('/daftar-project/step/{step}', [ProjectController::class, 'updateStep'])->name('daftar-project.step.update');
+    Route::delete('/daftar-project/step/{step}', [ProjectController::class, 'deleteStep'])->name('daftar-project.step.delete');
 
     Route::get('/profil', function () {
         abort_unless(auth()->user()?->role === 'admin', 403);

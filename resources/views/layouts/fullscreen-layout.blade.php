@@ -51,7 +51,6 @@
         (function() {
             localStorage.setItem('theme', 'dark');
             document.documentElement.classList.add('dark');
-            document.body.classList.add('dark');
         })();
     </script>
 </head>

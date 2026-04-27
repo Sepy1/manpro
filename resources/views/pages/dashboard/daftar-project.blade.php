@@ -11,14 +11,18 @@
             openProjectId: @js($openProjectFromQuery > 0 ? $openProjectFromQuery : null),
             showProjectModal: false,
             showStepModal: false,
+            showAddStepModal: false,
             projectAction: '',
             stepAction: '',
-            projectForm: { name: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            addStepAction: '',
+            projectForm: { name: '', category: 'Development Aplikasi', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             stepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
+            addStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             openProjectModal(el) {
                 this.projectAction = el.dataset.action;
                 this.projectForm = {
                     name: el.dataset.name || '',
+                    category: el.dataset.category || 'Development Aplikasi',
                     description: el.dataset.description || '',
                     url: el.dataset.url || '',
                     pic: el.dataset.pic || '',
@@ -42,6 +46,20 @@
                     status: el.dataset.status || 'planned',
                 };
                 this.showStepModal = true;
+            },
+            openAddStepModal(el) {
+                this.addStepAction = el.dataset.action;
+                this.addStepForm = {
+                    step_name: '',
+                    start_date: '',
+                    end_date: '',
+                    deadline: '',
+                    description: '',
+                    pic: '',
+                    follow_up: '',
+                    status: 'planned',
+                };
+                this.showAddStepModal = true;
             },
         }"
         class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
@@ -141,6 +159,16 @@
                             $totalSteps = $project->steps->count();
                             $completedSteps = $project->steps->where('status', 'completed')->count();
                             $progressPct = $totalSteps > 0 ? (int) round(($completedSteps / $totalSteps) * 100) : 0;
+                            $categoryTone = $categoryBadgeColors[$project->category] ?? 'gray';
+                            $categoryBadgeClass = match ($categoryTone) {
+                                'blue' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                                'purple' => 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                                'amber' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                                'emerald' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                'rose' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                                'cyan' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                                default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                            };
                             $progressBarClass = match (true) {
                                 $progressPct >= 100 => 'bg-green-500',
                                 $progressPct >= 70 => 'bg-emerald-500',
@@ -153,7 +181,14 @@
                             class="cursor-pointer border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
                             @click="openProjectId = openProjectId === {{ $project->id }} ? null : {{ $project->id }}"
                         >
-                            <td class="truncate px-3 py-3 text-sm font-medium text-gray-800 dark:text-white/90">{{ $project->name }}</td>
+                            <td class="truncate px-3 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                                <div class="flex items-center gap-2">
+                                    <span class="truncate">{{ $project->name }}</span>
+                                    <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {{ $categoryBadgeClass }}">
+                                        {{ $project->category }}
+                                    </span>
+                                </div>
+                            </td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ str_replace('_', ' ', ucfirst($project->status)) }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ optional($project->period_start)->format('d M Y') ?? '-' }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ optional($project->period_end)->format('d M Y') ?? '-' }}</td>
@@ -172,29 +207,52 @@
                                 </div>
                             </td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                                <button
-                                    type="button"
-                                    @click.stop="openProjectModal($el)"
-                                    data-action="{{ route('admin.daftar-project.update', $project) }}"
-                                    data-name="{{ $project->name }}"
-                                    data-description="{{ $project->description }}"
-                                    data-url="{{ $project->url }}"
-                                    data-pic="{{ $project->pic }}"
-                                    data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
-                                    data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
-                                    data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
-                                    data-status="{{ $project->status }}"
-                                    class="rounded-lg border border-brand-500 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10"
-                                >
-                                    Update
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        @click.stop="openProjectModal($el)"
+                                        data-action="{{ route('admin.daftar-project.update', $project) }}"
+                                        data-name="{{ $project->name }}"
+                                        data-category="{{ $project->category }}"
+                                        data-description="{{ $project->description }}"
+                                        data-url="{{ $project->url }}"
+                                        data-pic="{{ $project->pic }}"
+                                        data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
+                                        data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
+                                        data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
+                                        data-status="{{ $project->status }}"
+                                        class="rounded-lg border border-brand-500 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10"
+                                    >
+                                        Update
+                                    </button>
+                                    <form method="POST" action="{{ route('admin.daftar-project.delete', $project) }}" @click.stop onsubmit="return confirm('Hapus project ini? Semua step juga akan terhapus.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            type="submit"
+                                            class="rounded-lg border border-red-400 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-300 dark:hover:bg-red-900/20"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
 
                         <tr x-show="openProjectId === {{ $project->id }}" x-transition.opacity class="border-b border-gray-100 dark:border-gray-800">
                             <td colspan="9" class="px-3 pb-4 pt-2">
                                 <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-white/[0.02]">
-                                    <h4 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Step Project</h4>
+                                    <div class="mb-2 flex items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Step Project</h4>
+                                        <button
+                                            type="button"
+                                            @click.stop="openAddStepModal($el)"
+                                            data-action="{{ route('admin.daftar-project.step.store', $project) }}"
+                                            class="rounded-lg border border-brand-500 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10"
+                                        >
+                                            Add Step
+                                        </button>
+                                    </div>
 
                                     @if ($project->steps->isEmpty())
                                         <p class="text-sm text-gray-500 dark:text-gray-400">Belum ada langkah untuk project ini.</p>
@@ -234,6 +292,16 @@
                                                             >
                                                                 Update
                                                             </button>
+                                                            <form method="POST" action="{{ route('admin.daftar-project.step.delete', $step) }}" @click.stop onsubmit="return confirm('Hapus langkah ini?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button
+                                                                    type="submit"
+                                                                    class="rounded-lg border border-red-400 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-300 dark:hover:bg-red-900/20"
+                                                                >
+                                                                    Hapus
+                                                                </button>
+                                                            </form>
                                                         </div>
                                                     </div>
                                                     <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -279,6 +347,14 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
                         <input type="text" name="pic" x-model="projectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
+                        <select name="category" x-model="projectForm.category" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            @foreach ($projectCategories as $category)
+                                <option value="{{ $category }}">{{ $category }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -364,6 +440,58 @@
                     </div>
                     <div class="md:col-span-2">
                         <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Simpan Update Step</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div x-show="showAddStepModal" x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddStepModal = false">
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Step Project</h4>
+                    <button type="button" @click="showAddStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
+                </div>
+                <form :action="addStepAction" method="POST" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    @csrf
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Step</label>
+                        <input type="text" name="step_name" x-model="addStepForm.step_name" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Start Date</label>
+                        <input type="date" name="start_date" x-model="addStepForm.start_date" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">End Date</label>
+                        <input type="date" name="end_date" x-model="addStepForm.end_date" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Deadline</label>
+                        <input type="date" name="deadline" x-model="addStepForm.deadline" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
+                        <input type="text" name="pic" x-model="addStepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
+                        <textarea name="description" rows="2" x-model="addStepForm.description" class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Tindak Lanjut</label>
+                        <textarea name="follow_up" rows="2" x-model="addStepForm.follow_up" class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+                        <select name="status" x-model="addStepForm.status" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="planned">Planned</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="delayed">Delayed</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Tambah Step</button>
                     </div>
                 </form>
             </div>

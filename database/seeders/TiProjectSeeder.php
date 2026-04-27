@@ -56,6 +56,7 @@ class TiProjectSeeder extends Seeder
         ];
 
         $statusOptions = ['planned', 'in_progress', 'completed', 'delayed'];
+        $categoryOptions = Project::CATEGORIES;
 
         foreach ($projectTopics as $index => $topic) {
             $baseDate = Carbon::now()->subDays(40 - ($index * 2));
@@ -67,6 +68,7 @@ class TiProjectSeeder extends Seeder
             $project = Project::query()->create([
                 'user_id' => $admin->id,
                 'name' => "Project TI {$topic}",
+                'category' => Arr::random($categoryOptions),
                 'description' => "Inisiatif TI untuk {$topic} agar proses bisnis lebih efisien dan terukur.",
                 'url' => 'https://ti.example.local/project-' . ($index + 1),
                 'pic' => 'Tim TI Internal',

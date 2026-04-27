@@ -13,6 +13,13 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <script>
+            (function() {
+                localStorage.setItem('theme', 'dark');
+                document.documentElement.classList.add('dark');
+            })();
+        </script>
     </head>
     <body class="font-sans antialiased dark bg-gray-900 text-gray-100">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">

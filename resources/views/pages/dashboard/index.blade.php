@@ -26,12 +26,13 @@
             selectedStatus: '',
             statusLabel: '',
             todoProjectAction: '',
-            todoProjectForm: { name: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            todoProjectForm: { name: '', category: 'Development Aplikasi', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             todoStepAction: '',
             todoStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             projects: @js($projectsForModal->map(fn ($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
+                'category' => $p->category,
                 'status' => $p->status,
                 'period_start' => optional($p->period_start)->format('d M Y'),
                 'period_end' => optional($p->period_end)->format('d M Y'),
@@ -53,6 +54,7 @@
                 this.todoProjectAction = el.dataset.action;
                 this.todoProjectForm = {
                     name: el.dataset.name || '',
+                    category: el.dataset.category || 'Development Aplikasi',
                     description: el.dataset.description || '',
                     url: el.dataset.url || '',
                     pic: el.dataset.pic || '',
@@ -86,6 +88,17 @@
                 if (progress >= 40) return 'bg-yellow-500';
                 if (progress > 0) return 'bg-red-500';
                 return 'bg-gray-400';
+            },
+            categoryClass(category) {
+                const map = {
+                    'Development Aplikasi': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                    'Change Request': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                    'Audit': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                    'Infrastruktur': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                    'Pengadaan': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                    'Kerjasama Vendor': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                };
+                return map[category] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
             },
         }"
         class="flex min-h-0 h-full flex-col overflow-hidden text-base leading-relaxed md:text-lg"
@@ -139,6 +152,7 @@
                                         @click="openTodoProjectModal($el)"
                                         data-action="{{ route('admin.daftar-project.update', $project) }}"
                                         data-name="{{ $project->name }}"
+                                        data-category="{{ $project->category }}"
                                         data-description="{{ $project->description }}"
                                         data-url="{{ $project->url }}"
                                         data-pic="{{ $project->pic }}"
@@ -149,6 +163,21 @@
                                     >
                                         {{ $project->name }}
                                     </button>
+                                    @php
+                                        $todoCategoryTone = $categoryBadgeColors[$project->category] ?? 'gray';
+                                        $todoCategoryClass = match ($todoCategoryTone) {
+                                            'blue' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                                            'purple' => 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                                            'amber' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                                            'emerald' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                            'rose' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                                            'cyan' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                                            default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                                        };
+                                    @endphp
+                                    <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {{ $todoCategoryClass }}">
+                                        {{ $project->category }}
+                                    </span>
                                     <div class="w-32 shrink-0">
                                         <div class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                                             <div class="h-2 rounded-full {{ $todoProgressClass }}" style="width: {{ $todoProgress }}%"></div>
@@ -191,7 +220,7 @@
                     </div>
                 </div>
                 <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-800">
-                    {{ $todoProjects->links() }}
+                    {{ $todoProjects->onEachSide(2)->links() }}
                 </div>
             </div>
 
@@ -217,6 +246,7 @@
                                     @click="openTodoProjectModal($el)"
                                     data-action="{{ route('admin.daftar-project.update', $project) }}"
                                     data-name="{{ $project->name }}"
+                                    data-category="{{ $project->category }}"
                                     data-description="{{ $project->description }}"
                                     data-url="{{ $project->url }}"
                                     data-pic="{{ $project->pic }}"
@@ -227,6 +257,21 @@
                                 >
                                     {{ $project->name }}
                                 </button>
+                                @php
+                                    $deadlineCategoryTone = $categoryBadgeColors[$project->category] ?? 'gray';
+                                    $deadlineCategoryClass = match ($deadlineCategoryTone) {
+                                        'blue' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                                        'purple' => 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                                        'amber' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                                        'emerald' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                        'rose' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                                        'cyan' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                                        default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                                    };
+                                @endphp
+                                <span class="ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $deadlineCategoryClass }}">
+                                    {{ $project->category }}
+                                </span>
                             @else
                                 <p class="text-base font-semibold text-gray-700 dark:text-gray-300">Project tidak ditemukan</p>
                             @endif
@@ -260,7 +305,7 @@
                     @endforelse
                 </div>
                 <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-800">
-                    {{ $upcomingDeadlines->links() }}
+                    {{ $upcomingDeadlines->onEachSide(2)->links() }}
                 </div>
             </div>
         </div>
@@ -399,6 +444,14 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
                     <input type="text" name="pic" x-model="todoProjectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                 </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
+                    <select name="category" x-model="todoProjectForm.category" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                        @foreach ($projectCategories as $category)
+                            <option value="{{ $category }}">{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
                     <textarea name="description" rows="3" x-model="todoProjectForm.description" class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
@@ -517,12 +570,19 @@
                         <template x-for="project in filteredProjects" :key="project.id">
                             <tr class="border-b border-gray-100 dark:border-gray-800">
                                 <td class="truncate px-3 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                                    <button
-                                        type="button"
-                                        class="truncate text-left text-brand-600 hover:underline dark:text-brand-400"
-                                        @click="goToDaftarProject(project.id)"
-                                        x-text="project.name"
-                                    ></button>
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="truncate text-left text-brand-600 hover:underline dark:text-brand-400"
+                                            @click="goToDaftarProject(project.id)"
+                                            x-text="project.name"
+                                        ></button>
+                                        <span
+                                            class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                                            :class="categoryClass(project.category)"
+                                            x-text="project.category"
+                                        ></span>
+                                    </div>
                                 </td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="project.status.replace('_',' ')"></td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="project.period_start || '-'"></td>

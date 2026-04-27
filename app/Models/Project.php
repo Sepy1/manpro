@@ -8,9 +8,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
+    public const CATEGORIES = [
+        'Development Aplikasi',
+        'Change Request',
+        'Audit',
+        'Infrastruktur',
+        'Pengadaan',
+        'Kerjasama Vendor',
+    ];
+
     protected $fillable = [
         'user_id',
         'name',
+        'category',
         'description',
         'url',
         'pic',

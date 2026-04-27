@@ -61,6 +61,20 @@
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
+                            <select name="category"
+                                class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90">
+                                @foreach ($projectCategories as $category)
+                                    <option value="{{ $category }}" @selected(old('category', 'Development Aplikasi') === $category)>
+                                        {{ $category }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('category')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
                                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Periode mulai</label>
@@ -138,6 +152,16 @@
                                 <p class="mb-3 text-xs font-medium uppercase tracking-wide text-brand-600 dark:text-white/90">
                                     Langkah <span x-text="index + 1"></span> dari <span x-text="steps.length"></span>
                                 </p>
+                                <div class="mb-3 flex justify-end">
+                                    <button
+                                        type="button"
+                                        @click="removeStep(index)"
+                                        :disabled="steps.length <= 1"
+                                        class="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+                                    >
+                                        Hapus langkah
+                                    </button>
+                                </div>
                                 <div class="space-y-3">
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Step</label>
@@ -297,6 +321,13 @@
                         status: 'planned',
                     });
                     this.currentIndex = this.steps.length - 1;
+                },
+                removeStep(index) {
+                    if (this.steps.length <= 1) return;
+                    this.steps.splice(index, 1);
+                    if (this.currentIndex >= this.steps.length) {
+                        this.currentIndex = this.steps.length - 1;
+                    }
                 },
                 handleSwipe(event) {
                     if (this.touchStartX == null) return;
