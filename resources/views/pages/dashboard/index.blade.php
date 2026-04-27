@@ -427,7 +427,7 @@
         </div>
     </div>
 
-    <div x-show="showTodoProjectModal" x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoProjectModal = false">
+    <div x-show="showTodoProjectModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoProjectModal = false">
         <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Project</h4>
@@ -488,7 +488,7 @@
         </div>
     </div>
 
-    <div x-show="showTodoStepModal" x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoStepModal = false">
+    <div x-show="showTodoStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoStepModal = false">
         <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Step Project</h4>
@@ -541,7 +541,7 @@
         </div>
     </div>
 
-    <div x-show="showStatusModal" x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStatusModal = false">
+    <div x-show="showStatusModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStatusModal = false">
         <div class="max-h-[90vh] w-full max-w-7xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Project - <span x-text="statusLabel"></span></h4>
