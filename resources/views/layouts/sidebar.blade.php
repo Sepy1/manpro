@@ -8,7 +8,7 @@
 @endphp
 
 <aside id="sidebar"
-    class="fixed flex flex-col mt-0 top-0 px-5 left-0 bg-slate-50 text-slate-800 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-800 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-slate-200"
+    class="fixed flex flex-col mt-0 top-0 px-5 left-0 bg-slate-50 text-slate-800 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-800 h-screen z-99999 border-r border-slate-200"
     x-data="{
         openSubmenus: {},
         init() {

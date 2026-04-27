@@ -6,7 +6,7 @@
         @include('layouts.backdrop')
 
         <div
-            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out"
+            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden"
             :class="{
                 'xl:ml-[290px]': $store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen,
                 'xl:ml-[90px]': !$store.sidebar.isExpanded && !$store.sidebar.isHovered
