@@ -55,7 +55,7 @@
     </script>
 </head>
 
-<body class="h-screen overflow-hidden dark bg-gray-900 text-gray-100" x-data="{ loaded: true, navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
+<body class="h-screen overflow-hidden dark bg-gray-900 text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
 const checkMobile = () => {
     if (window.innerWidth < 1280) {
         $store.sidebar.setMobileOpen(false);
@@ -66,7 +66,6 @@ const checkMobile = () => {
     }
 };
 window.addEventListener('resize', checkMobile);
-window.addEventListener('DOMContentLoaded', () => { setTimeout(() => loaded = false, 120); });
 const isInternalLink = (link) => {
     if (!link) return false;
     if (link.target && link.target !== '_self') return false;
@@ -87,15 +86,17 @@ document.addEventListener('click', (event) => {
     event.preventDefault();
     navigating = true;
     const shell = document.getElementById('page-transition-root');
-    shell?.classList.add('blur-sm', 'opacity-70');
-    setTimeout(() => { window.location.href = link.href; }, 140);
+    shell?.classList.add('blur-[2px]', 'opacity-85');
+    requestAnimationFrame(() => {
+        setTimeout(() => { window.location.href = link.href; }, 180);
+    });
 });">
 
     {{-- preloader --}}
     <x-common.preloader/>
     {{-- preloader end --}}
 
-    <div id="page-transition-root" class="transition-[filter,opacity] duration-200 ease-out opacity-100 blur-0">
+    <div id="page-transition-root" class="transition-[filter,opacity] duration-300 ease-out opacity-100 blur-0 will-change-[filter,opacity]">
         @yield('content')
     </div>
 

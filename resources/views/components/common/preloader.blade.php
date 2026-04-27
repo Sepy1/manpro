@@ -1,5 +1,5 @@
 <div
-  x-show="loaded || navigating"
+  x-show="navigating"
   x-transition:enter="transition-opacity duration-200"
   x-transition:enter-start="opacity-0"
   x-transition:enter-end="opacity-100"
