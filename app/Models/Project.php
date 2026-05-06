@@ -19,6 +19,7 @@ class Project extends Model
 
     protected $fillable = [
         'user_id',
+        'vendor_id',
         'name',
         'category',
         'description',
@@ -42,6 +43,11 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
     }
 
     public function steps(): HasMany

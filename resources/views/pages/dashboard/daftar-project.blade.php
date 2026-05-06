@@ -15,7 +15,11 @@
             projectAction: '',
             stepAction: '',
             addStepAction: '',
-            projectForm: { name: '', category: 'Development Aplikasi', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            picNames: @js($picUsers->pluck('name')->values()),
+            projectPicError: '',
+            stepPicError: '',
+            addStepPicError: '',
+            projectForm: { name: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             stepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             addStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             openProjectModal(el) {
@@ -23,6 +27,7 @@
                 this.projectForm = {
                     name: el.dataset.name || '',
                     category: el.dataset.category || 'Development Aplikasi',
+                    vendor_id: el.dataset.vendorId || '',
                     description: el.dataset.description || '',
                     url: el.dataset.url || '',
                     pic: el.dataset.pic || '',
@@ -32,6 +37,7 @@
                     status: el.dataset.status || 'planned',
                 };
                 this.showProjectModal = true;
+                this.projectPicError = '';
             },
             openStepModal(el) {
                 this.stepAction = el.dataset.action;
@@ -46,6 +52,7 @@
                     status: el.dataset.status || 'planned',
                 };
                 this.showStepModal = true;
+                this.stepPicError = '';
             },
             openAddStepModal(el) {
                 this.addStepAction = el.dataset.action;
@@ -60,6 +67,20 @@
                     status: 'planned',
                 };
                 this.showAddStepModal = true;
+                this.addStepPicError = '';
+            },
+            isRegisteredPic(value) {
+                if (!String(value || '').trim()) return true;
+                return this.picNames.includes(String(value).trim());
+            },
+            validateProjectPic() {
+                this.projectPicError = this.isRegisteredPic(this.projectForm.pic) ? '' : 'PIC belum terdaftar.';
+            },
+            validateStepPic() {
+                this.stepPicError = this.isRegisteredPic(this.stepForm.pic) ? '' : 'PIC belum terdaftar.';
+            },
+            validateAddStepPic() {
+                this.addStepPicError = this.isRegisteredPic(this.addStepForm.pic) ? '' : 'PIC belum terdaftar.';
             },
         }"
         class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
@@ -104,6 +125,7 @@
                     <input
                         type="text"
                         name="pic"
+                        list="pic-user-options"
                         value="{{ $filters['pic'] ?? '' }}"
                         placeholder="Cari PIC project/step..."
                         class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
@@ -187,6 +209,11 @@
                                     <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {{ $categoryBadgeClass }}">
                                         {{ $project->category }}
                                     </span>
+                                    @if ($project->vendor)
+                                        <span class="shrink-0 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                                            {{ $project->vendor->name }}
+                                        </span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ str_replace('_', ' ', ucfirst($project->status)) }}</td>
@@ -214,6 +241,7 @@
                                         data-action="{{ route('admin.daftar-project.update', $project) }}"
                                         data-name="{{ $project->name }}"
                                         data-category="{{ $project->category }}"
+                                        data-vendor-id="{{ $project->vendor_id }}"
                                         data-description="{{ $project->description }}"
                                         data-url="{{ $project->url }}"
                                         data-pic="{{ $project->pic }}"
@@ -346,13 +374,23 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" x-model="projectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <input type="text" name="pic" list="pic-user-options" x-model="projectForm.pic" @blur="validateProjectPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <p x-show="projectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="projectPicError"></p>
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
                         <select name="category" x-model="projectForm.category" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                             @foreach ($projectCategories as $category)
                                 <option value="{{ $category }}">{{ $category }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div x-show="projectForm.category === 'Kerjasama Vendor'" x-cloak>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Vendor</label>
+                        <select name="vendor_id" x-model="projectForm.vendor_id" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="">Pilih vendor</option>
+                            @foreach ($vendors as $vendor)
+                                <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -419,7 +457,8 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" x-model="stepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <input type="text" name="pic" list="pic-user-options" x-model="stepForm.pic" @blur="validateStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <p x-show="stepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="stepPicError"></p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -471,7 +510,8 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" x-model="addStepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <input type="text" name="pic" list="pic-user-options" x-model="addStepForm.pic" @blur="validateAddStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                        <p x-show="addStepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="addStepPicError"></p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -496,5 +536,10 @@
                 </form>
             </div>
         </div>
+        <datalist id="pic-user-options">
+            @foreach ($picUsers as $picUser)
+                <option value="{{ $picUser->name }}"></option>
+            @endforeach
+        </datalist>
     </div>
 @endsection

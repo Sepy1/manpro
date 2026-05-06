@@ -6,7 +6,7 @@ class MenuHelper
 {
     public static function getMainNavItems()
     {
-        return [
+        $items = [
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
@@ -22,12 +22,27 @@ class MenuHelper
                 'name' => 'Daftar Project',
                 'path' => '/admin/daftar-project',
             ],
-            [
+        ];
+
+        if (auth()->user()?->role === 'admin') {
+            $items[] = [
+                'icon' => 'pages',
+                'name' => 'Manajemen Vendor',
+                'path' => '/admin/manajemen-vendor',
+            ];
+            $items[] = [
+                'icon' => 'user-profile',
+                'name' => 'Manajemen User',
+                'path' => '/admin/manajemen-user',
+            ];
+            $items[] = [
                 'icon' => 'user-profile',
                 'name' => 'Profil',
                 'path' => '/admin/profil',
-            ],
-        ];
+            ];
+        }
+
+        return $items;
     }
 
     public static function getOthersItems()

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectStep;
+use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +57,7 @@ class ProjectController extends Controller
             ->paginate(5, ['*'], 'todo_page');
 
         $upcomingDeadlines = ProjectStep::query()
-            ->with('project:id,name,category,description,url,pic,deadline,period_start,period_end,status')
+            ->with('project:id,name,vendor_id,category,description,url,pic,deadline,period_start,period_end,status')
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
             ->whereNotNull('deadline')
             ->whereDate('deadline', '>=', Carbon::today())
@@ -70,7 +72,7 @@ class ProjectController extends Controller
                 },
             ])
             ->latest()
-            ->get(['id', 'name', 'category', 'status', 'period_start', 'period_end', 'deadline', 'pic']);
+            ->get(['id', 'name', 'vendor_id', 'category', 'status', 'period_start', 'period_end', 'deadline', 'pic']);
 
         $overdueSteps = ProjectStep::query()
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
@@ -87,6 +89,8 @@ class ProjectController extends Controller
         ) + [
             'projectCategories' => Project::CATEGORIES,
             'categoryBadgeColors' => self::CATEGORY_BADGE_COLORS,
+            'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'picUsers' => User::query()->orderBy('name')->get(['name']),
         ]);
     }
 
@@ -103,6 +107,7 @@ class ProjectController extends Controller
         $projects = Project::query()
             ->with([
                 'user',
+                'vendor',
                 'steps' => fn ($query) => $query->orderBy('sort_order'),
             ])
             ->when($projectName !== '', function ($query) use ($projectName) {
@@ -135,6 +140,8 @@ class ProjectController extends Controller
             'projects' => $projects,
             'projectCategories' => Project::CATEGORIES,
             'categoryBadgeColors' => self::CATEGORY_BADGE_COLORS,
+            'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'picUsers' => User::query()->orderBy('name')->get(['name']),
             'filters' => [
                 'project_name' => $projectName,
                 'step_name' => $stepName,
@@ -151,6 +158,8 @@ class ProjectController extends Controller
 
         return view('pages.dashboard.insert-project', [
             'projectCategories' => Project::CATEGORIES,
+            'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'picUsers' => User::query()->orderBy('name')->get(['name']),
         ]);
     }
 
@@ -163,25 +172,40 @@ class ProjectController extends Controller
             'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
-            'pic' => ['nullable', 'string', 'max:255'],
+            'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'deadline' => ['nullable', 'date'],
             'period_start' => ['nullable', 'date'],
             'period_end' => ['nullable', 'date', 'after_or_equal:period_start'],
             'status' => ['required', 'string', 'in:planned,in_progress,completed,delayed'],
+            'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.step_name' => ['required', 'string', 'max:255'],
             'steps.*.start_date' => ['nullable', 'date'],
             'steps.*.end_date' => ['nullable', 'date'],
             'steps.*.deadline' => ['nullable', 'date'],
             'steps.*.description' => ['nullable', 'string'],
-            'steps.*.pic' => ['nullable', 'string', 'max:255'],
+            'steps.*.pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'steps.*.follow_up' => ['nullable', 'string'],
             'steps.*.status' => ['required', 'string', 'in:planned,in_progress,completed,delayed'],
+        ], [
+            'pic.exists' => 'PIC belum terdaftar.',
+            'steps.*.pic.exists' => 'PIC belum terdaftar.',
         ]);
+
+        if ($validated['category'] === 'Kerjasama Vendor' && empty($validated['vendor_id'])) {
+            return back()
+                ->withErrors(['vendor_id' => 'Vendor wajib dipilih untuk kategori Kerjasama Vendor.'])
+                ->withInput();
+        }
+
+        if ($validated['category'] !== 'Kerjasama Vendor') {
+            $validated['vendor_id'] = null;
+        }
 
         DB::transaction(function () use ($validated) {
             $project = Project::create([
                 'user_id' => auth()->id(),
+                'vendor_id' => $validated['vendor_id'] ?? null,
                 'name' => $validated['name'],
                 'category' => $validated['category'],
                 'description' => $validated['description'] ?? null,
@@ -222,12 +246,25 @@ class ProjectController extends Controller
             'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
-            'pic' => ['nullable', 'string', 'max:255'],
+            'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'deadline' => ['nullable', 'date'],
             'period_start' => ['nullable', 'date'],
             'period_end' => ['nullable', 'date', 'after_or_equal:period_start'],
             'status' => ['required', 'string', 'in:planned,in_progress,completed,delayed'],
+            'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
+        ], [
+            'pic.exists' => 'PIC belum terdaftar.',
         ]);
+
+        if ($validated['category'] === 'Kerjasama Vendor' && empty($validated['vendor_id'])) {
+            return back()
+                ->withErrors(['vendor_id' => 'Vendor wajib dipilih untuk kategori Kerjasama Vendor.'])
+                ->withInput();
+        }
+
+        if ($validated['category'] !== 'Kerjasama Vendor') {
+            $validated['vendor_id'] = null;
+        }
 
         $project->update($validated);
 
@@ -257,9 +294,11 @@ class ProjectController extends Controller
             'end_date' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
             'description' => ['nullable', 'string'],
-            'pic' => ['nullable', 'string', 'max:255'],
+            'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'follow_up' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:planned,in_progress,completed,delayed'],
+        ], [
+            'pic.exists' => 'PIC belum terdaftar.',
         ]);
 
         $step->update($validated);
@@ -279,9 +318,11 @@ class ProjectController extends Controller
             'end_date' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
             'description' => ['nullable', 'string'],
-            'pic' => ['nullable', 'string', 'max:255'],
+            'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'follow_up' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:planned,in_progress,completed,delayed'],
+        ], [
+            'pic.exists' => 'PIC belum terdaftar.',
         ]);
 
         $nextSortOrder = (int) ($project->steps()->max('sort_order') ?? -1) + 1;

@@ -26,7 +26,10 @@
             selectedStatus: '',
             statusLabel: '',
             todoProjectAction: '',
-            todoProjectForm: { name: '', category: 'Development Aplikasi', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            picNames: @js($picUsers->pluck('name')->values()),
+            todoProjectPicError: '',
+            todoStepPicError: '',
+            todoProjectForm: { name: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             todoStepAction: '',
             todoStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             projects: @js($projectsForModal->map(fn ($p) => [
@@ -55,6 +58,7 @@
                 this.todoProjectForm = {
                     name: el.dataset.name || '',
                     category: el.dataset.category || 'Development Aplikasi',
+                    vendor_id: el.dataset.vendorId || '',
                     description: el.dataset.description || '',
                     url: el.dataset.url || '',
                     pic: el.dataset.pic || '',
@@ -64,6 +68,7 @@
                     status: el.dataset.status || 'planned',
                 };
                 this.showTodoProjectModal = true;
+                this.todoProjectPicError = '';
             },
             openTodoStepModal(el) {
                 this.todoStepAction = el.dataset.action;
@@ -78,6 +83,17 @@
                     status: el.dataset.status || 'planned',
                 };
                 this.showTodoStepModal = true;
+                this.todoStepPicError = '';
+            },
+            isRegisteredPic(value) {
+                if (!String(value || '').trim()) return true;
+                return this.picNames.includes(String(value).trim());
+            },
+            validateTodoProjectPic() {
+                this.todoProjectPicError = this.isRegisteredPic(this.todoProjectForm.pic) ? '' : 'PIC belum terdaftar.';
+            },
+            validateTodoStepPic() {
+                this.todoStepPicError = this.isRegisteredPic(this.todoStepForm.pic) ? '' : 'PIC belum terdaftar.';
             },
             get filteredProjects() {
                 return this.projects.filter((project) => String(project.status || '').toLowerCase() === this.selectedStatus);
@@ -153,6 +169,7 @@
                                         data-action="{{ route('admin.daftar-project.update', $project) }}"
                                         data-name="{{ $project->name }}"
                                         data-category="{{ $project->category }}"
+                                        data-vendor-id="{{ $project->vendor_id }}"
                                         data-description="{{ $project->description }}"
                                         data-url="{{ $project->url }}"
                                         data-pic="{{ $project->pic }}"
@@ -247,6 +264,7 @@
                                     data-action="{{ route('admin.daftar-project.update', $project) }}"
                                     data-name="{{ $project->name }}"
                                     data-category="{{ $project->category }}"
+                                    data-vendor-id="{{ $project->vendor_id }}"
                                     data-description="{{ $project->description }}"
                                     data-url="{{ $project->url }}"
                                     data-pic="{{ $project->pic }}"
@@ -442,13 +460,23 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                    <input type="text" name="pic" x-model="todoProjectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    <input type="text" name="pic" list="pic-user-options" x-model="todoProjectForm.pic" @blur="validateTodoProjectPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    <p x-show="todoProjectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="todoProjectPicError"></p>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
                     <select name="category" x-model="todoProjectForm.category" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                         @foreach ($projectCategories as $category)
                             <option value="{{ $category }}">{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div x-show="todoProjectForm.category === 'Kerjasama Vendor'" x-cloak>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Vendor</label>
+                    <select name="vendor_id" x-model="todoProjectForm.vendor_id" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                        <option value="">Pilih vendor</option>
+                        @foreach ($vendors as $vendor)
+                            <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -515,7 +543,8 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                    <input type="text" name="pic" x-model="todoStepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    <input type="text" name="pic" list="pic-user-options" x-model="todoStepForm.pic" @blur="validateTodoStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    <p x-show="todoStepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="todoStepPicError"></p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -605,5 +634,10 @@
             </div>
         </div>
     </div>
+        <datalist id="pic-user-options">
+            @foreach ($picUsers as $picUser)
+                <option value="{{ $picUser->name }}"></option>
+            @endforeach
+        </datalist>
     </div>
 @endsection

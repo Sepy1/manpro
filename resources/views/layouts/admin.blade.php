@@ -17,8 +17,16 @@
             <main
                 @class([
                     'flex min-h-0 flex-1 flex-col overflow-hidden p-4 text-slate-800 md:p-6 dark:text-gray-100',
-                    'w-full max-w-none' => request()->routeIs('admin.dashboard') || request()->routeIs('admin.insert-project.*') || request()->routeIs('admin.daftar-project.*'),
-                    'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard') && !request()->routeIs('admin.insert-project.*') && !request()->routeIs('admin.daftar-project.*'),
+                    'w-full max-w-none' => request()->routeIs('admin.dashboard')
+                        || request()->routeIs('admin.insert-project.*')
+                        || request()->routeIs('admin.daftar-project.*')
+                        || request()->routeIs('admin.manajemen-user.*')
+                        || request()->routeIs('admin.manajemen-vendor.*'),
+                    'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
+                        && !request()->routeIs('admin.insert-project.*')
+                        && !request()->routeIs('admin.daftar-project.*')
+                        && !request()->routeIs('admin.manajemen-user.*')
+                        && !request()->routeIs('admin.manajemen-vendor.*'),
                 ])
             >
                 @yield('admin-content')

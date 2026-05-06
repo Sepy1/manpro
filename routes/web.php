@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\ProjectController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,16 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
         return view('pages.dashboard.profil');
     })->name('profil');
+
+    Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
+    Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');
+    Route::put('/manajemen-vendor/{vendor}', [VendorController::class, 'update'])->name('manajemen-vendor.update');
+    Route::delete('/manajemen-vendor/{vendor}', [VendorController::class, 'destroy'])->name('manajemen-vendor.delete');
+
+    Route::get('/manajemen-user', [UserManagementController::class, 'index'])->name('manajemen-user.index');
+    Route::post('/manajemen-user', [UserManagementController::class, 'store'])->name('manajemen-user.store');
+    Route::put('/manajemen-user/{user}', [UserManagementController::class, 'update'])->name('manajemen-user.update');
+    Route::delete('/manajemen-user/{user}', [UserManagementController::class, 'destroy'])->name('manajemen-user.delete');
 });
 
 Route::middleware('auth')->group(function () {

@@ -55,15 +55,16 @@
                         </div>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                            <input type="text" name="pic" value="{{ old('pic') }}" placeholder="Nama PIC"
+                            <input type="text" name="pic" list="pic-user-options" x-model="projectPic" @blur="validateProjectPic()" value="{{ old('pic') }}" placeholder="Nama PIC"
                                 class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90" />
+                            <p x-show="projectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="projectPicError"></p>
                             @error('pic')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
-                            <select name="category"
+                            <select name="category" x-model="selectedCategory"
                                 class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90">
                                 @foreach ($projectCategories as $category)
                                     <option value="{{ $category }}" @selected(old('category', 'Development Aplikasi') === $category)>
@@ -72,6 +73,21 @@
                                 @endforeach
                             </select>
                             @error('category')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div x-show="selectedCategory === 'Kerjasama Vendor'" x-cloak>
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Vendor</label>
+                            <select name="vendor_id"
+                                class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90">
+                                <option value="">Pilih vendor</option>
+                                @foreach ($vendors as $vendor)
+                                    <option value="{{ $vendor->id }}" @selected((string) old('vendor_id') === (string) $vendor->id)>
+                                        {{ $vendor->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('vendor_id')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
@@ -190,8 +206,9 @@
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                                        <input type="text" :name="'steps[' + index + '][pic]'" x-model="step.pic"
+                                        <input type="text" list="pic-user-options" :name="'steps[' + index + '][pic]'" x-model="step.pic" @blur="validateStepPic(index)"
                                             class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90" />
+                                        <p x-show="stepPicErrors[index]" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="stepPicErrors[index]"></p>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Tindak Lanjut</label>
@@ -259,6 +276,12 @@
                 </div>
             </div>
         </form>
+
+        <datalist id="pic-user-options">
+            @foreach ($picUsers as $picUser)
+                <option value="{{ $picUser->name }}"></option>
+            @endforeach
+        </datalist>
     </div>
 @endsection
 
@@ -268,6 +291,11 @@
             Alpine.data('insertProjectForm', () => ({
                 currentIndex: 0,
                 touchStartX: null,
+                selectedCategory: @js(old('category', 'Development Aplikasi')),
+                projectPic: @js(old('pic', '')),
+                projectPicError: '',
+                stepPicErrors: {},
+                picNames: @js($picUsers->pluck('name')->values()),
                 steps: [
                     {
                         step_name: '',
@@ -325,9 +353,21 @@
                 removeStep(index) {
                     if (this.steps.length <= 1) return;
                     this.steps.splice(index, 1);
+                    delete this.stepPicErrors[index];
                     if (this.currentIndex >= this.steps.length) {
                         this.currentIndex = this.steps.length - 1;
                     }
+                },
+                isRegisteredPic(value) {
+                    if (!String(value || '').trim()) return true;
+                    return this.picNames.includes(String(value).trim());
+                },
+                validateProjectPic() {
+                    this.projectPicError = this.isRegisteredPic(this.projectPic) ? '' : 'PIC belum terdaftar.';
+                },
+                validateStepPic(index) {
+                    const value = this.steps[index]?.pic ?? '';
+                    this.stepPicErrors[index] = this.isRegisteredPic(value) ? '' : 'PIC belum terdaftar.';
                 },
                 handleSwipe(event) {
                     if (this.touchStartX == null) return;
