@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/insert-project', [ProjectController::class, 'create'])->name('insert-project.create');
     Route::post('/insert-project', [ProjectController::class, 'store'])->name('insert-project.store');
     Route::get('/daftar-project', [ProjectController::class, 'index'])->name('daftar-project.index');
+    Route::get('/daftar-project/report', [ProjectController::class, 'report'])->name('daftar-project.report');
     Route::put('/daftar-project/{project}', [ProjectController::class, 'updateProject'])->name('daftar-project.update');
     Route::delete('/daftar-project/{project}', [ProjectController::class, 'deleteProject'])->name('daftar-project.delete');
     Route::post('/daftar-project/{project}/step', [ProjectController::class, 'storeStep'])->name('daftar-project.step.store');

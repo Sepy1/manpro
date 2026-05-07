@@ -12,6 +12,8 @@
             showProjectModal: false,
             showStepModal: false,
             showAddStepModal: false,
+            showReportModal: false,
+            reportUseAi: '0',
             projectAction: '',
             stepAction: '',
             addStepAction: '',
@@ -82,6 +84,11 @@
             validateAddStepPic() {
                 this.addStepPicError = this.isRegisteredPic(this.addStepForm.pic) ? '' : 'PIC belum terdaftar.';
             },
+            submitReport(useAi) {
+                this.reportUseAi = useAi ? '1' : '0';
+                this.$refs.reportForm.requestSubmit(this.$refs.reportSubmitButton);
+                this.showReportModal = false;
+            },
         }"
         class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
     >
@@ -98,7 +105,8 @@
             </p>
         </div>
 
-        <form method="GET" action="{{ route('admin.daftar-project.index') }}" class="mb-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+        <form method="GET" action="{{ route('admin.daftar-project.index') }}" x-ref="reportForm" class="mb-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+            <input type="hidden" name="use_ai_summary" x-model="reportUseAi" />
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
                 <div>
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Project</label>
@@ -154,6 +162,20 @@
                 <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
                     Cari
                 </button>
+                <button
+                    type="button"
+                    @click="showReportModal = true"
+                    class="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"
+                >
+                    Generate Laporan
+                </button>
+                <button
+                    x-ref="reportSubmitButton"
+                    type="submit"
+                    formaction="{{ route('admin.daftar-project.report') }}"
+                    formtarget="_blank"
+                    class="hidden"
+                ></button>
                 <a href="{{ route('admin.daftar-project.index') }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/10">
                     Reset
                 </a>
@@ -534,6 +556,25 @@
                         <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Tambah Step</button>
                     </div>
                 </form>
+            </div>
+        </div>
+        <div x-show="showReportModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showReportModal = false">
+            <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+                <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Generate Laporan</h4>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                    Pilih metode pembuatan summary project pada laporan PDF.
+                </p>
+                <div class="mt-4 grid grid-cols-1 gap-2">
+                    <button type="button" @click="submitReport(false)" class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/10">
+                        Generate Tanpa AI
+                    </button>
+                    <button type="button" @click="submitReport(true)" class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
+                        Generate Dengan AI
+                    </button>
+                    <button type="button" @click="showReportModal = false" class="inline-flex h-10 items-center justify-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                        Batal
+                    </button>
+                </div>
             </div>
         </div>
         <datalist id="pic-user-options">
