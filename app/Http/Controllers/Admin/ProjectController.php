@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Division;
 use App\Models\Project;
 use App\Models\ProjectStep;
 use App\Models\User;
@@ -29,11 +30,135 @@ class ProjectController extends Controller
         'Kerjasama Vendor' => 'cyan',
     ];
 
+    private function ensureProjectViewer(): void
+    {
+        abort_unless(in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor'], true), 403);
+    }
+
+    private function canManageProjects(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return $user->role === 'manager' && !empty($user->division);
+    }
+
+    private function canOfficerEditFollowUp(): bool
+    {
+        return auth()->user()?->role === 'officer';
+    }
+
+    private function isUserPicForProject(Project $project, User $user): bool
+    {
+        return ((int) ($project->pic_user_id ?? 0) === (int) $user->id)
+            || (trim((string) $project->pic) !== '' && trim((string) $project->pic) === trim((string) $user->name));
+    }
+
+    private function isUserPicForStep(ProjectStep $step, User $user): bool
+    {
+        return ((int) ($step->pic_user_id ?? 0) === (int) $user->id)
+            || (trim((string) $step->pic) !== '' && trim((string) $step->pic) === trim((string) $user->name));
+    }
+
+    private function visibleProjectsQuery(): Builder
+    {
+        $user = auth()->user();
+
+        $query = Project::query();
+
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->role === 'admin') {
+            return $query;
+        }
+
+        if ($user->role === 'manager') {
+            if (!$user->division) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where('division', $user->division);
+        }
+
+        if (in_array($user->role, ['officer', 'vendor'], true)) {
+            return $query->where(function (Builder $nested) use ($user): void {
+                $nested->where('pic_user_id', $user->id)
+                    ->orWhere('pic', $user->name)
+                    ->orWhereHas('steps', function (Builder $stepQuery) use ($user): void {
+                        $stepQuery->where('pic_user_id', $user->id)
+                            ->orWhere('pic', $user->name);
+                    });
+            });
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    private function ensureCanManageProject(Project $project): void
+    {
+        abort_unless($this->canManageProjects(), 403);
+
+        if (auth()->user()?->role === 'manager') {
+            abort_unless(!empty(auth()->user()?->division) && $project->division === auth()->user()?->division, 403);
+        }
+    }
+
+    private function ensureCanManageStep(ProjectStep $step): void
+    {
+        $project = $step->project()->firstOrFail();
+        $this->ensureCanManageProject($project);
+    }
+
+    private function resolvePicUserId(?string $picName): ?int
+    {
+        $name = trim((string) $picName);
+
+        if ($name === '') {
+            return null;
+        }
+
+        return User::query()->where('name', $name)->value('id');
+    }
+
+    private function divisionOptions()
+    {
+        return Division::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name');
+    }
+
+    private function applyOfficerStepScope($query): void
+    {
+        $user = auth()->user();
+
+        if (!in_array($user?->role, ['officer', 'vendor'], true)) {
+            return;
+        }
+
+        $query->where(function (Builder $nested) use ($user): void {
+            $nested->where('pic_user_id', $user->id)
+                ->orWhere('pic', $user->name);
+        });
+    }
+
     public function dashboard(): View
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureProjectViewer();
 
-        $statusCounts = Project::query()
+        $visibleProjects = $this->visibleProjectsQuery();
+        $visibleProjectIds = $this->visibleProjectsQuery()->select('id');
+
+        $statusCounts = $visibleProjects
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -45,43 +170,60 @@ class ProjectController extends Controller
             'delayed' => (int) ($statusCounts['delayed'] ?? 0),
         ];
 
-        $todoProjects = Project::query()
+        $todoProjects = $this->visibleProjectsQuery()
             ->with(['steps' => function ($query) {
-                $query->where('status', '!=', 'completed')->orderBy('sort_order');
+                $query->where('status', '!=', 'completed');
+                $this->applyOfficerStepScope($query);
+                $query->orderBy('sort_order');
             }])
             ->withCount([
-                'steps as total_steps_count',
+                'steps as total_steps_count' => function ($query): void {
+                    $this->applyOfficerStepScope($query);
+                },
                 'steps as completed_steps_count' => function ($query) {
                     $query->where('status', 'completed');
+                    $this->applyOfficerStepScope($query);
                 },
             ])
             ->whereHas('steps', function ($query) {
                 $query->where('status', '!=', 'completed');
+                $this->applyOfficerStepScope($query);
             })
             ->latest()
             ->paginate(5, ['*'], 'todo_page');
 
         $upcomingDeadlines = ProjectStep::query()
-            ->with('project:id,name,vendor_id,category,description,url,pic,deadline,period_start,period_end,status')
+            ->with('project:id,name,division,vendor_id,category,description,url,pic,deadline,period_start,period_end,status')
+            ->whereIn('project_id', $visibleProjectIds)
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
             ->whereNotNull('deadline')
+            ->when(in_array(auth()->user()?->role, ['officer', 'vendor'], true), function ($query): void {
+                $this->applyOfficerStepScope($query);
+            })
             ->whereDate('deadline', '>=', Carbon::today())
             ->orderBy('deadline')
             ->paginate(5, ['*'], 'deadline_page');
 
-        $projectsForModal = Project::query()
+        $projectsForModal = $this->visibleProjectsQuery()
             ->withCount([
-                'steps as total_steps_count',
+                'steps as total_steps_count' => function ($query): void {
+                    $this->applyOfficerStepScope($query);
+                },
                 'steps as completed_steps_count' => function ($query) {
                     $query->where('status', 'completed');
+                    $this->applyOfficerStepScope($query);
                 },
             ])
             ->latest()
-            ->get(['id', 'name', 'vendor_id', 'category', 'status', 'period_start', 'period_end', 'deadline', 'pic']);
+            ->get(['id', 'name', 'division', 'vendor_id', 'category', 'status', 'period_start', 'period_end', 'deadline', 'pic']);
 
         $overdueSteps = ProjectStep::query()
+            ->whereIn('project_id', $visibleProjectIds)
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
             ->whereNotNull('deadline')
+            ->when(in_array(auth()->user()?->role, ['officer', 'vendor'], true), function ($query): void {
+                $this->applyOfficerStepScope($query);
+            })
             ->whereDate('deadline', '<', Carbon::today())
             ->count();
 
@@ -95,13 +237,16 @@ class ProjectController extends Controller
             'projectCategories' => Project::CATEGORIES,
             'categoryBadgeColors' => self::CATEGORY_BADGE_COLORS,
             'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'divisions' => $this->divisionOptions(),
             'picUsers' => User::query()->orderBy('name')->get(['name']),
+            'canManageProjects' => $this->canManageProjects(),
+            'canEditOfficerFollowUp' => $this->canOfficerEditFollowUp(),
         ]);
     }
 
     public function index(Request $request): View
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureProjectViewer();
 
         $projectName = trim((string) $request->string('project_name'));
         $stepName = trim((string) $request->string('step_name'));
@@ -119,7 +264,10 @@ class ProjectController extends Controller
             'projectCategories' => Project::CATEGORIES,
             'categoryBadgeColors' => self::CATEGORY_BADGE_COLORS,
             'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'divisions' => $this->divisionOptions(),
             'picUsers' => User::query()->orderBy('name')->get(['name']),
+            'canManageProjects' => $this->canManageProjects(),
+            'canEditOfficerFollowUp' => $this->canOfficerEditFollowUp(),
             'filters' => [
                 'project_name' => $projectName,
                 'step_name' => $stepName,
@@ -132,10 +280,13 @@ class ProjectController extends Controller
 
     public function report(Request $request)
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureProjectViewer();
 
         $projects = $this->buildFilteredProjectsQuery($request)
-            ->with(['steps' => fn ($query) => $query->orderBy('sort_order')])
+            ->with(['steps' => function ($query): void {
+                $this->applyOfficerStepScope($query);
+                $query->orderBy('sort_order');
+            }])
             ->latest()
             ->get();
 
@@ -386,11 +537,14 @@ class ProjectController extends Controller
         $periodStart = $request->input('period_start');
         $periodEnd = $request->input('period_end');
 
-        return Project::query()
+        return $this->visibleProjectsQuery()
             ->with([
                 'user',
                 'vendor',
-                'steps' => fn ($query) => $query->orderBy('sort_order'),
+                'steps' => function ($query): void {
+                    $this->applyOfficerStepScope($query);
+                    $query->orderBy('sort_order');
+                },
             ])
             ->when($projectName !== '', function ($query) use ($projectName) {
                 $query->where('name', 'like', "%{$projectName}%");
@@ -418,23 +572,36 @@ class ProjectController extends Controller
 
     public function create(): View
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        abort_unless($this->canManageProjects(), 403);
+
+        if (auth()->user()?->role === 'manager' && empty(auth()->user()?->division)) {
+            abort(403, 'Manager belum memiliki divisi.');
+        }
 
         return view('pages.dashboard.insert-project', [
             'projectCategories' => Project::CATEGORIES,
             'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'picUsers' => User::query()->orderBy('name')->get(['name']),
+            'divisionOptions' => $this->divisionOptions(),
+            'currentUserRole' => auth()->user()?->role,
+            'currentUserDivision' => auth()->user()?->division,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        abort_unless($this->canManageProjects(), 403);
+
+        if (auth()->user()?->role === 'manager' && empty(auth()->user()?->division)) {
+            return back()->withErrors(['division' => 'Akun manager belum memiliki divisi. Hubungi admin.'])->withInput();
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'division' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
+            'follow_up' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
             'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'deadline' => ['nullable', 'date'],
@@ -466,15 +633,22 @@ class ProjectController extends Controller
             $validated['vendor_id'] = null;
         }
 
+        if (auth()->user()?->role === 'manager') {
+            $validated['division'] = (string) auth()->user()?->division;
+        }
+
         DB::transaction(function () use ($validated) {
             $project = Project::create([
                 'user_id' => auth()->id(),
                 'vendor_id' => $validated['vendor_id'] ?? null,
                 'name' => $validated['name'],
+                'division' => $validated['division'],
                 'category' => $validated['category'],
                 'description' => $validated['description'] ?? null,
+                'follow_up' => $validated['follow_up'] ?? null,
                 'url' => $validated['url'] ?? null,
                 'pic' => $validated['pic'] ?? null,
+                'pic_user_id' => $this->resolvePicUserId($validated['pic'] ?? null),
                 'deadline' => $validated['deadline'] ?? null,
                 'period_start' => $validated['period_start'] ?? null,
                 'period_end' => $validated['period_end'] ?? null,
@@ -490,6 +664,7 @@ class ProjectController extends Controller
                     'deadline' => $step['deadline'] ?? null,
                     'description' => $step['description'] ?? null,
                     'pic' => $step['pic'] ?? null,
+                    'pic_user_id' => $this->resolvePicUserId($step['pic'] ?? null),
                     'follow_up' => $step['follow_up'] ?? null,
                     'status' => $step['status'],
                 ]);
@@ -503,12 +678,18 @@ class ProjectController extends Controller
 
     public function updateProject(Request $request, Project $project): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureCanManageProject($project);
+
+        if (auth()->user()?->role === 'manager' && empty(auth()->user()?->division)) {
+            return back()->withErrors(['division' => 'Akun manager belum memiliki divisi. Hubungi admin.'])->withInput();
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'division' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
+            'follow_up' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
             'pic' => ['nullable', 'string', 'max:255', 'exists:users,name'],
             'deadline' => ['nullable', 'date'],
@@ -530,6 +711,12 @@ class ProjectController extends Controller
             $validated['vendor_id'] = null;
         }
 
+        if (auth()->user()?->role === 'manager') {
+            $validated['division'] = (string) auth()->user()?->division;
+        }
+
+        $validated['pic_user_id'] = $this->resolvePicUserId($validated['pic'] ?? null);
+
         $project->update($validated);
 
         return redirect()
@@ -539,7 +726,7 @@ class ProjectController extends Controller
 
     public function deleteProject(Project $project): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureCanManageProject($project);
 
         $project->delete();
 
@@ -548,9 +735,27 @@ class ProjectController extends Controller
             ->with('status', 'Project berhasil dihapus.');
     }
 
+    public function updateOfficerProjectFollowUp(Request $request, Project $project): RedirectResponse
+    {
+        abort_unless($this->canOfficerEditFollowUp(), 403);
+        abort_unless($this->isUserPicForProject($project, auth()->user()), 403);
+
+        $validated = $request->validate([
+            'follow_up' => ['nullable', 'string'],
+        ]);
+
+        $project->update([
+            'follow_up' => $validated['follow_up'] ?? null,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('status', 'Tindak lanjut project berhasil diperbarui.');
+    }
+
     public function updateStep(Request $request, ProjectStep $step): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureCanManageStep($step);
 
         $incomingPic = trim((string) $request->input('pic', ''));
         $currentPic = trim((string) ($step->pic ?? ''));
@@ -574,6 +779,8 @@ class ProjectController extends Controller
             'pic.exists' => 'PIC belum terdaftar.',
         ]);
 
+        $validated['pic_user_id'] = $this->resolvePicUserId($validated['pic'] ?? null);
+
         $step->update($validated);
 
         return redirect()
@@ -583,7 +790,7 @@ class ProjectController extends Controller
 
     public function storeStep(Request $request, Project $project): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureCanManageProject($project);
 
         $validated = $request->validate([
             'step_name' => ['required', 'string', 'max:255'],
@@ -602,6 +809,7 @@ class ProjectController extends Controller
 
         $project->steps()->create([
             'sort_order' => $nextSortOrder,
+            'pic_user_id' => $this->resolvePicUserId($validated['pic'] ?? null),
             ...$validated,
         ]);
 
@@ -610,9 +818,27 @@ class ProjectController extends Controller
             ->with('status', 'Step project berhasil ditambahkan.');
     }
 
+    public function updateOfficerStepFollowUp(Request $request, ProjectStep $step): RedirectResponse
+    {
+        abort_unless($this->canOfficerEditFollowUp(), 403);
+        abort_unless($this->isUserPicForStep($step, auth()->user()), 403);
+
+        $validated = $request->validate([
+            'follow_up' => ['nullable', 'string'],
+        ]);
+
+        $step->update([
+            'follow_up' => $validated['follow_up'] ?? null,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('status', 'Tindak lanjut step berhasil diperbarui.');
+    }
+
     public function deleteStep(ProjectStep $step): RedirectResponse
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $this->ensureCanManageStep($step);
 
         $projectId = $step->project_id;
         $step->delete();

@@ -9,17 +9,22 @@
                 {{ session('status') }}
             </div>
         @endif
+        @if ($errors->any())
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
         <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar User (Manager / Office / Vendor)</h3>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar User (Admin / Manager / Officer / Vendor)</h3>
                 <button type="button" @click="showAddForm = !showAddForm"
                     class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
                     Add User
                 </button>
             </div>
 
-            <form x-show="showAddForm" x-cloak method="POST" action="{{ route('admin.manajemen-user.store') }}" class="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 md:grid-cols-5 dark:border-gray-700">
+            <form x-show="showAddForm" x-cloak method="POST" action="{{ route('admin.manajemen-user.store') }}" class="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 md:grid-cols-6 dark:border-gray-700">
                 @csrf
                 <input type="text" name="name" value="{{ old('name') }}" required placeholder="Nama"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
@@ -28,6 +33,12 @@
                 <select name="role" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                     @foreach ($roles as $role)
                         <option value="{{ $role }}" @selected(old('role') === $role)>{{ ucfirst($role) }}</option>
+                    @endforeach
+                </select>
+                <select name="division" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                    <option value="">Pilih divisi</option>
+                    @foreach ($divisions as $division)
+                        <option value="{{ $division }}" @selected(old('division') === $division)>{{ $division }}</option>
                     @endforeach
                 </select>
                 <input type="password" name="password" required placeholder="Password"
@@ -50,7 +61,8 @@
                             <th class="w-[22%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama</th>
                             <th class="w-[24%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Email</th>
                             <th class="w-[14%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Role</th>
-                            <th class="w-[32%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
+                            <th class="w-[14%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Divisi</th>
+                            <th class="w-[24%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,7 +71,7 @@
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->id }}</td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                                     <span x-show="!edit">{{ $managedUser->name }}</span>
-                                    <form x-show="edit" x-cloak method="POST" action="{{ route('admin.manajemen-user.update', $managedUser) }}" class="grid grid-cols-1 gap-2 md:grid-cols-4">
+                                    <form x-show="edit" x-cloak method="POST" action="{{ route('admin.manajemen-user.update', $managedUser) }}" class="grid grid-cols-1 gap-2 md:grid-cols-5">
                                         @csrf
                                         @method('PUT')
                                         <input type="text" name="name" value="{{ $managedUser->name }}" required class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-sm dark:border-gray-700 dark:text-white/90" />
@@ -67,6 +79,12 @@
                                         <select name="role" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-sm dark:border-gray-700 dark:text-white/90">
                                             @foreach ($roles as $role)
                                                 <option value="{{ $role }}" @selected($managedUser->role === $role)>{{ ucfirst($role) }}</option>
+                                            @endforeach
+                                        </select>
+                                        <select name="division" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-sm dark:border-gray-700 dark:text-white/90">
+                                            <option value="">Pilih divisi</option>
+                                            @foreach ($divisions as $division)
+                                                <option value="{{ $division }}" @selected($managedUser->division === $division)>{{ $division }}</option>
                                             @endforeach
                                         </select>
                                         <div class="flex items-center gap-2">
@@ -77,6 +95,7 @@
                                 </td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->email }}</td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ ucfirst($managedUser->role) }}</td>
+                                <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->division ?: '-' }}</td>
                                 <td class="px-3 py-3 text-sm">
                                     <div class="flex items-center gap-2">
                                         <button type="button" @click="edit = !edit" class="inline-flex h-9 items-center rounded-lg border border-brand-500 px-3 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
@@ -94,7 +113,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada user role manager/office/vendor.</td>
+                                <td colspan="6" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada user role admin/manager/officer/vendor.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -23,13 +23,14 @@
             showStatusModal: false,
             showTodoProjectModal: false,
             showTodoStepModal: false,
+            canManageProjects: @js($canManageProjects),
             selectedStatus: '',
             statusLabel: '',
             todoProjectAction: '',
             picNames: @js($picUsers->pluck('name')->values()),
             todoProjectPicError: '',
             todoStepPicError: '',
-            todoProjectForm: { name: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            todoProjectForm: { name: '', division: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             todoStepAction: '',
             todoStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             projects: @js($projectsForModal->map(fn ($p) => [
@@ -57,6 +58,7 @@
                 this.todoProjectAction = el.dataset.action;
                 this.todoProjectForm = {
                     name: el.dataset.name || '',
+                    division: el.dataset.division || '',
                     category: el.dataset.category || 'Development Aplikasi',
                     vendor_id: el.dataset.vendorId || '',
                     description: el.dataset.description || '',
@@ -162,24 +164,31 @@
                             @endphp
                             <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                                 <div class="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        class="min-w-0 flex-1 truncate text-left text-lg font-semibold text-gray-800 hover:underline dark:text-white/90"
-                                        @click="openTodoProjectModal($el)"
-                                        data-action="{{ route('admin.daftar-project.update', $project) }}"
-                                        data-name="{{ $project->name }}"
-                                        data-category="{{ $project->category }}"
-                                        data-vendor-id="{{ $project->vendor_id }}"
-                                        data-description="{{ $project->description }}"
-                                        data-url="{{ $project->url }}"
-                                        data-pic="{{ $project->pic }}"
-                                        data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
-                                        data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
-                                        data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
-                                        data-status="{{ $project->status }}"
-                                    >
-                                        {{ $project->name }}
-                                    </button>
+                                    @if ($canManageProjects)
+                                        <button
+                                            type="button"
+                                            class="min-w-0 flex-1 truncate text-left text-lg font-semibold text-gray-800 hover:underline dark:text-white/90"
+                                            @click="openTodoProjectModal($el)"
+                                            data-action="{{ route('admin.daftar-project.update', $project) }}"
+                                            data-name="{{ $project->name }}"
+                                            data-division="{{ $project->division }}"
+                                            data-category="{{ $project->category }}"
+                                            data-vendor-id="{{ $project->vendor_id }}"
+                                            data-description="{{ $project->description }}"
+                                            data-url="{{ $project->url }}"
+                                            data-pic="{{ $project->pic }}"
+                                            data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
+                                            data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
+                                            data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
+                                            data-status="{{ $project->status }}"
+                                        >
+                                            {{ $project->name }}
+                                        </button>
+                                    @else
+                                        <span class="min-w-0 flex-1 truncate text-left text-lg font-semibold text-gray-800 dark:text-white/90">
+                                            {{ $project->name }}
+                                        </span>
+                                    @endif
                                     @php
                                         $todoCategoryTone = $categoryBadgeColors[$project->category] ?? 'gray';
                                         $todoCategoryClass = match ($todoCategoryTone) {
@@ -205,22 +214,26 @@
                                 <ul class="mt-2 space-y-1">
                                     @foreach ($project->steps as $step)
                                         <li class="flex items-start justify-between gap-2 text-lg">
-                                            <button
-                                                type="button"
-                                                class="text-left text-gray-700 hover:underline dark:text-gray-300"
-                                                @click="openTodoStepModal($el)"
-                                                data-action="{{ route('admin.daftar-project.step.update', $step) }}"
-                                                data-step-name="{{ $step->step_name }}"
-                                                data-start-date="{{ optional($step->start_date)->format('Y-m-d') }}"
-                                                data-end-date="{{ optional($step->end_date)->format('Y-m-d') }}"
-                                                data-deadline="{{ optional($step->deadline)->format('Y-m-d') }}"
-                                                data-description="{{ $step->description }}"
-                                                data-pic="{{ $step->pic }}"
-                                                data-follow-up="{{ $step->follow_up }}"
-                                                data-status="{{ $step->status }}"
-                                            >
-                                                - {{ $step->step_name }}
-                                            </button>
+                                            @if ($canManageProjects)
+                                                <button
+                                                    type="button"
+                                                    class="text-left text-gray-700 hover:underline dark:text-gray-300"
+                                                    @click="openTodoStepModal($el)"
+                                                    data-action="{{ route('admin.daftar-project.step.update', $step) }}"
+                                                    data-step-name="{{ $step->step_name }}"
+                                                    data-start-date="{{ optional($step->start_date)->format('Y-m-d') }}"
+                                                    data-end-date="{{ optional($step->end_date)->format('Y-m-d') }}"
+                                                    data-deadline="{{ optional($step->deadline)->format('Y-m-d') }}"
+                                                    data-description="{{ $step->description }}"
+                                                    data-pic="{{ $step->pic }}"
+                                                    data-follow-up="{{ $step->follow_up }}"
+                                                    data-status="{{ $step->status }}"
+                                                >
+                                                    - {{ $step->step_name }}
+                                                </button>
+                                            @else
+                                                <span class="text-left text-gray-700 dark:text-gray-300">- {{ $step->step_name }}</span>
+                                            @endif
                                             <span class="shrink-0 rounded-full px-2 py-0.5 text-xs
                                                 {{ $step->status === 'delayed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' }}">
                                                 {{ str_replace('_', ' ', ucfirst($step->status)) }}
@@ -257,24 +270,29 @@
                         @endphp
                         <div class="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">
                             @if ($project)
-                                <button
-                                    type="button"
-                                    class="text-left text-base font-semibold text-gray-800 hover:underline dark:text-white/90"
-                                    @click="openTodoProjectModal($el)"
-                                    data-action="{{ route('admin.daftar-project.update', $project) }}"
-                                    data-name="{{ $project->name }}"
-                                    data-category="{{ $project->category }}"
-                                    data-vendor-id="{{ $project->vendor_id }}"
-                                    data-description="{{ $project->description }}"
-                                    data-url="{{ $project->url }}"
-                                    data-pic="{{ $project->pic }}"
-                                    data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
-                                    data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
-                                    data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
-                                    data-status="{{ $project->status }}"
-                                >
-                                    {{ $project->name }}
-                                </button>
+                                @if ($canManageProjects)
+                                    <button
+                                        type="button"
+                                        class="text-left text-base font-semibold text-gray-800 hover:underline dark:text-white/90"
+                                        @click="openTodoProjectModal($el)"
+                                        data-action="{{ route('admin.daftar-project.update', $project) }}"
+                                        data-name="{{ $project->name }}"
+                                        data-division="{{ $project->division }}"
+                                        data-category="{{ $project->category }}"
+                                        data-vendor-id="{{ $project->vendor_id }}"
+                                        data-description="{{ $project->description }}"
+                                        data-url="{{ $project->url }}"
+                                        data-pic="{{ $project->pic }}"
+                                        data-deadline="{{ optional($project->deadline)->format('Y-m-d') }}"
+                                        data-period-start="{{ optional($project->period_start)->format('Y-m-d') }}"
+                                        data-period-end="{{ optional($project->period_end)->format('Y-m-d') }}"
+                                        data-status="{{ $project->status }}"
+                                    >
+                                        {{ $project->name }}
+                                    </button>
+                                @else
+                                    <p class="text-left text-base font-semibold text-gray-800 dark:text-white/90">{{ $project->name }}</p>
+                                @endif
                                 @php
                                     $deadlineCategoryTone = $categoryBadgeColors[$project->category] ?? 'gray';
                                     $deadlineCategoryClass = match ($deadlineCategoryTone) {
@@ -296,25 +314,34 @@
 
                             <div class="mt-2 space-y-1">
                                 @foreach ($projectSteps as $step)
-                                    <button
-                                        type="button"
-                                        class="block w-full text-left text-base text-gray-700 hover:underline dark:text-gray-300"
-                                        @click="openTodoStepModal($el)"
-                                        data-action="{{ route('admin.daftar-project.step.update', $step) }}"
-                                        data-step-name="{{ $step->step_name }}"
-                                        data-start-date="{{ optional($step->start_date)->format('Y-m-d') }}"
-                                        data-end-date="{{ optional($step->end_date)->format('Y-m-d') }}"
-                                        data-deadline="{{ optional($step->deadline)->format('Y-m-d') }}"
-                                        data-description="{{ $step->description }}"
-                                        data-pic="{{ $step->pic }}"
-                                        data-follow-up="{{ $step->follow_up }}"
-                                        data-status="{{ $step->status }}"
-                                    >
-                                        - {{ $step->step_name }}
-                                        <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                                            (Deadline: {{ optional($step->deadline)->format('d M Y') ?? '-' }})
-                                        </span>
-                                    </button>
+                                    @if ($canManageProjects)
+                                        <button
+                                            type="button"
+                                            class="block w-full text-left text-base text-gray-700 hover:underline dark:text-gray-300"
+                                            @click="openTodoStepModal($el)"
+                                            data-action="{{ route('admin.daftar-project.step.update', $step) }}"
+                                            data-step-name="{{ $step->step_name }}"
+                                            data-start-date="{{ optional($step->start_date)->format('Y-m-d') }}"
+                                            data-end-date="{{ optional($step->end_date)->format('Y-m-d') }}"
+                                            data-deadline="{{ optional($step->deadline)->format('Y-m-d') }}"
+                                            data-description="{{ $step->description }}"
+                                            data-pic="{{ $step->pic }}"
+                                            data-follow-up="{{ $step->follow_up }}"
+                                            data-status="{{ $step->status }}"
+                                        >
+                                            - {{ $step->step_name }}
+                                            <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                                                (Deadline: {{ optional($step->deadline)->format('d M Y') ?? '-' }})
+                                            </span>
+                                        </button>
+                                    @else
+                                        <p class="block w-full text-left text-base text-gray-700 dark:text-gray-300">
+                                            - {{ $step->step_name }}
+                                            <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                                                (Deadline: {{ optional($step->deadline)->format('d M Y') ?? '-' }})
+                                            </span>
+                                        </p>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
@@ -459,9 +486,22 @@
                     <input type="text" name="name" x-model="todoProjectForm.name" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                 </div>
                 <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Divisi</label>
+                    <select name="division" x-model="todoProjectForm.division" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                        <option value="">Pilih divisi</option>
+                        @foreach ($divisions as $division)
+                            <option value="{{ $division }}">{{ $division }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                    <input type="text" name="pic" list="pic-user-options" x-model="todoProjectForm.pic" @blur="validateTodoProjectPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <p x-show="todoProjectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="todoProjectPicError"></p>
+                    <select name="pic" x-model="todoProjectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                        <option value="">Pilih PIC</option>
+                        @foreach ($picUsers as $picUser)
+                            <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
@@ -543,8 +583,12 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                    <input type="text" name="pic" list="pic-user-options" x-model="todoStepForm.pic" @blur="validateTodoStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <p x-show="todoStepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="todoStepPicError"></p>
+                    <select name="pic" x-model="todoStepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                        <option value="">Pilih PIC</option>
+                        @foreach ($picUsers as $picUser)
+                            <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -634,10 +678,5 @@
             </div>
         </div>
     </div>
-        <datalist id="pic-user-options">
-            @foreach ($picUsers as $picUser)
-                <option value="{{ $picUser->name }}"></option>
-            @endforeach
-        </datalist>
     </div>
 @endsection

@@ -38,6 +38,27 @@
                             @enderror
                         </div>
                         <div>
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Divisi</label>
+                            @if ($currentUserRole === 'manager')
+                                <input type="text" value="{{ $currentUserDivision ?: '-' }}" readonly
+                                    class="h-10 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90" />
+                                <input type="hidden" name="division" value="{{ $currentUserDivision }}">
+                            @else
+                                <select name="division" required
+                                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90">
+                                    <option value="">Pilih divisi</option>
+                                    @foreach ($divisionOptions as $divisionOption)
+                                        <option value="{{ $divisionOption }}" @selected(old('division') === $divisionOption)>
+                                            {{ $divisionOption }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('division')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
                             <textarea name="description" rows="3" placeholder="Deskripsi singkat project"
                                 class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90 dark:placeholder:text-white/30">{{ old('description') }}</textarea>
@@ -55,9 +76,13 @@
                         </div>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                            <input type="text" name="pic" list="pic-user-options" x-model="projectPic" @blur="validateProjectPic()" value="{{ old('pic') }}" placeholder="Nama PIC"
-                                class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90" />
-                            <p x-show="projectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="projectPicError"></p>
+                            <select name="pic" x-model="projectPic"
+                                class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90">
+                                <option value="">Pilih PIC</option>
+                                @foreach ($picUsers as $picUser)
+                                    <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                                @endforeach
+                            </select>
                             @error('pic')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
@@ -206,9 +231,13 @@
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                                        <input type="text" list="pic-user-options" :name="'steps[' + index + '][pic]'" x-model="step.pic" @blur="validateStepPic(index)"
-                                            class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90" />
-                                        <p x-show="stepPicErrors[index]" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="stepPicErrors[index]"></p>
+                                        <select :name="'steps[' + index + '][pic]'" x-model="step.pic"
+                                            class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90">
+                                            <option value="">Pilih PIC</option>
+                                            @foreach ($picUsers as $picUser)
+                                                <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Tindak Lanjut</label>
@@ -277,11 +306,6 @@
             </div>
         </form>
 
-        <datalist id="pic-user-options">
-            @foreach ($picUsers as $picUser)
-                <option value="{{ $picUser->name }}"></option>
-            @endforeach
-        </datalist>
     </div>
 @endsection
 

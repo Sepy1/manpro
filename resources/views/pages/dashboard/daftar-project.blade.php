@@ -13,21 +13,30 @@
             showStepModal: false,
             showAddStepModal: false,
             showReportModal: false,
+            showOfficerProjectFollowUpModal: false,
+            showOfficerStepFollowUpModal: false,
             reportUseAi: '0',
+            canManageProjects: @js($canManageProjects),
+            canEditOfficerFollowUp: @js($canEditOfficerFollowUp),
             projectAction: '',
             stepAction: '',
             addStepAction: '',
+            officerProjectFollowUpAction: '',
+            officerStepFollowUpAction: '',
+            officerProjectFollowUpValue: '',
+            officerStepFollowUpValue: '',
             picNames: @js($picUsers->pluck('name')->values()),
             projectPicError: '',
             stepPicError: '',
             addStepPicError: '',
-            projectForm: { name: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
+            projectForm: { name: '', division: '', category: 'Development Aplikasi', vendor_id: '', description: '', url: '', pic: '', deadline: '', period_start: '', period_end: '', status: 'planned' },
             stepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             addStepForm: { step_name: '', start_date: '', end_date: '', deadline: '', description: '', pic: '', follow_up: '', status: 'planned' },
             openProjectModal(el) {
                 this.projectAction = el.dataset.action;
                 this.projectForm = {
                     name: el.dataset.name || '',
+                    division: el.dataset.division || '',
                     category: el.dataset.category || 'Development Aplikasi',
                     vendor_id: el.dataset.vendorId || '',
                     description: el.dataset.description || '',
@@ -70,6 +79,16 @@
                 };
                 this.showAddStepModal = true;
                 this.addStepPicError = '';
+            },
+            openOfficerProjectFollowUpModal(el) {
+                this.officerProjectFollowUpAction = el.dataset.action;
+                this.officerProjectFollowUpValue = el.dataset.followUp || '';
+                this.showOfficerProjectFollowUpModal = true;
+            },
+            openOfficerStepFollowUpModal(el) {
+                this.officerStepFollowUpAction = el.dataset.action;
+                this.officerStepFollowUpValue = el.dataset.followUp || '';
+                this.showOfficerStepFollowUpModal = true;
             },
             isRegisteredPic(value) {
                 if (!String(value || '').trim()) return true;
@@ -188,6 +207,7 @@
                     <tr class="border-b border-gray-200 dark:border-gray-800">
                         <th class="w-[20%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Nama Project</th>
                         <th class="w-[10%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
+                        <th class="w-[10%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Divisi</th>
                         <th class="w-[10%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Start Date</th>
                         <th class="w-[10%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">End Date</th>
                         <th class="w-[10%] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Deadline</th>
@@ -239,6 +259,7 @@
                                 </div>
                             </td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ str_replace('_', ' ', ucfirst($project->status)) }}</td>
+                            <td class="truncate px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $project->division ?: '-' }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ optional($project->period_start)->format('d M Y') ?? '-' }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ optional($project->period_end)->format('d M Y') ?? '-' }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ optional($project->deadline)->format('d M Y') ?? '-' }}</td>
@@ -257,11 +278,13 @@
                             </td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                                 <div class="flex items-center gap-2">
+                                    @if ($canManageProjects)
                                     <button
                                         type="button"
                                         @click.stop="openProjectModal($el)"
                                         data-action="{{ route('admin.daftar-project.update', $project) }}"
                                         data-name="{{ $project->name }}"
+                                        data-division="{{ $project->division }}"
                                         data-category="{{ $project->category }}"
                                         data-vendor-id="{{ $project->vendor_id }}"
                                         data-description="{{ $project->description }}"
@@ -285,15 +308,38 @@
                                             Hapus
                                         </button>
                                     </form>
+                                    @else
+                                        @php
+                                            $canOfficerEditProjectFollowUp = $canEditOfficerFollowUp
+                                                && (
+                                                    ((int) ($project->pic_user_id ?? 0) === (int) auth()->id())
+                                                    || (!empty($project->pic) && $project->pic === auth()->user()?->name)
+                                                );
+                                        @endphp
+                                        @if ($canOfficerEditProjectFollowUp)
+                                            <button
+                                                type="button"
+                                                @click.stop="openOfficerProjectFollowUpModal($el)"
+                                                data-action="{{ route('admin.daftar-project.follow-up.update', $project) }}"
+                                                data-follow-up="{{ $project->follow_up }}"
+                                                class="rounded-lg border border-emerald-500 px-2 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-900/20"
+                                            >
+                                                Tindak Lanjut
+                                            </button>
+                                        @else
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">View only</span>
+                                        @endif
+                                    @endif
                                 </div>
                             </td>
                         </tr>
 
                         <tr x-show="openProjectId === {{ $project->id }}" x-transition.opacity class="border-b border-gray-100 dark:border-gray-800">
-                            <td colspan="9" class="px-3 pb-4 pt-2">
+                            <td colspan="10" class="px-3 pb-4 pt-2">
                                 <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-white/[0.02]">
                                     <div class="mb-2 flex items-center justify-between gap-2">
                                         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Step Project</h4>
+                                        @if ($canManageProjects)
                                         <button
                                             type="button"
                                             @click.stop="openAddStepModal($el)"
@@ -302,6 +348,7 @@
                                         >
                                             Add Step
                                         </button>
+                                        @endif
                                     </div>
 
                                     @if ($project->steps->isEmpty())
@@ -326,6 +373,7 @@
                                                             <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $stepStatusClasses }}">
                                                                 {{ str_replace('_', ' ', ucfirst($step->status)) }}
                                                             </span>
+                                                            @if ($canManageProjects)
                                                             <button
                                                                 type="button"
                                                                 @click.stop="openStepModal($el)"
@@ -352,6 +400,17 @@
                                                                     Hapus
                                                                 </button>
                                                             </form>
+                                                            @elseif ($canEditOfficerFollowUp && (((int) ($step->pic_user_id ?? 0) === (int) auth()->id()) || (!empty($step->pic) && $step->pic === auth()->user()?->name)))
+                                                            <button
+                                                                type="button"
+                                                                @click.stop="openOfficerStepFollowUpModal($el)"
+                                                                data-action="{{ route('admin.daftar-project.step.follow-up.update', $step) }}"
+                                                                data-follow-up="{{ $step->follow_up }}"
+                                                                class="rounded-lg border border-emerald-500 px-2 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-900/20"
+                                                            >
+                                                                Tindak Lanjut
+                                                            </button>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                     <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -368,7 +427,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="10" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 Belum ada data project.
                             </td>
                         </tr>
@@ -395,9 +454,22 @@
                         <input type="text" name="name" x-model="projectForm.name" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                     </div>
                     <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Divisi</label>
+                        <select name="division" x-model="projectForm.division" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="">Pilih divisi</option>
+                            @foreach ($divisions as $division)
+                                <option value="{{ $division }}">{{ $division }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" list="pic-user-options" x-model="projectForm.pic" @blur="validateProjectPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                        <p x-show="projectPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="projectPicError"></p>
+                        <select name="pic" x-model="projectForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="">Pilih PIC</option>
+                            @foreach ($picUsers as $picUser)
+                                <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Kategori</label>
@@ -479,8 +551,12 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" list="pic-user-options" x-model="stepForm.pic" @blur="validateStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                        <p x-show="stepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="stepPicError"></p>
+                        <select name="pic" x-model="stepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="">Pilih PIC</option>
+                            @foreach ($picUsers as $picUser)
+                                <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -532,8 +608,12 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-                        <input type="text" name="pic" list="pic-user-options" x-model="addStepForm.pic" @blur="validateAddStepPic()" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                        <p x-show="addStepPicError" x-cloak class="mt-1 text-sm text-red-600 dark:text-red-400" x-text="addStepPicError"></p>
+                        <select name="pic" x-model="addStepForm.pic" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                            <option value="">Pilih PIC</option>
+                            @foreach ($picUsers as $picUser)
+                                <option value="{{ $picUser->name }}">{{ $picUser->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan</label>
@@ -575,6 +655,40 @@
                         Batal
                     </button>
                 </div>
+            </div>
+        </div>
+        <div x-show="showOfficerProjectFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerProjectFollowUpModal = false">
+            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Project</h4>
+                    <button type="button" @click="showOfficerProjectFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
+                </div>
+                <form :action="officerProjectFollowUpAction" method="POST" class="space-y-3">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Tindak Lanjut</label>
+                        <textarea name="follow_up" rows="4" x-model="officerProjectFollowUpValue" class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
+                    </div>
+                    <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">Simpan Tindak Lanjut Project</button>
+                </form>
+            </div>
+        </div>
+        <div x-show="showOfficerStepFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerStepFollowUpModal = false">
+            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Step</h4>
+                    <button type="button" @click="showOfficerStepFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
+                </div>
+                <form :action="officerStepFollowUpAction" method="POST" class="space-y-3">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">Tindak Lanjut</label>
+                        <textarea name="follow_up" rows="4" x-model="officerStepFollowUpValue" class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
+                    </div>
+                    <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">Simpan Tindak Lanjut Step</button>
+                </form>
             </div>
         </div>
         <datalist id="pic-user-options">

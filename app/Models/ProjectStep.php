@@ -16,6 +16,7 @@ class ProjectStep extends Model
         'deadline',
         'description',
         'pic',
+        'pic_user_id',
         'follow_up',
         'status',
     ];
@@ -32,6 +33,11 @@ class ProjectStep extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function picUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pic_user_id');
     }
 
 }

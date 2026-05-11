@@ -6,16 +6,13 @@ class MenuHelper
 {
     public static function getMainNavItems()
     {
+        $role = auth()->user()?->role;
+
         $items = [
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
                 'path' => '/admin/dashboard',
-            ],
-            [
-                'icon' => 'task',
-                'name' => 'Insert Project',
-                'path' => '/admin/insert-project',
             ],
             [
                 'icon' => 'tables',
@@ -24,11 +21,24 @@ class MenuHelper
             ],
         ];
 
-        if (auth()->user()?->role === 'admin') {
+        if ($role === 'admin' || ($role === 'manager' && !empty(auth()->user()?->division))) {
+            array_splice($items, 1, 0, [[
+                'icon' => 'task',
+                'name' => 'Insert Project',
+                'path' => '/admin/insert-project',
+            ]]);
+        }
+
+        if ($role === 'admin') {
             $items[] = [
                 'icon' => 'pages',
                 'name' => 'Manajemen Vendor',
                 'path' => '/admin/manajemen-vendor',
+            ];
+            $items[] = [
+                'icon' => 'pages',
+                'name' => 'Manajemen Divisi',
+                'path' => '/admin/manajemen-divisi',
             ];
             $items[] = [
                 'icon' => 'user-profile',

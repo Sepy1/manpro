@@ -21,10 +21,13 @@ class Project extends Model
         'user_id',
         'vendor_id',
         'name',
+        'division',
         'category',
         'description',
+        'follow_up',
         'url',
         'pic',
+        'pic_user_id',
         'deadline',
         'period_start',
         'period_end',
@@ -43,6 +46,11 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function picUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pic_user_id');
     }
 
     public function vendor(): BelongsTo

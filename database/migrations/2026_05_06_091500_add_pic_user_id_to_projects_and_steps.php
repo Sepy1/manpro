@@ -22,19 +22,43 @@ return new class extends Migration
         });
 
         // Backfill from legacy pic name when possible.
-        DB::statement("
-            UPDATE projects p
-            JOIN users u ON u.name = p.pic
-            SET p.pic_user_id = u.id
-            WHERE p.pic IS NOT NULL AND p.pic <> '' AND p.pic_user_id IS NULL
-        ");
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement("
+                UPDATE projects
+                SET pic_user_id = (
+                    SELECT users.id
+                    FROM users
+                    WHERE users.name = projects.pic
+                    LIMIT 1
+                )
+                WHERE pic IS NOT NULL AND pic <> '' AND pic_user_id IS NULL
+            ");
 
-        DB::statement("
-            UPDATE project_steps s
-            JOIN users u ON u.name = s.pic
-            SET s.pic_user_id = u.id
-            WHERE s.pic IS NOT NULL AND s.pic <> '' AND s.pic_user_id IS NULL
-        ");
+            DB::statement("
+                UPDATE project_steps
+                SET pic_user_id = (
+                    SELECT users.id
+                    FROM users
+                    WHERE users.name = project_steps.pic
+                    LIMIT 1
+                )
+                WHERE pic IS NOT NULL AND pic <> '' AND pic_user_id IS NULL
+            ");
+        } else {
+            DB::statement("
+                UPDATE projects p
+                JOIN users u ON u.name = p.pic
+                SET p.pic_user_id = u.id
+                WHERE p.pic IS NOT NULL AND p.pic <> '' AND p.pic_user_id IS NULL
+            ");
+
+            DB::statement("
+                UPDATE project_steps s
+                JOIN users u ON u.name = s.pic
+                SET s.pic_user_id = u.id
+                WHERE s.pic IS NOT NULL AND s.pic <> '' AND s.pic_user_id IS NULL
+            ");
+        }
     }
 
     public function down(): void
