@@ -56,12 +56,6 @@
                 </svg>
             </button>
 
-            <!-- Logo (mobile only) -->
-            <a href="/" class="xl:hidden">
-                <img class="dark:hidden" src="/images/logo/logo.svg" alt="Logo" />
-                <img class="hidden dark:block" src="/images/logo/logo-dark.svg" alt="Logo" />
-            </a>
-
             <!-- Application Menu Toggle (mobile only) -->
             <button @click="toggleApplicationMenu()"
                 class="flex items-center justify-center w-10 h-10 text-slate-700 rounded-lg z-99999 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-gray-800 xl:hidden">

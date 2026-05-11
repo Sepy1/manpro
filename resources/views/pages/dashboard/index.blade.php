@@ -400,6 +400,16 @@
                         isEnd: dateIso === project.deadline,
                     }));
                 },
+                visibleTimelineProjects() {
+                    const monthStart = `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}-01`;
+                    const monthEnd = `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}-${String(this.daysInMonth()).padStart(2, '0')}`;
+                    return this.timelineProjects
+                        .filter((project) => {
+                            if (!project.start_date || !project.deadline) return false;
+                            return project.start_date <= monthEnd && project.deadline >= monthStart;
+                        })
+                        .sort((a, b) => a.start_date.localeCompare(b.start_date));
+                },
                 init() {
                     // Force default filter to current month/year on every page load.
                     const now = new Date();
@@ -444,7 +454,26 @@
                     Kalender <span x-text="monthLabel"></span> - marker bar menunjukkan rentang mulai hingga deadline.
                 </p>
 
-                <div class="grid flex-1 grid-cols-7 gap-1 text-center text-xs text-gray-500 dark:text-gray-400">
+                <div class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Label Warna Project
+                    </p>
+                    <div class="max-h-24 overflow-y-auto pr-1">
+                        <template x-if="visibleTimelineProjects().length === 0">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Tidak ada project pada bulan ini.</span>
+                        </template>
+                        <div class="grid grid-cols-2 gap-2">
+                            <template x-for="project in visibleTimelineProjects()" :key="'legend-' + project.id">
+                                <div class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900/60">
+                                    <span class="h-2 w-5 rounded-full" :class="project.color"></span>
+                                    <span class="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-200" :title="project.name" x-text="project.name"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid min-h-0 flex-1 grid-cols-7 gap-1 text-center text-xs text-gray-500 dark:text-gray-400">
                     <template x-for="dayName in weekdayNames" :key="dayName">
                         <div class="font-semibold" x-text="dayName"></div>
                     </template>

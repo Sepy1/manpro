@@ -154,9 +154,6 @@
                     <!-- ===== Common Grid Shape Start ===== -->
                     <x-common.common-grid-shape />
                     <div class="flex max-w-xs flex-col items-center">
-                        <a href="/" class="mb-4 block">
-                            <img src="./images/logo/auth-logo.svg" alt="Logo" />
-                        </a>
                         <p class="text-center text-gray-400 dark:text-white/60">
                             Free and Open-Source Tailwind CSS Admin Dashboard Template
                         </p>

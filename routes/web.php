@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ProjectController;
+use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
@@ -36,11 +37,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/daftar-project/step/{step}/follow-up', [ProjectController::class, 'updateOfficerStepFollowUp'])->name('daftar-project.step.follow-up.update');
     Route::delete('/daftar-project/step/{step}', [ProjectController::class, 'deleteStep'])->name('daftar-project.step.delete');
 
-    Route::get('/profil', function () {
-        abort_unless(auth()->user()?->role === 'admin', 403);
-
-        return view('pages.dashboard.profil');
-    })->name('profil');
+    Route::get('/profil', [ProfileManagementController::class, 'index'])->name('profil');
+    Route::put('/profil/update-profile', [ProfileManagementController::class, 'updateProfile'])->name('profil.update-profile');
+    Route::put('/profil/update-password', [ProfileManagementController::class, 'updatePassword'])->name('profil.update-password');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');

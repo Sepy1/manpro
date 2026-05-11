@@ -32,18 +32,21 @@ class MenuHelper
         if ($role === 'admin') {
             $items[] = [
                 'icon' => 'pages',
-                'name' => 'Manajemen Vendor',
-                'path' => '/admin/manajemen-vendor',
-            ];
-            $items[] = [
-                'icon' => 'pages',
-                'name' => 'Manajemen Divisi',
-                'path' => '/admin/manajemen-divisi',
-            ];
-            $items[] = [
-                'icon' => 'user-profile',
-                'name' => 'Manajemen User',
-                'path' => '/admin/manajemen-user',
+                'name' => 'Parameter',
+                'subItems' => [
+                    [
+                        'name' => 'Manajemen Vendor',
+                        'path' => '/admin/manajemen-vendor',
+                    ],
+                    [
+                        'name' => 'Manajemen Divisi',
+                        'path' => '/admin/manajemen-divisi',
+                    ],
+                    [
+                        'name' => 'Manajemen User',
+                        'path' => '/admin/manajemen-user',
+                    ],
+                ],
             ];
             $items[] = [
                 'icon' => 'user-profile',

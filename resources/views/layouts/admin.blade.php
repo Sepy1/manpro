@@ -22,13 +22,15 @@
                         || request()->routeIs('admin.daftar-project.*')
                         || request()->routeIs('admin.manajemen-user.*')
                         || request()->routeIs('admin.manajemen-vendor.*')
-                        || request()->routeIs('admin.manajemen-divisi.*'),
+                        || request()->routeIs('admin.manajemen-divisi.*')
+                        || request()->routeIs('admin.profil*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
                         && !request()->routeIs('admin.insert-project.*')
                         && !request()->routeIs('admin.daftar-project.*')
                         && !request()->routeIs('admin.manajemen-user.*')
                         && !request()->routeIs('admin.manajemen-vendor.*')
-                        && !request()->routeIs('admin.manajemen-divisi.*'),
+                        && !request()->routeIs('admin.manajemen-divisi.*')
+                        && !request()->routeIs('admin.profil*'),
                 ])
             >
                 @yield('admin-content')

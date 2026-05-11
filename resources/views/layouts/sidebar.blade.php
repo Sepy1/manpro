@@ -107,7 +107,7 @@
                                     @if (isset($item['subItems']))
                                         <!-- Menu Item with Submenu -->
                                         <button @click="toggleSubmenu({{ $groupIndex }}, {{ $itemIndex }})"
-                                            class="menu-item group w-full flex-nowrap"
+                                            class="menu-item group w-full flex-nowrap items-center"
                                             :class="[
                                                 isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ?
                                                 'menu-item-active' : 'menu-item-inactive',
@@ -116,15 +116,20 @@
                                             ]">
 
                                             <!-- Icon -->
-                                            <span :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ?
-                                                    'menu-item-icon-active' : 'menu-item-icon-inactive'">
+                                            <span :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }})
+                                                    ? 'text-sky-400'
+                                                    : 'text-slate-400 dark:text-gray-400'"
+                                                class="transition-colors duration-150">
                                                 {!! MenuHelper::getIconSvg($item['icon']) !!}
                                             </span>
 
                                             <!-- Text -->
                                             <span
                                                 x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                                                class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold">
+                                                :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }})
+                                                    ? 'text-sky-400'
+                                                    : 'text-slate-700 dark:text-gray-200'"
+                                                class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
                                                 {{ $item['name'] }}
                                                 @if (!empty($item['new']))
                                                     <span class="absolute right-10"
@@ -136,16 +141,6 @@
                                                 @endif
                                             </span>
 
-                                            <!-- Chevron Down Icon -->
-                                            <svg x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                                                class="ml-auto w-5 h-5 transition-transform duration-200"
-                                                :class="{
-                                                    'rotate-180 text-brand-500': isSubmenuOpen({{ $groupIndex }},
-                                                        {{ $itemIndex }})
-                                                }"
-                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
                                         </button>
 
                                         <!-- Submenu -->
@@ -156,8 +151,10 @@
                                                         <a href="{{ $subItem['path'] }}" class="menu-dropdown-item"
                                                             :class="isActive('{{ $subItem['path'] }}') ?
                                                                 'menu-dropdown-item-active' :
-                                                                'menu-dropdown-item-inactive'">
-                                                            {{ $subItem['name'] }}
+                                                                'menu-dropdown-item-inactive'"
+                                                            :style="isActive('{{ $subItem['path'] }}') ? 'color: rgb(56 189 248);' : ''">
+                                                            <span class="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
+                                                            <span>{{ $subItem['name'] }}</span>
                                                             <span class="flex items-center gap-1 ml-auto">
                                                                 @if (!empty($subItem['new']))
                                                                     <span
@@ -194,15 +191,20 @@
 
                                             <!-- Icon -->
                                             <span
-                                                :class="isActive('{{ $item['path'] }}') ? 'menu-item-icon-active' :
-                                                    'menu-item-icon-inactive'">
+                                                :class="isActive('{{ $item['path'] }}')
+                                                    ? 'text-sky-400'
+                                                    : 'text-slate-400 dark:text-gray-400'"
+                                                class="transition-colors duration-150">
                                                 {!! MenuHelper::getIconSvg($item['icon']) !!}
                                             </span>
 
                                             <!-- Text -->
                                             <span
                                                 x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                                                class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold">
+                                                :class="isActive('{{ $item['path'] }}')
+                                                    ? 'text-sky-400'
+                                                    : 'text-slate-700 dark:text-gray-200'"
+                                                class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
                                                 {{ $item['name'] }}
                                                 @if (!empty($item['new']))
                                                     <span
