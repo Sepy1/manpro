@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ProfileManagementController;
+use App\Http\Controllers\Admin\AsetTiController;
+use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
@@ -40,6 +42,18 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/profil', [ProfileManagementController::class, 'index'])->name('profil');
     Route::put('/profil/update-profile', [ProfileManagementController::class, 'updateProfile'])->name('profil.update-profile');
     Route::put('/profil/update-password', [ProfileManagementController::class, 'updatePassword'])->name('profil.update-password');
+
+    Route::get('/aset-ti/data-center', [AsetTiController::class, 'dataCenter'])->name('aset-ti.data-center');
+    Route::get('/aset-ti/cctv-dashboard', [CctvController::class, 'dashboard'])->name('aset-ti.cctv.dashboard');
+    Route::get('/aset-ti/cctv-dashboard/export-missing', [CctvController::class, 'exportMissingUpdates'])->name('aset-ti.cctv.dashboard.export-missing');
+    Route::get('/aset-ti/cctv', [CctvController::class, 'index'])->name('aset-ti.cctv.index');
+    Route::get('/aset-ti/cctv/export', [CctvController::class, 'export'])->name('aset-ti.cctv.export');
+    Route::get('/aset-ti/cctv/template', [CctvController::class, 'downloadTemplate'])->name('aset-ti.cctv.template');
+    Route::post('/aset-ti/cctv/import', [CctvController::class, 'import'])->name('aset-ti.cctv.import');
+    Route::post('/aset-ti/cctv', [CctvController::class, 'store'])->name('aset-ti.cctv.store');
+    Route::delete('/aset-ti/cctv', [CctvController::class, 'destroyAll'])->name('aset-ti.cctv.delete-all');
+    Route::put('/aset-ti/cctv/{device}', [CctvController::class, 'update'])->name('aset-ti.cctv.update');
+    Route::delete('/aset-ti/cctv/{device}', [CctvController::class, 'destroy'])->name('aset-ti.cctv.delete');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');

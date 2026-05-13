@@ -31,6 +31,24 @@ class MenuHelper
 
         if ($role === 'admin') {
             $items[] = [
+                'icon' => 'tables',
+                'name' => 'Aset TI',
+                'subItems' => [
+                    [
+                        'name' => 'Dashboard CCTV',
+                        'path' => '/admin/aset-ti/cctv-dashboard',
+                    ],
+                    [
+                        'name' => 'Data Center',
+                        'path' => '/admin/aset-ti/data-center',
+                    ],
+                    [
+                        'name' => 'CCTV',
+                        'path' => '/admin/aset-ti/cctv',
+                    ],
+                ],
+            ];
+            $items[] = [
                 'icon' => 'pages',
                 'name' => 'Parameter',
                 'subItems' => [
