@@ -152,7 +152,7 @@ class CctvController extends Controller
             ->orderBy($sortBy, $sortDir);
 
         return view('pages.dashboard.aset-ti.cctv', [
-            'devices' => $devicesQuery->paginate(10)->withQueryString(),
+            'devices' => $devicesQuery->get(),
             'filters' => [
                 'keyword' => $keyword,
             ],
@@ -293,8 +293,9 @@ class CctvController extends Controller
             'connection_status' => ['nullable', 'string', 'max:255'],
             'device_status' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
-            'dvr_photo' => ['nullable', 'image', 'max:4096'],
-            'monitor_photo' => ['nullable', 'image', 'max:4096'],
+            // Restrict to raster image types to avoid scriptable SVG uploads.
+            'dvr_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+            'monitor_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
         ]);
     }
 }

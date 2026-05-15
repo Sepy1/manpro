@@ -64,6 +64,10 @@ class MenuHelper
                         'name' => 'Manajemen User',
                         'path' => '/admin/manajemen-user',
                     ],
+                    [
+                        'name' => 'Log User',
+                        'path' => '/admin/manajemen-log-user',
+                    ],
                 ],
             ];
             $items[] = [

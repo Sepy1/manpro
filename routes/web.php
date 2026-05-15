@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\AsetTiController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DivisionController;
+use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\ProfileController;
@@ -22,9 +23,9 @@ Route::get('/dashboard', function () {
     }
 
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'menu.activity'])->name('dashboard');
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/insert-project', [ProjectController::class, 'create'])->name('insert-project.create');
@@ -69,10 +70,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/manajemen-user', [UserManagementController::class, 'store'])->name('manajemen-user.store');
     Route::put('/manajemen-user/{user}', [UserManagementController::class, 'update'])->name('manajemen-user.update');
     Route::delete('/manajemen-user/{user}', [UserManagementController::class, 'destroy'])->name('manajemen-user.delete');
+
+    Route::get('/manajemen-log-user', [UserActivityLogController::class, 'index'])->name('manajemen-log-user.index');
+});
+
+Route::middleware(['auth', 'menu.activity'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

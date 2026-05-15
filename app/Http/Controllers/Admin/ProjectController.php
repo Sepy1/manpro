@@ -57,14 +57,12 @@ class ProjectController extends Controller
 
     private function isUserPicForProject(Project $project, User $user): bool
     {
-        return ((int) ($project->pic_user_id ?? 0) === (int) $user->id)
-            || (trim((string) $project->pic) !== '' && trim((string) $project->pic) === trim((string) $user->name));
+        return (int) ($project->pic_user_id ?? 0) === (int) $user->id;
     }
 
     private function isUserPicForStep(ProjectStep $step, User $user): bool
     {
-        return ((int) ($step->pic_user_id ?? 0) === (int) $user->id)
-            || (trim((string) $step->pic) !== '' && trim((string) $step->pic) === trim((string) $user->name));
+        return (int) ($step->pic_user_id ?? 0) === (int) $user->id;
     }
 
     private function visibleProjectsQuery(): Builder
@@ -92,10 +90,8 @@ class ProjectController extends Controller
         if (in_array($user->role, ['officer', 'vendor'], true)) {
             return $query->where(function (Builder $nested) use ($user): void {
                 $nested->where('pic_user_id', $user->id)
-                    ->orWhere('pic', $user->name)
                     ->orWhereHas('steps', function (Builder $stepQuery) use ($user): void {
-                        $stepQuery->where('pic_user_id', $user->id)
-                            ->orWhere('pic', $user->name);
+                        $stepQuery->where('pic_user_id', $user->id);
                     });
             });
         }
@@ -146,8 +142,7 @@ class ProjectController extends Controller
         }
 
         $query->where(function (Builder $nested) use ($user): void {
-            $nested->where('pic_user_id', $user->id)
-                ->orWhere('pic', $user->name);
+            $nested->where('pic_user_id', $user->id);
         });
     }
 
