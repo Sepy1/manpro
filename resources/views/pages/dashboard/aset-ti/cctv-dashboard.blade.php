@@ -357,7 +357,7 @@
                     <div class="flex items-center gap-8">
                         <div class="relative h-72 w-72 shrink-0 rounded-full"
                             x-data="createDonut(currentChart()?.items || [])"
-                        x-effect="setItems($root.currentChart()?.items || [])"
+                            x-effect="setItems(currentChart()?.items || [])"
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                         :style="`background: conic-gradient(${gradient});`">
