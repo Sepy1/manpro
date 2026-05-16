@@ -46,6 +46,14 @@ class MenuHelper
                         'name' => 'CCTV',
                         'path' => '/admin/aset-ti/cctv',
                     ],
+                    [
+                        'name' => 'Dashboard DC DRC',
+                        'path' => '/admin/aset-ti/perangkat-dc-drc-dashboard',
+                    ],
+                    [
+                        'name' => 'Perangkat DC - DRC',
+                        'path' => '/admin/aset-ti/perangkat-dc-drc',
+                    ],
                 ],
             ];
             $items[] = [

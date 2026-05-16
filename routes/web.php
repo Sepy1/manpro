@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\AsetTiController;
 use App\Http\Controllers\Admin\CctvController;
+use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -55,6 +56,14 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::delete('/aset-ti/cctv', [CctvController::class, 'destroyAll'])->name('aset-ti.cctv.delete-all');
     Route::put('/aset-ti/cctv/{device}', [CctvController::class, 'update'])->name('aset-ti.cctv.update');
     Route::delete('/aset-ti/cctv/{device}', [CctvController::class, 'destroy'])->name('aset-ti.cctv.delete');
+    Route::get('/aset-ti/perangkat-dc-drc-dashboard', [DcDrcDeviceController::class, 'dashboard'])->name('aset-ti.perangkat-dc-drc.dashboard');
+    Route::get('/aset-ti/perangkat-dc-drc', [DcDrcDeviceController::class, 'index'])->name('aset-ti.perangkat-dc-drc.index');
+    Route::post('/aset-ti/perangkat-dc-drc', [DcDrcDeviceController::class, 'store'])->name('aset-ti.perangkat-dc-drc.store');
+    Route::put('/aset-ti/perangkat-dc-drc/{device}', [DcDrcDeviceController::class, 'update'])->name('aset-ti.perangkat-dc-drc.update');
+    Route::delete('/aset-ti/perangkat-dc-drc/{device}', [DcDrcDeviceController::class, 'destroy'])->name('aset-ti.perangkat-dc-drc.delete');
+    Route::get('/aset-ti/perangkat-dc-drc/export', [DcDrcDeviceController::class, 'export'])->name('aset-ti.perangkat-dc-drc.export');
+    Route::get('/aset-ti/perangkat-dc-drc/template', [DcDrcDeviceController::class, 'downloadTemplate'])->name('aset-ti.perangkat-dc-drc.template');
+    Route::post('/aset-ti/perangkat-dc-drc/import', [DcDrcDeviceController::class, 'import'])->name('aset-ti.perangkat-dc-drc.import');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');
