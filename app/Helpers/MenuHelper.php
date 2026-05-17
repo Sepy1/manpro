@@ -46,10 +46,6 @@ class MenuHelper
                         'path' => '/admin/aset-ti/data-center',
                     ],
                     [
-                        'name' => 'Dashboard DC-DRC',
-                        'path' => '/admin/aset-ti/data-center?tab=dc-drc',
-                    ],
-                    [
                         'name' => 'Monitoring',
                         'path' => '/admin/aset-ti/monitoring',
                     ],

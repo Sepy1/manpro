@@ -60,11 +60,6 @@
                 || '{{ $currentPath }}' === pathnamePart.replace(/^\//, '');
             if (!pathMatches) return false;
             if (!queryPart) {
-                const actual = new URLSearchParams(window.location.search);
-                const tab = actual.get('tab');
-                if (normalizedPath === '/admin/aset-ti/data-center' && tab === 'dc-drc') {
-                    return false;
-                }
                 return true;
             }
             const wanted = new URLSearchParams(queryPart);
