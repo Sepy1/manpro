@@ -117,8 +117,8 @@ class ServerStatisticsController extends Controller
         }
 
         if ($metric === 'disk') {
-            // Disk: min = % bebas di awal periode, max = % bebas di akhir periode, avg = selisih (akhir − awal).
-            $stats = $this->summarizeDiskPeriodFromHistoricData($histData);
+            $diskSummary = $this->summarizeDiskPeriodFromHistoricData($histData);
+            $stats = $diskSummary['percent'];
         } else {
             $stats = $this->summarizeSeries($rawValues);
         }
@@ -136,6 +136,7 @@ class ServerStatisticsController extends Controller
         ];
 
         if ($metric === 'disk') {
+            $payload['stats_free_gb'] = $diskSummary['free_gb'];
             $snapshot = $this->fetchDiskSensorSnapshot($objid);
             $lastvalue = $snapshot['lastvalue'] ?? '';
             $payload['disk_meta'] = [
@@ -189,19 +190,22 @@ class ServerStatisticsController extends Controller
     }
 
     /**
-     * Disk free: urutkan histori menurut waktu; min/max/avg API = % bebas awal, % bebas akhir, selisih (penambahan/pengurangan relatif bebas).
+     * Disk free: urutkan histori menurut waktu.
+     * percent: min/max/avg = % bebas awal, akhir, selisih.
+     * free_gb: idem untuk ruang bebas (dari kolom Free Bytes API), dalam GiB (ditampilkan sebagai GB).
      *
-     * @return array{min: float|null, max: float|null, avg: float|null}
+     * @return array{percent: array{min: float|null, max: float|null, avg: float|null}, free_gb: array{min: float|null, max: float|null, avg: float|null}}
      */
     private function summarizeDiskPeriodFromHistoricData(array $histData): array
     {
         $series = $this->extractDiskTimelineFromHistoricData($histData);
 
         if (empty($series)) {
+            $empty = ['min' => null, 'max' => null, 'avg' => null];
+
             return [
-                'min' => null,
-                'max' => null,
-                'avg' => null,
+                'percent' => $empty,
+                'free_gb' => $empty,
             ];
         }
 
@@ -210,15 +214,37 @@ class ServerStatisticsController extends Controller
         $startVal = $first['v'];
         $endVal = $last['v'];
 
-        return [
+        $percent = [
             'min' => round($startVal, 2),
             'max' => round($endVal, 2),
             'avg' => round($endVal - $startVal, 2),
         ];
+
+        $freeGb = [
+            'min' => null,
+            'max' => null,
+            'avg' => null,
+        ];
+
+        $firstB = $first['b'] ?? null;
+        $lastB = $last['b'] ?? null;
+        if (is_numeric($firstB) && is_numeric($lastB) && (float) $firstB > 0 && (float) $lastB > 0) {
+            $gib = (float) (1024 ** 3);
+            $fb = (float) $firstB;
+            $lb = (float) $lastB;
+            $freeGb['min'] = round($fb / $gib, 2);
+            $freeGb['max'] = round($lb / $gib, 2);
+            $freeGb['avg'] = round(($lb - $fb) / $gib, 2);
+        }
+
+        return [
+            'percent' => $percent,
+            'free_gb' => $freeGb,
+        ];
     }
 
     /**
-     * @return list<array{ts: ?Carbon, idx: int, v: float}>
+     * @return list<array{ts: ?Carbon, idx: int, v: float, b: ?float}>
      */
     private function extractDiskTimelineFromHistoricData(array $histData): array
     {
@@ -239,6 +265,7 @@ class ServerStatisticsController extends Controller
                 'ts' => $this->parseHistoricRowDateTime($row),
                 'idx' => $idx,
                 'v' => $v,
+                'b' => $this->pickDiskFreeBytesFromHistoricRow($row),
             ];
             $idx++;
         }
@@ -440,6 +467,149 @@ class ServerStatisticsController extends Controller
         }
 
         return $score;
+    }
+
+    /**
+     * Kolom Free Bytes pada historicdata PRTG (nilai mentah byte atau string bertegi GB/MB).
+     */
+    private function pickDiskFreeBytesFromHistoricRow(array $row): ?float
+    {
+        $bestScore = -1;
+        $best = null;
+
+        foreach ($row as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $kl = strtolower($key);
+            if (str_contains($kl, 'downtime') || str_contains($kl, 'datetime') || str_ends_with($key, '_raw') || $kl === 'coverage') {
+                continue;
+            }
+
+            if ($this->historicKeyLooksNonDisk($kl)) {
+                continue;
+            }
+
+            if ((bool) preg_match('/\btotal\b/u', $kl) && ! str_contains($kl, 'free')) {
+                continue;
+            }
+
+            $bytes = $this->normalizeDiskFreeBytesScalar($value);
+            if ($bytes === null) {
+                continue;
+            }
+
+            $score = $this->diskFreeBytesCaptionScore($kl);
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $bytes;
+            }
+        }
+
+        return ($best !== null && $bestScore >= 4) ? $best : null;
+    }
+
+    private function diskFreeBytesCaptionScore(string $keyLower): int
+    {
+        $score = 0;
+
+        if (str_contains($keyLower, 'free') && str_contains($keyLower, 'byte')) {
+            $score += 12;
+        }
+        if (str_contains($keyLower, 'bytes')) {
+            $score += 6;
+        }
+        if (str_contains($keyLower, 'free space') && ! str_contains($keyLower, '%')) {
+            $score += 3;
+        }
+        if (str_contains($keyLower, 'percent') || str_contains($keyLower, '%')) {
+            $score -= 15;
+        }
+        if ((bool) preg_match('/\btotal\b/u', $keyLower) && ! str_contains($keyLower, 'free')) {
+            $score -= 20;
+        }
+
+        return $score;
+    }
+
+    private function normalizeDiskFreeBytesScalar(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            $n = (float) $value;
+            if ($n <= 0 || ! is_finite($n)) {
+                return null;
+            }
+            if ($n >= 1_048_576) {
+                return $n;
+            }
+
+            return null;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $s = trim(str_replace("\xc2\xa0", ' ', $value));
+        if ($s === '') {
+            return null;
+        }
+
+        if (preg_match('/^([\d][\d\s.,]*)\s*(tb|tbyte|gb|gbyte|gib|mb|mbyte|mib|kb|kbyte|byte|bytes)?\s*$/iu', $s, $m)) {
+            $unitRaw = isset($m[2]) && $m[2] !== '' ? strtolower($m[2]) : '';
+            $n = $this->normalizePrtgDecimalStringForStorage($m[1]);
+            if ($n <= 0) {
+                return null;
+            }
+            if ($unitRaw === '' || $unitRaw === 'byte' || $unitRaw === 'bytes') {
+                return $n >= 1_048_576 ? $n : null;
+            }
+
+            return $this->prtgStorageUnitToBytes($n, $unitRaw);
+        }
+
+        return null;
+    }
+
+    private function normalizePrtgDecimalStringForStorage(string $raw): float
+    {
+        $raw = trim(preg_replace('/\s+/u', '', $raw) ?? '');
+        if ($raw === '') {
+            return 0.0;
+        }
+
+        if (str_contains($raw, '.') && str_contains($raw, ',')) {
+            $lastComma = strrpos($raw, ',');
+            $lastDot = strrpos($raw, '.');
+            if ($lastComma !== false && $lastDot !== false && $lastComma > $lastDot) {
+                $raw = str_replace('.', '', $raw);
+                $raw = str_replace(',', '.', $raw);
+            } else {
+                $raw = str_replace(',', '', $raw);
+            }
+        } elseif (str_contains($raw, ',') && ! str_contains($raw, '.')) {
+            $raw = str_replace(',', '.', $raw);
+        }
+
+        return (float) $raw;
+    }
+
+    private function prtgStorageUnitToBytes(float $n, string $u): ?float
+    {
+        $mult = match (true) {
+            str_starts_with($u, 'tb') || str_starts_with($u, 'tby') || $u === 'tbyte' => 1024.0 ** 4,
+            str_starts_with($u, 'gb') || str_starts_with($u, 'gby') || str_starts_with($u, 'gib') || $u === 'gbyte' => 1024.0 ** 3,
+            str_starts_with($u, 'mb') || str_starts_with($u, 'mby') || str_starts_with($u, 'mib') || $u === 'mbyte' => 1024.0 ** 2,
+            str_starts_with($u, 'kb') || str_starts_with($u, 'kib') || str_starts_with($u, 'kby') || $u === 'kbyte' => 1024.0,
+            default => null,
+        };
+
+        if ($mult === null) {
+            return null;
+        }
+
+        return $n * $mult;
     }
 
     /**

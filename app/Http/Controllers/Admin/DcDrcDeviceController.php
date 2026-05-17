@@ -17,10 +17,67 @@ use Maatwebsite\Excel\Validators\ValidationException;
 
 class DcDrcDeviceController extends Controller
 {
-    public function dashboard(): View
+    /**
+     * @param  array<int, string|int|float>  $labels
+     * @param  array<int, string|int|float>  $totals
+     * @return array{gradient: string, items: list<array{label: string|int|float, total: int, percent: float, color: string}>, sum: int}
+     */
+    public static function buildConicDonut(array $labels, array $totals, array $palette): array
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        $sum = array_sum($totals);
 
+        if ($sum <= 0) {
+            return [
+                'gradient' => '#1f2937 0% 100%',
+                'items' => [],
+                'sum' => 0,
+            ];
+        }
+
+        $current = 0.0;
+        $segments = [];
+        $items = [];
+
+        foreach ($labels as $idx => $label) {
+            $value = (float) ($totals[$idx] ?? 0);
+            if ($value <= 0) {
+                continue;
+            }
+
+            $percent = ($value / $sum) * 100;
+            $start = $current;
+            $end = $current + $percent;
+            $color = $palette[$idx % count($palette)];
+            $segments[] = sprintf('%s %.3f%% %.3f%%', $color, $start, $end);
+            $items[] = [
+                'label' => $label,
+                'total' => (int) $value,
+                'percent' => round($percent, 1),
+                'color' => $color,
+            ];
+            $current = $end;
+        }
+
+        if ($segments === []) {
+            return [
+                'gradient' => '#1f2937 0% 100%',
+                'items' => [],
+                'sum' => 0,
+            ];
+        }
+
+        return [
+            'gradient' => implode(', ', $segments),
+            'items' => $items,
+            'sum' => (int) $sum,
+        ];
+    }
+
+    /**
+     * @return array{hostTypeDonut: array, brandDonut: array, vmPerHostDonut: array, osDonut: array}
+     */
+    public function dashboardDonuts(): array
+    {
         $allDevices = DcDrcDevice::query()->get(['device_type', 'nic_model']);
 
         $hostTypeStats = [
@@ -46,6 +103,12 @@ class DcDrcDeviceController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        $osRows = DcDrcDevice::query()
+            ->selectRaw("CASE WHEN os IS NULL OR TRIM(os) = '' THEN 'Tidak Diketahui' ELSE TRIM(os) END as label, COUNT(*) as total")
+            ->groupByRaw("CASE WHEN os IS NULL OR TRIM(os) = '' THEN 'Tidak Diketahui' ELSE TRIM(os) END")
+            ->orderByDesc('total')
+            ->get();
+
         $vmPerHostRows = DcDrcDevice::query()
             ->from('dc_drc_devices as host')
             ->leftJoin('dc_drc_devices as vm', function ($join): void {
@@ -58,14 +121,40 @@ class DcDrcDeviceController extends Controller
             ->selectRaw('host.server_name as label, COUNT(vm.id) as total')
             ->get();
 
-        return view('pages.dashboard.aset-ti.perangkat-dc-drc-dashboard', [
-            'hostTypeLabels' => array_keys($hostTypeStats),
-            'hostTypeTotals' => array_values($hostTypeStats),
-            'brandLabels' => $brandRows->pluck('label')->values(),
-            'brandTotals' => $brandRows->pluck('total')->values(),
-            'vmPerHostLabels' => $vmPerHostRows->pluck('label')->values(),
-            'vmPerHostTotals' => $vmPerHostRows->pluck('total')->values(),
-        ]);
+        $hostPalette = ['#06b6d4', '#8b5cf6'];
+        $brandPalette = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#3b82f6', '#22c55e', '#a855f7', '#14b8a6', '#f97316'];
+        $vmPalette = ['#22c55e', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#3b82f6'];
+        $osPalette = ['#0ea5e9', '#d946ef', '#eab308', '#34d399', '#fb7185', '#818cf8', '#2dd4bf', '#f97316', '#a78bfa', '#4ade80'];
+
+        return [
+            'hostTypeDonut' => self::buildConicDonut(
+                array_keys($hostTypeStats),
+                array_values($hostTypeStats),
+                $hostPalette
+            ),
+            'brandDonut' => self::buildConicDonut(
+                $brandRows->pluck('label')->values()->all(),
+                $brandRows->pluck('total')->values()->all(),
+                $brandPalette
+            ),
+            'vmPerHostDonut' => self::buildConicDonut(
+                $vmPerHostRows->pluck('label')->values()->all(),
+                $vmPerHostRows->pluck('total')->values()->all(),
+                $vmPalette
+            ),
+            'osDonut' => self::buildConicDonut(
+                $osRows->pluck('label')->values()->all(),
+                $osRows->pluck('total')->values()->all(),
+                $osPalette
+            ),
+        ];
+    }
+
+    public function dashboard(): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        return redirect()->route('admin.aset-ti.data-center', ['tab' => 'dc-drc']);
     }
 
     public function index(): View

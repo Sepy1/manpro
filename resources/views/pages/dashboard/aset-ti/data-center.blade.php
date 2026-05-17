@@ -9,8 +9,55 @@
         errorMessage: null,
         updatedAt: '',
         dataUrl: @js($metricsUrl),
+        activePanel: 0,
+        dcTouchStartX: null,
         async init() {
+            try {
+                const url = new URL(window.location.href);
+                if (url.searchParams.get('tab') === 'dc-drc') {
+                    this.activePanel = 1;
+                }
+            } catch (e) {
+                /* ignore */
+            }
             await this.loadData();
+        },
+        dcSwipeStart(e) {
+            const t = e.touches && e.touches[0];
+            if (t) {
+                this.dcTouchStartX = t.clientX;
+            }
+        },
+        dcSwipeEnd(e) {
+            if (this.dcTouchStartX === null) {
+                return;
+            }
+            const t = e.changedTouches && e.changedTouches[0];
+            if (!t) {
+                this.dcTouchStartX = null;
+                return;
+            }
+            const dx = t.clientX - this.dcTouchStartX;
+            this.dcTouchStartX = null;
+            if (dx < -60 && this.activePanel < 1) {
+                this.setDcPanel(1);
+            } else if (dx > 60 && this.activePanel > 0) {
+                this.setDcPanel(0);
+            }
+        },
+        setDcPanel(index) {
+            this.activePanel = index;
+            try {
+                const url = new URL(window.location.href);
+                if (index === 1) {
+                    url.searchParams.set('tab', 'dc-drc');
+                } else {
+                    url.searchParams.delete('tab');
+                }
+                window.history.replaceState({}, '', url);
+            } catch (e) {
+                /* ignore */
+            }
         },
         async loadData() {
             this.loading = true;
@@ -150,19 +197,42 @@
 
             return ticks;
         },
-    }" class="flex min-h-0 h-full flex-col space-y-4">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Dashboard Per Server</h3>
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400" x-text="updatedAt ? `Update: ${updatedAt}` : ''"></span>
-                <button type="button" @click="loadData()"
-                    class="inline-flex h-9 items-center rounded-lg border border-brand-500 px-3 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
-                    Refresh
-                </button>
-            </div>
+    }" class="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+            Pilih tab di bawah atau geser kiri/kanan pada area konten untuk berpindah halaman.
+        </p>
+
+        <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2 dark:border-gray-700" role="tablist">
+            <button type="button" role="tab" :aria-selected="activePanel === 0" @click="setDcPanel(0)"
+                class="rounded-t-lg px-3 py-2 text-sm font-medium transition"
+                :class="activePanel === 0 ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90'">
+                Monitoring per server (PRTG)
+            </button>
+            <button type="button" role="tab" :aria-selected="activePanel === 1" @click="setDcPanel(1)"
+                class="rounded-t-lg px-3 py-2 text-sm font-medium transition"
+                :class="activePanel === 1 ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90'">
+                Inventaris DC-DRC
+            </button>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-auto pr-1">
+        <div class="min-h-0 flex-1 overflow-hidden">
+            <div class="flex h-full min-h-0 min-w-0 flex-1 touch-pan-y transition-transform duration-300 ease-out w-[200%]"
+                 :style="'transform: translateX(-' + (activePanel * 50) + '%)'"
+                 @touchstart.passive="dcSwipeStart($event)"
+                 @touchend="dcSwipeEnd($event)">
+                <div class="h-full w-1/2 shrink-0 flex min-h-0 flex-col overflow-hidden pr-2">
+                    <div class="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Dashboard Per Server</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500 dark:text-gray-400" x-text="updatedAt ? `Update: ${updatedAt}` : ''"></span>
+                            <button type="button" @click="loadData()"
+                                class="inline-flex h-9 items-center rounded-lg border border-brand-500 px-3 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="min-h-0 flex-1 overflow-y-auto pr-1">
             <div x-show="loading" x-cloak class="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300">
                 Memuat dashboard Data Center...
             </div>
@@ -260,6 +330,17 @@
                         </div>
                     </div>
                 </template>
+            </div>
+                    </div>
+                </div>
+                <div class="h-full w-1/2 shrink-0 flex min-h-0 flex-col overflow-hidden pl-2">
+                    <div class="mb-1 shrink-0">
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Dashboard inventaris DC-DRC</h3>
+                    </div>
+                    <div class="min-h-0 flex-1 overflow-hidden">
+                        @include('pages.dashboard.aset-ti.partials.dc-drc-inventory-dashboard')
+                    </div>
+                </div>
             </div>
         </div>
     </div>

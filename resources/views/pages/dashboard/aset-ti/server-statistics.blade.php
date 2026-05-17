@@ -24,7 +24,7 @@
                 stats: { min: null, max: null, avg: null },
                 bars: { min: null, max: null, avg: null },
                 uptime_percent: null,
-                disk_meta: null,
+                stats_free_gb: null,
             };
         },
         async init() {
@@ -63,7 +63,7 @@
                     state.stats = { min: null, max: null, avg: null };
                     state.bars = { min: null, max: null, avg: null };
                     state.uptime_percent = null;
-                    state.disk_meta = null;
+                    state.stats_free_gb = null;
                 });
             });
         },
@@ -142,10 +142,16 @@
                 if (metric === 'ping') {
                     state.uptime_percent = payload.uptime_percent;
                 } else {
-                    state.stats = payload.stats || { min: null, max: null, avg: null };
-                    state.bars = payload.bars || state.stats;
+                    if (metric === 'ram') {
+                        const rawFree = payload.stats || { min: null, max: null, avg: null };
+                        state.stats = this.freeRamStatsToLoadStats(rawFree);
+                        state.bars = state.stats;
+                    } else {
+                        state.stats = payload.stats || { min: null, max: null, avg: null };
+                        state.bars = payload.bars || state.stats;
+                    }
                     if (metric === 'disk') {
-                        state.disk_meta = payload.disk_meta || null;
+                        state.stats_free_gb = payload.stats_free_gb || null;
                     }
                 }
             } catch (error) {
@@ -161,6 +167,20 @@
         },
         spinnerHtml() {
             return `<span class='inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-brand-500'></span>`;
+        },
+        /** API PRTG: min/max/avg = persen RAM bebas → tampilan load = 100 − nilai. */
+        freeRamStatsToLoadStats(freeStats) {
+            if (!freeStats) return { min: null, max: null, avg: null };
+            const n = (v) => (v !== null && v !== undefined && !Number.isNaN(Number(v)) ? Number(v) : null);
+            const fmin = n(freeStats.min);
+            const fmax = n(freeStats.max);
+            const favg = n(freeStats.avg);
+            const r2 = (x) => Math.round(x * 100) / 100;
+            return {
+                min: fmax !== null ? r2(100 - fmax) : null,
+                max: fmin !== null ? r2(100 - fmin) : null,
+                avg: favg !== null ? r2(100 - favg) : null,
+            };
         },
         formatPercent(value) {
             if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
@@ -196,6 +216,11 @@
             if (percent === null || percent === undefined || Number.isNaN(Number(percent))) return 0;
             return Math.max(0, Math.min(100, Number(percent)));
         },
+        metricBarClass(kind, percent) {
+            if (kind === 'cpu' || kind === 'ram_load') return this.cpuBarClass(percent);
+            if (kind === 'ram' || kind === 'disk') return this.ramBarClass(percent);
+            return 'bg-brand-500';
+        },
         diskStatRowLabel(metricKey) {
             const labels = { min: 'Awal', max: 'Akhir', avg: 'Selisih' };
             return labels[metricKey] || metricKey;
@@ -215,6 +240,21 @@
         diskDeltaBarWidth(delta) {
             if (delta === null || delta === undefined || Number.isNaN(Number(delta))) return 0;
             return Math.min(100, Math.abs(Number(delta)) * 5);
+        },
+        diskFreeRowDisplay(metricKey, row) {
+            const s = row.metrics.disk.stats;
+            const pct = metricKey === 'avg'
+                ? this.formatDiskDeltaPct(s.avg)
+                : this.formatPercent(s[metricKey]);
+            const g = row.metrics.disk.stats_free_gb;
+            if (!g || g[metricKey] === null || g[metricKey] === undefined || Number.isNaN(Number(g[metricKey]))) {
+                return pct;
+            }
+            const n = Number(g[metricKey]);
+            const gbSuffix = metricKey === 'avg'
+                ? (n === 0 ? ' · 0.00 GB' : (' · ' + (n > 0 ? '+' : '') + n.toFixed(2) + ' GB'))
+                : (' · ' + n.toFixed(2) + ' GB');
+            return pct + gbSuffix;
         },
     }" class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <div class="mb-4">
@@ -258,13 +298,9 @@
                         <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Server</th>
                         <th class="w-[11%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Uptime</th>
                         <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">CPU Load</th>
-                        <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Free RAM</th>
+                        <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Load RAM</th>
                         <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Traffic</th>
-                        <th class="w-[19%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
-                            title="Persen ruang bebas di titik awal &amp; akhir periode (data histori PRTG), serta selisih (akhir − awal).">
-                            <span>Disk Free</span>
-                            <span class="mt-0.5 block text-[9px] font-normal normal-case text-gray-400 dark:text-gray-500">Awal / akhir / selisih</span>
-                        </th>
+                        <th class="w-[19%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Disk Free</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -346,7 +382,7 @@
                                                     <span x-text="formatPercent(row.metrics.ram.stats[metricKey])"></span>
                                                 </div>
                                                 <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                                                    <div class="h-full" :class="metricBarClass('ram', row.metrics.ram.bars[metricKey])" :style="`width: ${barWidth(row.metrics.ram.bars[metricKey])}%`"></div>
+                                                    <div class="h-full" :class="metricBarClass('ram_load', row.metrics.ram.bars[metricKey])" :style="`width: ${barWidth(row.metrics.ram.bars[metricKey])}%`"></div>
                                                 </div>
                                             </div>
                                         </template>
@@ -393,24 +429,11 @@
                                 </template>
                                 <template x-if="hasSubmitted && !row.metrics.disk.loading && row.metrics.disk.available">
                                     <div class="space-y-1">
-                                        <div class="mb-1.5 space-y-0.5 text-[10px] leading-snug text-gray-500 dark:text-gray-400"
-                                            x-show="row.metrics.disk.disk_meta && (row.metrics.disk.disk_meta.capacity_hint || row.metrics.disk.disk_meta.lastvalue || row.metrics.disk.disk_meta.sensor)">
-                                            <div x-show="row.metrics.disk.disk_meta && row.metrics.disk.disk_meta.capacity_hint"
-                                                x-text="row.metrics.disk.disk_meta.capacity_hint"></div>
-                                            <div x-show="row.metrics.disk.disk_meta && !row.metrics.disk.disk_meta.capacity_hint && row.metrics.disk.disk_meta.lastvalue"
-                                                x-text="row.metrics.disk.disk_meta.lastvalue"></div>
-                                            <div class="truncate text-[9px] italic" x-show="row.metrics.disk.disk_meta && row.metrics.disk.disk_meta.sensor"
-                                                :title="row.metrics.disk.disk_meta.sensor"
-                                                x-text="row.metrics.disk.disk_meta.sensor"></div>
-                                        </div>
                                         <template x-for="metricKey in ['min', 'max', 'avg']" :key="`disk-${row.id}-${metricKey}`">
                                             <div>
                                                 <div class="mb-0.5 flex justify-between text-[11px]">
                                                     <span class="font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400" x-text="diskStatRowLabel(metricKey)"></span>
-                                                    <span
-                                                        x-text="metricKey === 'avg'
-                                                            ? formatDiskDeltaPct(row.metrics.disk.stats.avg)
-                                                            : formatPercent(row.metrics.disk.stats[metricKey])"></span>
+                                                    <span class="tabular-nums" x-text="diskFreeRowDisplay(metricKey, row)"></span>
                                                 </div>
                                                 <template x-if="metricKey !== 'avg'">
                                                     <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">

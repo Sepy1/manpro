@@ -17,9 +17,12 @@ class AsetTiController extends Controller
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        return view('pages.dashboard.aset-ti.data-center', [
-            'metricsUrl' => route('admin.aset-ti.data-center.metrics'),
-        ]);
+        return view('pages.dashboard.aset-ti.data-center', array_merge(
+            [
+                'metricsUrl' => route('admin.aset-ti.data-center.metrics'),
+            ],
+            app(DcDrcDeviceController::class)->dashboardDonuts()
+        ));
     }
 
     public function dataCenterMetrics(): JsonResponse
