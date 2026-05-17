@@ -37,11 +37,20 @@
                 return 'background: conic-gradient(#9ca3af 0% 100%);';
             }
             const p = Math.max(0, Math.min(100, Number(percent)));
-            return `background: conic-gradient(${color} 0% ${p}%, #e5e7eb ${p}% 100%);`;
+            const oppositeColor = this.donutOppositeColor(color);
+            return `background: conic-gradient(${color} 0% ${p}%, ${oppositeColor} ${p}% 100%);`;
+        },
+        donutOppositeColor(color) {
+            return color === '#ef4444' ? '#22c55e' : '#ef4444';
         },
         percentText(value) {
             if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
             return `${Number(value).toFixed(1)}%`;
+        },
+        // Nilai API/PRTG untuk RAM di kartu ini = % free/tersedia; RAM load = 100 - free (hanya tampilan, endpoint tetap sama).
+        ramLoadPercent(freePercent) {
+            if (freePercent === null || freePercent === undefined || Number.isNaN(Number(freePercent))) return null;
+            return Math.max(0, Math.min(100, 100 - Number(freePercent)));
         },
         trafficText(value) {
             if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
@@ -175,6 +184,7 @@
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                                 <div class="mb-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">CPU Load</div>
+                                {{-- CPU: irisan = pemakaian (merah), sisa = headroom (hijau lewat donutOppositeColor) --}}
                                 <div class="mx-auto relative h-24 w-24 rounded-full"
                                     :style="donutStyle(row.cpu.percent, '#ef4444')">
                                     <div class="absolute inset-[24%] rounded-full bg-white dark:bg-gray-900"></div>
@@ -185,20 +195,22 @@
                             </div>
 
                             <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                <div class="mb-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Free RAM</div>
+                                <div class="mb-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">RAM Load</div>
+                                {{-- Beban = 100% − % free dari sensor (objid sama); irisan merah = load seperti CPU --}}
                                 <div class="mx-auto relative h-24 w-24 rounded-full"
-                                    :style="donutStyle(row.ram.percent, '#22c55e')">
+                                    :style="donutStyle(ramLoadPercent(row.ram.percent), '#ef4444')">
                                     <div class="absolute inset-[24%] rounded-full bg-white dark:bg-gray-900"></div>
                                     <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200"
-                                        x-text="percentText(row.ram.percent)"></div>
+                                        x-text="percentText(ramLoadPercent(row.ram.percent))"></div>
                                 </div>
                                 <div class="mt-2 text-center text-xs text-gray-500 dark:text-gray-400" x-text="row.ram.text"></div>
                             </div>
 
                             <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                                 <div class="mb-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Disk Free</div>
+                                {{-- Irisan = % ruang kosong (hijau), sisa = terpakai (merah) --}}
                                 <div class="mx-auto relative h-24 w-24 rounded-full"
-                                    :style="donutStyle(row.disk.percent, '#3b82f6')">
+                                    :style="donutStyle(row.disk.percent, '#22c55e')">
                                     <div class="absolute inset-[24%] rounded-full bg-white dark:bg-gray-900"></div>
                                     <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200"
                                         x-text="percentText(row.disk.percent)"></div>

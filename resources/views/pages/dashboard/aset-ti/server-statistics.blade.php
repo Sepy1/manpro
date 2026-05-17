@@ -24,6 +24,7 @@
                 stats: { min: null, max: null, avg: null },
                 bars: { min: null, max: null, avg: null },
                 uptime_percent: null,
+                disk_meta: null,
             };
         },
         async init() {
@@ -62,6 +63,7 @@
                     state.stats = { min: null, max: null, avg: null };
                     state.bars = { min: null, max: null, avg: null };
                     state.uptime_percent = null;
+                    state.disk_meta = null;
                 });
             });
         },
@@ -142,6 +144,9 @@
                 } else {
                     state.stats = payload.stats || { min: null, max: null, avg: null };
                     state.bars = payload.bars || state.stats;
+                    if (metric === 'disk') {
+                        state.disk_meta = payload.disk_meta || null;
+                    }
                 }
             } catch (error) {
                 state.error = 'Gagal';
@@ -191,10 +196,25 @@
             if (percent === null || percent === undefined || Number.isNaN(Number(percent))) return 0;
             return Math.max(0, Math.min(100, Number(percent)));
         },
-        metricBarClass(kind, percent) {
-            if (kind === 'cpu') return this.cpuBarClass(percent);
-            if (kind === 'ram' || kind === 'disk') return this.ramBarClass(percent);
-            return 'bg-brand-500';
+        diskStatRowLabel(metricKey) {
+            const labels = { min: 'Awal', max: 'Akhir', avg: 'Selisih' };
+            return labels[metricKey] || metricKey;
+        },
+        formatDiskDeltaPct(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+            const n = Number(value);
+            if (Object.is(n, -0) || n === 0) return `${n.toFixed(2)}%`;
+            const sign = n > 0 ? '+' : '';
+            return `${sign}${n.toFixed(2)}%`;
+        },
+        diskDeltaBarClass(delta) {
+            if (delta === null || delta === undefined || Number.isNaN(Number(delta))) return 'bg-gray-300';
+            if (Number(delta) >= 0) return 'bg-emerald-500';
+            return 'bg-red-500';
+        },
+        diskDeltaBarWidth(delta) {
+            if (delta === null || delta === undefined || Number.isNaN(Number(delta))) return 0;
+            return Math.min(100, Math.abs(Number(delta)) * 5);
         },
     }" class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <div class="mb-4">
@@ -240,7 +260,11 @@
                         <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">CPU Load</th>
                         <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Free RAM</th>
                         <th class="w-[18%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Traffic</th>
-                        <th class="w-[19%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Disk Free</th>
+                        <th class="w-[19%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                            title="Persen ruang bebas di titik awal &amp; akhir periode (data histori PRTG), serta selisih (akhir − awal).">
+                            <span>Disk Free</span>
+                            <span class="mt-0.5 block text-[9px] font-normal normal-case text-gray-400 dark:text-gray-500">Awal / akhir / selisih</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -369,15 +393,35 @@
                                 </template>
                                 <template x-if="hasSubmitted && !row.metrics.disk.loading && row.metrics.disk.available">
                                     <div class="space-y-1">
+                                        <div class="mb-1.5 space-y-0.5 text-[10px] leading-snug text-gray-500 dark:text-gray-400"
+                                            x-show="row.metrics.disk.disk_meta && (row.metrics.disk.disk_meta.capacity_hint || row.metrics.disk.disk_meta.lastvalue || row.metrics.disk.disk_meta.sensor)">
+                                            <div x-show="row.metrics.disk.disk_meta && row.metrics.disk.disk_meta.capacity_hint"
+                                                x-text="row.metrics.disk.disk_meta.capacity_hint"></div>
+                                            <div x-show="row.metrics.disk.disk_meta && !row.metrics.disk.disk_meta.capacity_hint && row.metrics.disk.disk_meta.lastvalue"
+                                                x-text="row.metrics.disk.disk_meta.lastvalue"></div>
+                                            <div class="truncate text-[9px] italic" x-show="row.metrics.disk.disk_meta && row.metrics.disk.disk_meta.sensor"
+                                                :title="row.metrics.disk.disk_meta.sensor"
+                                                x-text="row.metrics.disk.disk_meta.sensor"></div>
+                                        </div>
                                         <template x-for="metricKey in ['min', 'max', 'avg']" :key="`disk-${row.id}-${metricKey}`">
                                             <div>
                                                 <div class="mb-0.5 flex justify-between text-[11px]">
-                                                    <span class="uppercase" x-text="metricKey"></span>
-                                                    <span x-text="formatPercent(row.metrics.disk.stats[metricKey])"></span>
+                                                    <span class="font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400" x-text="diskStatRowLabel(metricKey)"></span>
+                                                    <span
+                                                        x-text="metricKey === 'avg'
+                                                            ? formatDiskDeltaPct(row.metrics.disk.stats.avg)
+                                                            : formatPercent(row.metrics.disk.stats[metricKey])"></span>
                                                 </div>
-                                                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                                                    <div class="h-full" :class="metricBarClass('disk', row.metrics.disk.bars[metricKey])" :style="`width: ${barWidth(row.metrics.disk.bars[metricKey])}%`"></div>
-                                                </div>
+                                                <template x-if="metricKey !== 'avg'">
+                                                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                                        <div class="h-full" :class="metricBarClass('disk', row.metrics.disk.bars[metricKey])" :style="`width: ${barWidth(row.metrics.disk.bars[metricKey])}%`"></div>
+                                                    </div>
+                                                </template>
+                                                <template x-if="metricKey === 'avg'">
+                                                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                                        <div class="h-full" :class="diskDeltaBarClass(row.metrics.disk.stats.avg)" :style="`width: ${diskDeltaBarWidth(row.metrics.disk.stats.avg)}%`"></div>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </template>
                                     </div>

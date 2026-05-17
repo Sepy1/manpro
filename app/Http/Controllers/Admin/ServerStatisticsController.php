@@ -98,7 +98,7 @@ class ServerStatisticsController extends Controller
     private function getMetricPayload(string $metric, string $objid, Carbon $startDate, Carbon $endDate): array
     {
         $histData = $this->fetchHistoricDataByObjid($objid, $startDate, $endDate);
-        $rawValues = $this->extractRawValues($histData);
+        $rawValues = $this->extractSeriesForMetric($histData, $metric);
         $coverageValues = $this->extractCoverageValues($histData);
 
         if ($metric === 'ping') {
@@ -116,18 +116,36 @@ class ServerStatisticsController extends Controller
             ];
         }
 
-        $stats = $this->summarizeSeries($rawValues);
+        if ($metric === 'disk') {
+            // Disk: min = % bebas di awal periode, max = % bebas di akhir periode, avg = selisih (akhir − awal).
+            $stats = $this->summarizeDiskPeriodFromHistoricData($histData);
+        } else {
+            $stats = $this->summarizeSeries($rawValues);
+        }
+
         $bars = $metric === 'traffic'
             ? $this->buildRelativeBars($stats)
             : $stats;
 
-        return [
+        $payload = [
             'ok' => true,
             'metric' => $metric,
             'available' => true,
             'stats' => $stats,
             'bars' => $bars,
         ];
+
+        if ($metric === 'disk') {
+            $snapshot = $this->fetchDiskSensorSnapshot($objid);
+            $lastvalue = $snapshot['lastvalue'] ?? '';
+            $payload['disk_meta'] = [
+                'lastvalue' => $lastvalue !== '' ? $lastvalue : null,
+                'sensor' => ($snapshot['sensor'] ?? '') !== '' ? $snapshot['sensor'] : null,
+                'capacity_hint' => $this->parseDiskCapacityHintFromLastvalue($lastvalue),
+            ];
+        }
+
+        return $payload;
     }
 
     private function resolvePeriodFromRequest(Request $request): array
@@ -170,6 +188,108 @@ class ServerStatisticsController extends Controller
         ];
     }
 
+    /**
+     * Disk free: urutkan histori menurut waktu; min/max/avg API = % bebas awal, % bebas akhir, selisih (penambahan/pengurangan relatif bebas).
+     *
+     * @return array{min: float|null, max: float|null, avg: float|null}
+     */
+    private function summarizeDiskPeriodFromHistoricData(array $histData): array
+    {
+        $series = $this->extractDiskTimelineFromHistoricData($histData);
+
+        if (empty($series)) {
+            return [
+                'min' => null,
+                'max' => null,
+                'avg' => null,
+            ];
+        }
+
+        $first = $series[0];
+        $last = $series[count($series) - 1];
+        $startVal = $first['v'];
+        $endVal = $last['v'];
+
+        return [
+            'min' => round($startVal, 2),
+            'max' => round($endVal, 2),
+            'avg' => round($endVal - $startVal, 2),
+        ];
+    }
+
+    /**
+     * @return list<array{ts: ?Carbon, idx: int, v: float}>
+     */
+    private function extractDiskTimelineFromHistoricData(array $histData): array
+    {
+        $out = [];
+        $idx = 0;
+
+        foreach ($histData as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $v = $this->pickDiskFreePercentFromHistoricRow($row);
+            if ($v === null) {
+                continue;
+            }
+
+            $out[] = [
+                'ts' => $this->parseHistoricRowDateTime($row),
+                'idx' => $idx,
+                'v' => $v,
+            ];
+            $idx++;
+        }
+
+        usort($out, function (array $a, array $b): int {
+            if ($a['ts'] !== null && $b['ts'] !== null) {
+                $cmp = $a['ts']->getTimestamp() <=> $b['ts']->getTimestamp();
+
+                return $cmp !== 0 ? $cmp : ($a['idx'] <=> $b['idx']);
+            }
+            if ($a['ts'] !== null) {
+                return -1;
+            }
+            if ($b['ts'] !== null) {
+                return 1;
+            }
+
+            return $a['idx'] <=> $b['idx'];
+        });
+
+        return $out;
+    }
+
+    private function parseHistoricRowDateTime(array $row): ?Carbon
+    {
+        $raw = $row['datetime'] ?? null;
+        if (! is_string($raw)) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $startToken = trim(explode(' - ', $raw, 2)[0] ?? $raw);
+
+        foreach (['d.m.Y H:i:s', 'd.m.Y H:i', 'Y-m-d H:i:s', 'Y-m-d H:i', \DateTimeInterface::ATOM] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $startToken);
+            } catch (Throwable) {
+            }
+        }
+
+        try {
+            return Carbon::parse($startToken);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     private function buildRelativeBars(array $stats): array
     {
         $max = $stats['max'] ?? null;
@@ -191,19 +311,288 @@ class ServerStatisticsController extends Controller
         ];
     }
 
-    private function extractRawValues(array $histData): array
+    /**
+     * Ambil deret nilai histori sesuai metric. Tanpa usecaption, JSON PRTG mengulang key value/value_raw
+     * sehingga value_raw sering salah (mis. 0 % downtime). Pakai kolom bertCaption + fallback.
+     *
+     * @return list<float>
+     */
+    private function extractSeriesForMetric(array $histData, string $metric): array
     {
         $values = [];
 
         foreach ($histData as $row) {
-            $raw = $row['value_raw'] ?? null;
+            if (! is_array($row)) {
+                continue;
+            }
 
-            if (is_numeric($raw)) {
-                $values[] = (float) $raw;
+            $val = match ($metric) {
+                'disk' => $this->pickDiskFreePercentFromHistoricRow($row),
+                'cpu' => $this->pickCpuPercentFromHistoricRow($row),
+                'ram' => $this->pickRamPercentFromHistoricRow($row),
+                'traffic' => $this->pickTrafficBytesPerSecondFromHistoricRow($row),
+                default => null,
+            };
+
+            if ($val === null && $metric !== 'disk') {
+                // Disk: jangan pakai value_raw — sering channel salah (mirip CPU/load kecil).
+                $val = $this->pickLegacySingleValueRaw($row);
+            }
+
+            if ($val !== null) {
+                $values[] = $val;
             }
         }
 
         return $values;
+    }
+
+    private function pickLegacySingleValueRaw(array $row): ?float
+    {
+        $raw = $row['value_raw'] ?? null;
+
+        return is_numeric($raw) ? (float) $raw : null;
+    }
+
+    private function pickDiskFreePercentFromHistoricRow(array $row): ?float
+    {
+        $strictScore = -1;
+        $strict = null;
+        $looseScore = -1;
+        $loose = null;
+
+        foreach ($row as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $kl = strtolower($key);
+            if (str_contains($kl, 'downtime')) {
+                continue;
+            }
+            if (str_contains($kl, 'datetime')) {
+                continue;
+            }
+            if (str_ends_with($key, '_raw')) {
+                continue;
+            }
+            if ($kl === 'coverage') {
+                continue;
+            }
+            if ($this->historicKeyLooksNonDisk($kl)) {
+                continue;
+            }
+
+            $v = $this->normalizePercentishScalar($value);
+            if ($v === null) {
+                continue;
+            }
+
+            $score = $this->diskHistoricCaptionScore($kl);
+
+            if ($score > $looseScore) {
+                $looseScore = $score;
+                $loose = $v;
+            }
+            if ($score >= 5 && $score > $strictScore) {
+                $strictScore = $score;
+                $strict = $v;
+            }
+        }
+
+        if ($strict !== null) {
+            return $strict;
+        }
+
+        if ($loose !== null && $looseScore >= 3) {
+            return $loose;
+        }
+
+        return null;
+    }
+
+    private function diskHistoricCaptionScore(string $keyLower): int
+    {
+        $score = 0;
+        if (str_contains($keyLower, 'disk free')) {
+            $score += 8;
+        }
+        if (str_contains($keyLower, '/') && (str_contains($keyLower, 'disk') || str_contains($keyLower, 'free') || str_contains($keyLower, 'label'))) {
+            $score += 6;
+        }
+        if (str_contains($keyLower, 'percent')) {
+            $score += 5;
+        }
+        if (str_contains($keyLower, 'available')) {
+            $score += 4;
+        }
+        if (str_contains($keyLower, 'free')) {
+            $score += 3;
+        }
+        if (str_contains($keyLower, 'disk')) {
+            $score += 2;
+        }
+        if (str_contains($keyLower, 'volume') || str_contains($keyLower, 'drive')) {
+            $score += 2;
+        }
+        if (str_contains($keyLower, 'used') && ! str_contains($keyLower, 'free')) {
+            $score -= 10;
+        }
+
+        return $score;
+    }
+
+    /**
+     * PRTG historicdata kadang mengirim persen sebagai string "24 %" atau "24,12%".
+     */
+    private function normalizePercentishScalar(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            $v = (float) $value;
+
+            return ($v >= 0 && $v <= 100) ? $v : null;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $s = trim(str_replace("\xc2\xa0", ' ', $value));
+        if ($s === '') {
+            return null;
+        }
+
+        if (preg_match('/^(-?\d+(?:[.,]\d+)?)\s*%?\s*$/u', $s, $matches)) {
+            $v = (float) str_replace(',', '.', $matches[1]);
+
+            return ($v >= 0 && $v <= 100) ? $v : null;
+        }
+
+        return null;
+    }
+
+    private function historicKeyLooksNonDisk(string $keyLower): bool
+    {
+        if (preg_match('/(^|[^a-z])cpu([^a-z]|$)/', $keyLower)) {
+            return true;
+        }
+        if (str_contains($keyLower, 'processor load') || str_contains($keyLower, 'cpu load')) {
+            return true;
+        }
+        if (str_contains($keyLower, 'traffic') || str_contains($keyLower, 'bandwidth')) {
+            return true;
+        }
+        if ((str_contains($keyLower, 'memory') || preg_match('/(^|[^a-z])ram([^a-z]|$)/', $keyLower)) && ! str_contains($keyLower, 'disk')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function pickCpuPercentFromHistoricRow(array $row): ?float
+    {
+        $bestScore = -1;
+        $best = null;
+
+        foreach ($row as $key => $value) {
+            if (! is_string($key) || ! is_numeric($value)) {
+                continue;
+            }
+            $kl = strtolower($key);
+            if (str_contains($kl, 'downtime')) {
+                continue;
+            }
+            if (str_ends_with($key, '_raw')) {
+                continue;
+            }
+            $v = (float) $value;
+            if ($v < 0 || $v > 100) {
+                continue;
+            }
+            $score = 0;
+            if (str_contains($kl, 'cpu')) {
+                $score += 4;
+            }
+            if (str_contains($kl, 'load')) {
+                $score += 4;
+            }
+            if (str_contains($kl, 'percent')) {
+                $score += 2;
+            }
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $v;
+            }
+        }
+
+        return $best;
+    }
+
+    private function pickRamPercentFromHistoricRow(array $row): ?float
+    {
+        $bestScore = -1;
+        $best = null;
+
+        foreach ($row as $key => $value) {
+            if (! is_string($key) || ! is_numeric($value)) {
+                continue;
+            }
+            $kl = strtolower($key);
+            if (str_contains($kl, 'downtime')) {
+                continue;
+            }
+            if (str_ends_with($key, '_raw')) {
+                continue;
+            }
+            $v = (float) $value;
+            if ($v < 0 || $v > 100) {
+                continue;
+            }
+            $score = 0;
+            if (str_contains($kl, 'physical')) {
+                $score += 4;
+            }
+            if (str_contains($kl, 'memory')) {
+                $score += 3;
+            }
+            if (str_contains($kl, 'ram')) {
+                $score += 2;
+            }
+            if (str_contains($kl, 'percent')) {
+                $score += 2;
+            }
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $v;
+            }
+        }
+
+        return $best;
+    }
+
+    private function pickTrafficBytesPerSecondFromHistoricRow(array $row): ?float
+    {
+        foreach ($row as $key => $value) {
+            if (! is_string($key) || ! is_numeric($value)) {
+                continue;
+            }
+            $kl = strtolower($key);
+            if (str_contains($kl, 'total') && str_contains($kl, 'speed')) {
+                return (float) $value;
+            }
+        }
+
+        foreach ($row as $key => $value) {
+            if (! is_string($key) || ! is_numeric($value)) {
+                continue;
+            }
+            $kl = strtolower($key);
+            if (str_contains($kl, 'speed')) {
+                return (float) $value;
+            }
+        }
+
+        return null;
     }
 
     private function extractCoverageValues(array $histData): array
@@ -211,10 +600,21 @@ class ServerStatisticsController extends Controller
         $values = [];
 
         foreach ($histData as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
             $raw = $row['coverage_raw'] ?? null;
 
             if (is_numeric($raw)) {
                 $values[] = round(((float) $raw) / 100, 2);
+
+                continue;
+            }
+
+            $coverage = $row['coverage'] ?? null;
+            if (is_string($coverage) && preg_match('/(-?\d+(?:[.,]\d+)?)\s*%/u', $coverage, $matches)) {
+                $values[] = round((float) str_replace(',', '.', $matches[1]), 2);
             }
         }
 
@@ -267,6 +667,7 @@ class ServerStatisticsController extends Controller
                 'sdate' => $startDate->format('Y-m-d-H-i-s'),
                 'edate' => $endDate->format('Y-m-d-H-i-s'),
                 'avg' => 3600,
+                'usecaption' => 1,
                 'username' => $username,
                 'passhash' => $passhash,
             ]);
@@ -291,5 +692,68 @@ class ServerStatisticsController extends Controller
         }
 
         return [$baseUrl, $username, $passhash, $verifySsl];
+    }
+
+    /**
+     * @return array{lastvalue: string, sensor: string}
+     */
+    private function fetchDiskSensorSnapshot(string $objid): array
+    {
+        if ($objid === '') {
+            return ['lastvalue' => '', 'sensor' => ''];
+        }
+
+        try {
+            [$baseUrl, $username, $passhash, $verifySsl] = $this->getPrtgConfig();
+            $response = Http::timeout(20)
+                ->acceptJson()
+                ->withOptions(['verify' => $verifySsl])
+                ->get(rtrim($baseUrl, '/') . '/api/table.json', [
+                    'content' => 'sensors',
+                    'output' => 'json',
+                    'columns' => 'device,sensor,lastvalue,status',
+                    'filter_objid' => $objid,
+                    'count' => 1,
+                    'username' => $username,
+                    'passhash' => $passhash,
+                ]);
+
+            if (! $response->successful()) {
+                return ['lastvalue' => '', 'sensor' => ''];
+            }
+
+            $json = $response->json();
+            $rows = is_array($json['sensors'] ?? null) ? $json['sensors'] : [];
+            $row = $rows[0] ?? null;
+
+            if (! is_array($row)) {
+                return ['lastvalue' => '', 'sensor' => ''];
+            }
+
+            return [
+                'lastvalue' => trim((string) ($row['lastvalue'] ?? '')),
+                'sensor' => trim((string) ($row['sensor'] ?? '')),
+            ];
+        } catch (Throwable) {
+            return ['lastvalue' => '', 'sensor' => ''];
+        }
+    }
+
+    private function parseDiskCapacityHintFromLastvalue(string $lastvalue): ?string
+    {
+        $lastvalue = trim($lastvalue);
+        if ($lastvalue === '') {
+            return null;
+        }
+
+        if (preg_match('/\(([^)]+)\)/u', $lastvalue, $matches)) {
+            return trim($matches[1]);
+        }
+
+        if (preg_match('/(\d+(?:[.,]\d+)?\s*(?:GB|TB|MB))\s+free\s+of\s+(\d+(?:[.,]\d+)?\s*(?:GB|TB|MB))/iu', $lastvalue, $matches)) {
+            return sprintf('%s bebas / %s total', trim($matches[1]), trim($matches[2]));
+        }
+
+        return null;
     }
 }
