@@ -83,6 +83,11 @@ class DcDrcDeviceController extends Controller
             'cpu_cores',
             'ram_gb',
             'storage_gb',
+            'objid_cpu',
+            'objid_ram',
+            'objid_ping',
+            'objid_diskfree',
+            'objid_traffic',
             'site',
             'system_role',
             'environment',
@@ -119,6 +124,11 @@ class DcDrcDeviceController extends Controller
                         ->orWhere('vlan', 'like', "%{$keyword}%")
                         ->orWhere('nic_model', 'like', "%{$keyword}%")
                         ->orWhere('os', 'like', "%{$keyword}%")
+                        ->orWhere('objid_cpu', 'like', "%{$keyword}%")
+                        ->orWhere('objid_ram', 'like', "%{$keyword}%")
+                        ->orWhere('objid_ping', 'like', "%{$keyword}%")
+                        ->orWhere('objid_diskfree', 'like', "%{$keyword}%")
+                        ->orWhere('objid_traffic', 'like', "%{$keyword}%")
                         ->orWhere('site', 'like', "%{$keyword}%")
                         ->orWhere('system_role', 'like', "%{$keyword}%")
                         ->orWhere('environment', 'like', "%{$keyword}%")
@@ -270,6 +280,11 @@ class DcDrcDeviceController extends Controller
             'cpu_cores' => ['nullable', 'integer', 'min:1', 'max:2048'],
             'ram_gb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
             'storage_gb' => ['nullable', 'integer', 'min:1', 'max:10485760'],
+            'objid_cpu' => ['nullable', 'string', 'max:255'],
+            'objid_ram' => ['nullable', 'string', 'max:255'],
+            'objid_ping' => ['nullable', 'string', 'max:255'],
+            'objid_diskfree' => ['nullable', 'string', 'max:255'],
+            'objid_traffic' => ['nullable', 'string', 'max:255'],
             'site' => ['nullable', 'string', 'max:255'],
             'system_role' => ['nullable', 'string', 'max:255'],
             'environment' => ['nullable', 'string', 'max:255'],
@@ -278,6 +293,7 @@ class DcDrcDeviceController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $validated['device_type'] = $this->normalizeDeviceType($validated['device_type'] ?? null);
         $deviceType = strtolower(trim((string) ($validated['device_type'] ?? '')));
         $vmHostId = isset($validated['vm_host_id']) ? (int) $validated['vm_host_id'] : null;
 
@@ -302,5 +318,23 @@ class DcDrcDeviceController extends Controller
         }
 
         return $validated;
+    }
+
+    private function normalizeDeviceType(?string $deviceType): ?string
+    {
+        $rawValue = trim((string) $deviceType);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        $compactValue = strtolower(preg_replace('/[\s_-]+/', '', $rawValue) ?? $rawValue);
+
+        return match ($compactValue) {
+            'vm' => 'VM',
+            'vmhost' => 'vm host',
+            'baremetal' => 'bare metal',
+            'physical' => 'physical',
+            default => $rawValue,
+        };
     }
 }

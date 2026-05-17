@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\AsetTiController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
+use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
@@ -46,6 +48,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::put('/profil/update-password', [ProfileManagementController::class, 'updatePassword'])->name('profil.update-password');
 
     Route::get('/aset-ti/data-center', [AsetTiController::class, 'dataCenter'])->name('aset-ti.data-center');
+    Route::get('/aset-ti/data-center/metrics', [AsetTiController::class, 'dataCenterMetrics'])->name('aset-ti.data-center.metrics');
     Route::get('/aset-ti/cctv-dashboard', [CctvController::class, 'dashboard'])->name('aset-ti.cctv.dashboard');
     Route::get('/aset-ti/cctv-dashboard/export-missing', [CctvController::class, 'exportMissingUpdates'])->name('aset-ti.cctv.dashboard.export-missing');
     Route::get('/aset-ti/cctv', [CctvController::class, 'index'])->name('aset-ti.cctv.index');
@@ -64,6 +67,10 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::get('/aset-ti/perangkat-dc-drc/export', [DcDrcDeviceController::class, 'export'])->name('aset-ti.perangkat-dc-drc.export');
     Route::get('/aset-ti/perangkat-dc-drc/template', [DcDrcDeviceController::class, 'downloadTemplate'])->name('aset-ti.perangkat-dc-drc.template');
     Route::post('/aset-ti/perangkat-dc-drc/import', [DcDrcDeviceController::class, 'import'])->name('aset-ti.perangkat-dc-drc.import');
+    Route::get('/aset-ti/monitoring', [MonitoringController::class, 'index'])->name('aset-ti.monitoring.index');
+    Route::get('/aset-ti/monitoring/data', [MonitoringController::class, 'data'])->name('aset-ti.monitoring.data');
+    Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
+    Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');

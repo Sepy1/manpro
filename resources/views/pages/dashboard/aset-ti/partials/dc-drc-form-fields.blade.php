@@ -45,6 +45,16 @@
     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
 <input type="number" name="storage_gb" value="{{ $isEdit ? '' : old('storage_gb') }}" {{ $isEdit ? 'x-model=editForm.storage_gb' : '' }} min="1" placeholder="Hardisk (GB)"
     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+<input type="text" name="objid_cpu" value="{{ $isEdit ? '' : old('objid_cpu') }}" {{ $isEdit ? 'x-model=editForm.objid_cpu' : '' }} placeholder="OBJID CPU (PRTG)"
+    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+<input type="text" name="objid_ram" value="{{ $isEdit ? '' : old('objid_ram') }}" {{ $isEdit ? 'x-model=editForm.objid_ram' : '' }} placeholder="OBJID RAM (PRTG)"
+    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+<input type="text" name="objid_ping" value="{{ $isEdit ? '' : old('objid_ping') }}" {{ $isEdit ? 'x-model=editForm.objid_ping' : '' }} placeholder="OBJID Ping (PRTG)"
+    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+<input type="text" name="objid_diskfree" value="{{ $isEdit ? '' : old('objid_diskfree') }}" {{ $isEdit ? 'x-model=editForm.objid_diskfree' : '' }} placeholder="OBJID DiskFree (PRTG)"
+    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+<input type="text" name="objid_traffic" value="{{ $isEdit ? '' : old('objid_traffic') }}" {{ $isEdit ? 'x-model=editForm.objid_traffic' : '' }} placeholder="OBJID Traffic (PRTG)"
+    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
 <input type="text" name="site" value="{{ $isEdit ? '' : old('site') }}" {{ $isEdit ? 'x-model=editForm.site' : '' }} placeholder="Lokasi (DC/DRC)"
     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
 <input type="text" name="system_role" value="{{ $isEdit ? '' : old('system_role') }}" {{ $isEdit ? 'x-model=editForm.system_role' : '' }} placeholder="Fungsi Sistem"

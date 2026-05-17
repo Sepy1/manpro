@@ -54,6 +54,14 @@ class MenuHelper
                         'name' => 'Perangkat DC - DRC',
                         'path' => '/admin/aset-ti/perangkat-dc-drc',
                     ],
+                    [
+                        'name' => 'Monitoring',
+                        'path' => '/admin/aset-ti/monitoring',
+                    ],
+                    [
+                        'name' => 'Statistik Server',
+                        'path' => '/admin/aset-ti/statistik-server',
+                    ],
                 ],
             ];
             $items[] = [

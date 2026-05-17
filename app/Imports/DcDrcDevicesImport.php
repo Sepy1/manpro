@@ -13,7 +13,7 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
     {
         $serverName = trim((string) ($row['server_name'] ?? ''));
         $ipAddress = $this->normalizeNullableString($row['ip_address'] ?? null);
-        $deviceType = $this->normalizeNullableString($row['tipe'] ?? null);
+        $deviceType = $this->normalizeDeviceType($this->normalizeNullableString($row['tipe'] ?? null));
         $hostServer = $this->normalizeNullableString($row['vm_server'] ?? null);
         $vmHostId = null;
 
@@ -36,6 +36,11 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
             'cpu_cores' => $this->normalizeNullableInteger($row['cpu'] ?? null),
             'ram_gb' => $this->normalizeNullableInteger($row['ram_gb'] ?? null),
             'storage_gb' => $this->normalizeNullableInteger($row['hardisk_gb'] ?? null),
+            'objid_cpu' => $this->normalizeNullableString($row['objid_cpu'] ?? null),
+            'objid_ram' => $this->normalizeNullableString($row['objid_ram'] ?? null),
+            'objid_ping' => $this->normalizeNullableString($row['objid_ping'] ?? null),
+            'objid_diskfree' => $this->normalizeNullableString($row['objid_diskfree'] ?? null),
+            'objid_traffic' => $this->normalizeNullableString($row['objid_traffic'] ?? null),
             'site' => $this->normalizeNullableString($row['lokasi'] ?? null),
             'system_role' => $this->normalizeNullableString($row['fungsi'] ?? null),
             'environment' => $this->normalizeNullableString($row['environment'] ?? null),
@@ -73,6 +78,11 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
             'cpu' => ['nullable', 'integer', 'min:1', 'max:2048'],
             'ram_gb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
             'hardisk_gb' => ['nullable', 'integer', 'min:1', 'max:10485760'],
+            'objid_cpu' => ['nullable', 'string', 'max:255'],
+            'objid_ram' => ['nullable', 'string', 'max:255'],
+            'objid_ping' => ['nullable', 'string', 'max:255'],
+            'objid_diskfree' => ['nullable', 'string', 'max:255'],
+            'objid_traffic' => ['nullable', 'string', 'max:255'],
             'lokasi' => ['nullable', 'string', 'max:255'],
             'fungsi' => ['nullable', 'string', 'max:255'],
             'environment' => ['nullable', 'string', 'max:255'],
@@ -104,5 +114,23 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
         }
 
         return (int) $normalized;
+    }
+
+    private function normalizeDeviceType(?string $deviceType): ?string
+    {
+        $rawValue = trim((string) $deviceType);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        $compactValue = strtolower(preg_replace('/[\s_-]+/', '', $rawValue) ?? $rawValue);
+
+        return match ($compactValue) {
+            'vm' => 'VM',
+            'vmhost' => 'vm host',
+            'baremetal' => 'bare metal',
+            'physical' => 'physical',
+            default => $rawValue,
+        };
     }
 }

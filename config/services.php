@@ -45,4 +45,11 @@ return [
         'chat_id' => env('TELEGRAM_CHAT_ID'),
     ],
 
+    'prtg' => [
+        'base_url' => env('PRTG_BASE_URL'),
+        'username' => env('PRTG_USERNAME'),
+        'passhash' => env('PRTG_PASSHASH'),
+        'verify_ssl' => env('PRTG_VERIFY_SSL', false),
+    ],
+
 ];

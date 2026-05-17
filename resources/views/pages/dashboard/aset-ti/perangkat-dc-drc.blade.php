@@ -41,6 +41,11 @@
                 cpu_cores: '',
                 ram_gb: '',
                 storage_gb: '',
+                objid_cpu: '',
+                objid_ram: '',
+                objid_ping: '',
+                objid_diskfree: '',
+                objid_traffic: '',
                 site: '',
                 system_role: '',
                 environment: '',
@@ -52,7 +57,7 @@
                 this.editForm = {
                     id: el.dataset.id || '',
                     server_name: el.dataset.serverName || '',
-                    device_type: el.dataset.deviceType || '',
+                    device_type: this.normalizeDeviceType(el.dataset.deviceType || ''),
                     host_server: el.dataset.hostServer || '',
                     vm_host_id: el.dataset.vmHostId || '',
                     ip_address: el.dataset.ipAddress || '',
@@ -62,6 +67,11 @@
                     cpu_cores: el.dataset.cpuCores || '',
                     ram_gb: el.dataset.ramGb || '',
                     storage_gb: el.dataset.storageGb || '',
+                    objid_cpu: el.dataset.objidCpu || '',
+                    objid_ram: el.dataset.objidRam || '',
+                    objid_ping: el.dataset.objidPing || '',
+                    objid_diskfree: el.dataset.objidDiskfree || '',
+                    objid_traffic: el.dataset.objidTraffic || '',
                     site: el.dataset.site || '',
                     system_role: el.dataset.systemRole || '',
                     environment: el.dataset.environment || '',
@@ -70,6 +80,28 @@
                     notes: el.dataset.notes || '',
                 };
                 this.showEditModal = true;
+            },
+            normalizeDeviceType(value) {
+                const normalized = String(value || '').trim();
+                if (normalized === '') {
+                    return '';
+                }
+
+                const compact = normalized.toLowerCase().replace(/[\s_-]+/g, '');
+                if (compact === 'vm') {
+                    return 'VM';
+                }
+                if (compact === 'vmhost') {
+                    return 'vm host';
+                }
+                if (compact === 'baremetal') {
+                    return 'bare metal';
+                }
+                if (compact === 'physical') {
+                    return 'physical';
+                }
+
+                return normalized;
             },
             get editAction() {
                 return this.updateActionBase.replace('__ID__', this.editForm.id || '');
@@ -191,6 +223,11 @@
                                             data-cpu-cores="{{ $host->cpu_cores }}"
                                             data-ram-gb="{{ $host->ram_gb }}"
                                             data-storage-gb="{{ $host->storage_gb }}"
+                                            data-objid-cpu="{{ $host->objid_cpu }}"
+                                            data-objid-ram="{{ $host->objid_ram }}"
+                                            data-objid-ping="{{ $host->objid_ping }}"
+                                            data-objid-diskfree="{{ $host->objid_diskfree }}"
+                                            data-objid-traffic="{{ $host->objid_traffic }}"
                                             data-site="{{ $host->site }}"
                                             data-system-role="{{ $host->system_role }}"
                                             data-environment="{{ $host->environment }}"
@@ -245,6 +282,11 @@
                                                                     data-cpu-cores="{{ $vm->cpu_cores }}"
                                                                     data-ram-gb="{{ $vm->ram_gb }}"
                                                                     data-storage-gb="{{ $vm->storage_gb }}"
+                                                                    data-objid-cpu="{{ $vm->objid_cpu }}"
+                                                                    data-objid-ram="{{ $vm->objid_ram }}"
+                                                                    data-objid-ping="{{ $vm->objid_ping }}"
+                                                                    data-objid-diskfree="{{ $vm->objid_diskfree }}"
+                                                                    data-objid-traffic="{{ $vm->objid_traffic }}"
                                                                     data-site="{{ $vm->site }}"
                                                                     data-system-role="{{ $vm->system_role }}"
                                                                     data-environment="{{ $vm->environment }}"
@@ -303,6 +345,11 @@
                                             data-cpu-cores="{{ $device->cpu_cores }}"
                                             data-ram-gb="{{ $device->ram_gb }}"
                                             data-storage-gb="{{ $device->storage_gb }}"
+                                            data-objid-cpu="{{ $device->objid_cpu }}"
+                                            data-objid-ram="{{ $device->objid_ram }}"
+                                            data-objid-ping="{{ $device->objid_ping }}"
+                                            data-objid-diskfree="{{ $device->objid_diskfree }}"
+                                            data-objid-traffic="{{ $device->objid_traffic }}"
                                             data-site="{{ $device->site }}"
                                             data-system-role="{{ $device->system_role }}"
                                             data-environment="{{ $device->environment }}"
@@ -388,11 +435,11 @@
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Edit Perangkat DC/DRC</h4>
                     <button type="button" @click="showEditModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
                 </div>
-                <form :action="editAction" method="POST" class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <form :action="editAction" method="POST" class="space-y-4">
                     @csrf
                     @method('PUT')
-                    @include('pages.dashboard.aset-ti.partials.dc-drc-form-fields', ['isEdit' => true, 'vmHosts' => $vmHosts])
-                    <div class="md:col-span-4">
+                    @include('pages.dashboard.aset-ti.partials.dc-drc-form-fields-vertical', ['vmHosts' => $vmHosts])
+                    <div>
                         <button type="submit"
                             class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
                             Simpan Update Perangkat
