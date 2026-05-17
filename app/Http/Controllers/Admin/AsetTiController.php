@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\DcDrcDevice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -96,31 +95,27 @@ class AsetTiController extends Controller
             ];
         }
 
-        $cacheKey = "data-center:percent:{$metric}:{$objid}";
-
         try {
-            return Cache::remember($cacheKey, now()->addMinutes(2), function () use ($objid): array {
-                $sensor = $this->fetchSensorByObjid($objid);
+            $sensor = $this->fetchSensorByObjid($objid);
 
-                if ($sensor === null) {
-                    return [
-                        'available' => false,
-                        'percent' => null,
-                        'text' => '-',
-                    ];
-                }
-
-                $raw = $sensor['lastvalue_raw'] ?? null;
-                $percent = is_numeric($raw)
-                    ? max(0, min(100, (float) $raw))
-                    : $this->parsePercentFromLastvalue((string) ($sensor['lastvalue'] ?? ''));
-
+            if ($sensor === null) {
                 return [
-                    'available' => true,
-                    'percent' => $percent,
-                    'text' => trim((string) ($sensor['lastvalue'] ?? '-')),
+                    'available' => false,
+                    'percent' => null,
+                    'text' => '-',
                 ];
-            });
+            }
+
+            $raw = $sensor['lastvalue_raw'] ?? null;
+            $percent = is_numeric($raw)
+                ? max(0, min(100, (float) $raw))
+                : $this->parsePercentFromLastvalue((string) ($sensor['lastvalue'] ?? ''));
+
+            return [
+                'available' => true,
+                'percent' => $percent,
+                'text' => trim((string) ($sensor['lastvalue'] ?? '-')),
+            ];
         } catch (Throwable $e) {
             Log::warning('Data center percent metric failed.', [
                 'metric' => $metric,
@@ -148,70 +143,67 @@ class AsetTiController extends Controller
 
         $endDate = Carbon::now()->endOfDay();
         $startDate = Carbon::now()->subDay()->startOfDay();
-        $cacheKey = 'data-center:traffic:v3:' . $objid . ':' . $startDate->format('YmdHi') . ':' . $endDate->format('YmdHi');
 
         try {
-            $payload = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($objid, $startDate, $endDate): array {
-                [$baseUrl, $username, $passhash, $verifySsl] = $this->getPrtgConfig();
+            [$baseUrl, $username, $passhash, $verifySsl] = $this->getPrtgConfig();
 
-                $response = Http::retry(1, 250)
-                    ->timeout(60)
-                    ->acceptJson()
-                    ->withOptions(['verify' => $verifySsl])
-                    ->get(rtrim($baseUrl, '/') . '/api/historicdata.json', [
-                        'id' => $objid,
-                        'sdate' => $startDate->format('Y-m-d-H-i-s'),
-                        'edate' => $endDate->format('Y-m-d-H-i-s'),
-                        'avg' => 3600,
-                        'usecaption' => 1,
-                        'username' => $username,
-                        'passhash' => $passhash,
-                    ]);
+            $response = Http::retry(1, 250)
+                ->timeout(60)
+                ->acceptJson()
+                ->withOptions(['verify' => $verifySsl])
+                ->get(rtrim($baseUrl, '/') . '/api/historicdata.json', [
+                    'id' => $objid,
+                    'sdate' => $startDate->format('Y-m-d-H-i-s'),
+                    'edate' => $endDate->format('Y-m-d-H-i-s'),
+                    'avg' => 3600,
+                    'usecaption' => 1,
+                    'username' => $username,
+                    'passhash' => $passhash,
+                ]);
 
-                if (! $response->successful()) {
-                    return $this->fallbackTrafficSeriesFromLiveSensor($objid);
+            if (! $response->successful()) {
+                return $this->normalizeTrafficPayload($this->fallbackTrafficSeriesFromLiveSensor($objid));
+            }
+
+            $json = $response->json();
+            $rows = is_array($json['histdata'] ?? null) ? $json['histdata'] : [];
+            $points = [];
+
+            foreach ($rows as $row) {
+                if (! is_array($row)) {
+                    continue;
                 }
 
-                $json = $response->json();
-                $rows = is_array($json['histdata'] ?? null) ? $json['histdata'] : [];
-                $points = [];
-
-                foreach ($rows as $row) {
-                    if (! is_array($row)) {
-                        continue;
-                    }
-
-                    $mbps = $this->extractTrafficMbpsFromHistoricRow($row);
-                    if ($mbps === null) {
-                        continue;
-                    }
-
-                    $label = $this->extractHourRangeLabel((string) ($row['datetime'] ?? ''));
-                    $points[] = [
-                        'label' => $label,
-                        'value' => $mbps,
-                    ];
+                $mbps = $this->extractTrafficMbpsFromHistoricRow($row);
+                if ($mbps === null) {
+                    continue;
                 }
 
-                if (empty($points)) {
-                    $fallback = $this->fallbackTrafficSeriesFromLiveSensor($objid);
-                    if (! empty($fallback['points'])) {
-                        return $fallback;
-                    }
-
-                    return [
-                        'available' => true,
-                        'latest_mbps' => 0.0,
-                        'points' => $this->generateFlatTrafficPoints(0.0),
-                    ];
-                }
-
-                return [
-                    'available' => true,
-                    'latest_mbps' => ! empty($points) ? $points[array_key_last($points)]['value'] : null,
-                    'points' => $points,
+                $label = $this->extractHourRangeLabel((string) ($row['datetime'] ?? ''));
+                $points[] = [
+                    'label' => $label,
+                    'value' => $mbps,
                 ];
-            });
+            }
+
+            if (empty($points)) {
+                $fallback = $this->fallbackTrafficSeriesFromLiveSensor($objid);
+                if (! empty($fallback['points'])) {
+                    return $this->normalizeTrafficPayload($fallback);
+                }
+
+                return $this->normalizeTrafficPayload([
+                    'available' => true,
+                    'latest_mbps' => 0.0,
+                    'points' => $this->generateFlatTrafficPoints(0.0),
+                ]);
+            }
+
+            $payload = [
+                'available' => true,
+                'latest_mbps' => ! empty($points) ? $points[array_key_last($points)]['value'] : null,
+                'points' => $points,
+            ];
 
             return $this->normalizeTrafficPayload($payload);
         } catch (Throwable $e) {

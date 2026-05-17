@@ -7,7 +7,6 @@ use App\Models\DcDrcDevice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -71,7 +70,7 @@ class ServerStatisticsController extends Controller
         }
 
         try {
-            $payload = $this->getMetricPayloadFromCache(
+            $payload = $this->getMetricPayload(
                 $metric,
                 $objid,
                 $startDate,
@@ -96,50 +95,39 @@ class ServerStatisticsController extends Controller
         }
     }
 
-    private function getMetricPayloadFromCache(string $metric, string $objid, Carbon $startDate, Carbon $endDate): array
+    private function getMetricPayload(string $metric, string $objid, Carbon $startDate, Carbon $endDate): array
     {
-        $cacheKey = implode(':', [
-            'server-statistics',
-            $metric,
-            $objid,
-            $startDate->format('YmdHis'),
-            $endDate->format('YmdHis'),
-            'avg3600',
-        ]);
+        $histData = $this->fetchHistoricDataByObjid($objid, $startDate, $endDate);
+        $rawValues = $this->extractRawValues($histData);
+        $coverageValues = $this->extractCoverageValues($histData);
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($metric, $objid, $startDate, $endDate): array {
-            $histData = $this->fetchHistoricDataByObjid($objid, $startDate, $endDate);
-            $rawValues = $this->extractRawValues($histData);
-            $coverageValues = $this->extractCoverageValues($histData);
-
-            if ($metric === 'ping') {
-                // PRTG historicdata for ping exposes coverage per interval.
-                // Use it as uptime proxy for selected period.
-                $uptimePercent = ! empty($coverageValues)
-                    ? round(array_sum($coverageValues) / count($coverageValues), 2)
-                    : (! empty($rawValues) ? 100.0 : null);
-
-                return [
-                    'ok' => true,
-                    'metric' => 'ping',
-                    'available' => true,
-                    'uptime_percent' => $uptimePercent,
-                ];
-            }
-
-            $stats = $this->summarizeSeries($rawValues);
-            $bars = $metric === 'traffic'
-                ? $this->buildRelativeBars($stats)
-                : $stats;
+        if ($metric === 'ping') {
+            // PRTG historicdata for ping exposes coverage per interval.
+            // Use it as uptime proxy for selected period.
+            $uptimePercent = ! empty($coverageValues)
+                ? round(array_sum($coverageValues) / count($coverageValues), 2)
+                : (! empty($rawValues) ? 100.0 : null);
 
             return [
                 'ok' => true,
-                'metric' => $metric,
+                'metric' => 'ping',
                 'available' => true,
-                'stats' => $stats,
-                'bars' => $bars,
+                'uptime_percent' => $uptimePercent,
             ];
-        });
+        }
+
+        $stats = $this->summarizeSeries($rawValues);
+        $bars = $metric === 'traffic'
+            ? $this->buildRelativeBars($stats)
+            : $stats;
+
+        return [
+            'ok' => true,
+            'metric' => $metric,
+            'available' => true,
+            'stats' => $stats,
+            'bars' => $bars,
+        ];
     }
 
     private function resolvePeriodFromRequest(Request $request): array
