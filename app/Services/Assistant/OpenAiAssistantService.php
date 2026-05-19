@@ -41,7 +41,7 @@ class OpenAiAssistantService
                 'content' => implode("\n", [
                     'Kamu adalah asisten Manpro untuk admin BKK Jateng.',
                     'Jawab ringkas dan jelas. Gunakan bahasa Indonesia jika pengguna memakai Indonesia.',
-                    'Untuk fakta angka atau daftar terkait Data Center (PRTG), CCTV, atau proyek, WAJIB memanggil function tools — jangan mengarang data.',
+                    'Untuk fakta angka atau daftar terkait Data Center (PRTG), CCTV, proyek, atau inventaris DC-DRC / kapasitas VM Host, WAJIB memanggil function tools — jangan mengarang data.',
                     'Setelah memakai tool, rangkum untuk pengguna (bullet atau paragraf pendek).',
                 ]),
             ],
@@ -198,6 +198,54 @@ class OpenAiAssistantService
                             'limit' => [
                                 'type' => 'integer',
                                 'description' => 'Maksimal proyek (1–25), default 15.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'list_dc_drc_devices',
+                    'description' => 'Inventaris perangkat DC-DRC dari database (server, VM, VM Host, baremetal): nama, spesifikasi, parent host, flag sensor PRTG terdaftar.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'device_type' => [
+                                'type' => 'string',
+                                'description' => 'Opsional: "vm host", "vm", atau "baremetal" untuk filter.',
+                            ],
+                            'keyword' => [
+                                'type' => 'string',
+                                'description' => 'Opsional: cari di nama server, IP, site, dll.',
+                            ],
+                            'limit' => [
+                                'type' => 'integer',
+                                'description' => 'Maks baris (1–60), default 40.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'analyze_vm_hosts_capacity',
+                    'description' => 'Gabungkan VM Host dari daftar DC-DRC dengan metrik live PRTG (CPU/RAM/disk/traffic) untuk menilai host mana yang masih punya headroom bagi VM baru. Cocok untuk rekomendasi penempatan VM.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'cpu_headroom_under' => [
+                                'type' => 'number',
+                                'description' => 'Batas atas pemakaian CPU % dianggap "penuh" (default 75). Di bawah ini lebih aman.',
+                            ],
+                            'ram_headroom_under' => [
+                                'type' => 'number',
+                                'description' => 'Batas pemakaian RAM % (default 80).',
+                            ],
+                            'disk_headroom_under' => [
+                                'type' => 'number',
+                                'description' => 'Batas pemakaian disk % (default 85).',
                             ],
                         ],
                     ],
