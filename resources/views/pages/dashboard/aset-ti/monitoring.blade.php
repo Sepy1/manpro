@@ -2,7 +2,15 @@
 
 @section('admin-content')
     <x-common.page-breadcrumb pageTitle="Aset TI - Monitoring" />
-    <div x-data="{
+    <x-dashboard.accent-card
+        accent-index="0"
+        shell-overflow="visible"
+        class="flex min-h-0 h-full flex-col"
+        padding="p-5 lg:p-6"
+    >
+        <div
+            class="flex min-h-0 flex-1 flex-col"
+            x-data="{
         rows: @js($rows),
         errorMessage: @js($errorMessage),
         lastUpdatedAt: @js($lastUpdatedAt->format('d M Y H:i:s')),
@@ -63,7 +71,8 @@
             if (percent < 50) return 'bg-amber-500';
             return 'bg-emerald-500';
         },
-    }" class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6">
+    }">
+        <div class="flex min-h-0 flex-1 flex-col">
         <div class="mb-4 flex items-center justify-between gap-2">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Monitoring Statistik Server (PRTG)</h3>
             <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -82,10 +91,10 @@
             </button>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-auto">
-            <table class="w-full table-fixed border-collapse">
-                <thead>
-                    <tr class="border-b border-gray-200 dark:border-gray-800">
+        <div class="min-h-0 flex-1 overflow-y-auto overflow-x-auto">
+            <table class="w-full table-fixed border-separate border-spacing-0">
+                <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-white dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
+                    <tr>
                         <th class="w-[24%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Server</th>
                         <th class="w-[14%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                         <th class="w-[14%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cpu Load</th>
@@ -137,5 +146,7 @@
                 </tbody>
             </table>
         </div>
-    </div>
+        </div>
+        </div>
+    </x-dashboard.accent-card>
 @endsection

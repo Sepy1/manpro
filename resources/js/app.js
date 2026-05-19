@@ -16,6 +16,17 @@ document.addEventListener('alpine:init', () => {
                 /* ignore */
             }
             document.documentElement.classList.toggle('dark', this.dark);
+            try {
+                let meta = document.querySelector('meta[name="color-scheme"]');
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.setAttribute('name', 'color-scheme');
+                    document.head.appendChild(meta);
+                }
+                meta.setAttribute('content', this.dark ? 'dark' : 'light');
+            } catch (e) {
+                /* ignore */
+            }
         },
     });
 

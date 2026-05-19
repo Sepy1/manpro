@@ -23,7 +23,12 @@
             @csrf
 
             {{-- Card kiri --}}
-            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden content-card">
+            <x-dashboard.accent-card
+                accent-index="0"
+                shell-overflow="hidden"
+                class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden"
+                padding="p-0"
+            >
                 <div class="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 md:px-5">
                     <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Data Project</h3>
                 </div>
@@ -163,10 +168,15 @@
                         Simpan Project
                     </button>
                 </div>
-            </div>
+            </x-dashboard.accent-card>
 
             {{-- Card kanan --}}
-            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden content-card">
+            <x-dashboard.accent-card
+                accent-index="1"
+                shell-overflow="hidden"
+                class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden"
+                padding="p-0"
+            >
                 <div class="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 md:px-5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Langkah Project</h3>
@@ -303,7 +313,7 @@
                     @endforeach
 
                 </div>
-            </div>
+            </x-dashboard.accent-card>
         </form>
 
     </div>

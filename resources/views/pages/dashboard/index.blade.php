@@ -18,6 +18,12 @@
         ];
     @endphp
 
+    <x-dashboard.accent-card
+        accent-index="0"
+        shell-overflow="visible"
+        class="flex min-h-0 h-full flex-col overflow-hidden text-base leading-relaxed md:text-lg"
+        padding="p-5 lg:p-6"
+    >
     <div
         x-data="{
             showStatusModal: false,
@@ -119,12 +125,14 @@
                 return map[category] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
             },
         }"
-        class="flex min-h-0 h-full flex-col overflow-hidden text-base leading-relaxed md:text-lg"
+        class="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
     <div class="grid shrink-0 grid-cols-1 gap-4 lg:grid-cols-4">
-        <button type="button" @click="openStatusModal('planned', 'Planned')" class="content-card p-4 text-left">
-            <p class="text-base font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-400">Planned</p>
-            <p class="mt-2 text-4xl font-bold text-gray-800 dark:text-white/90">{{ $projectsByStatus['planned'] }}</p>
+        <button type="button" @click="openStatusModal('planned', 'Planned')" class="block w-full rounded-2xl p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950">
+            <x-dashboard.accent-card accent-index="1" shell-overflow="hidden" class="text-left" padding="p-4">
+                <p class="text-base font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-400">Planned</p>
+                <p class="mt-2 text-4xl font-bold text-gray-800 dark:text-white/90">{{ $projectsByStatus['planned'] }}</p>
+            </x-dashboard.accent-card>
         </button>
         <button type="button" @click="openStatusModal('in_progress', 'In Progress')" class="rounded-2xl border border-yellow-200 bg-yellow-50/60 p-4 text-left dark:border-yellow-800/60 dark:bg-yellow-900/10">
             <p class="text-base font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-300">In Progress</p>
@@ -142,7 +150,7 @@
 
     <div class="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-3">
         <div class="grid min-h-0 grid-cols-1 gap-4 xl:col-span-2 xl:grid-cols-2">
-            <div class="flex min-h-0 flex-col content-card p-5">
+            <x-dashboard.accent-card accent-index="2" shell-overflow="hidden" class="flex min-h-0 flex-col" padding="p-5">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Todo Project & Step</h3>
                 </div>
@@ -252,9 +260,9 @@
                 <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-800">
                     {{ $todoProjects->onEachSide(2)->links() }}
                 </div>
-            </div>
+            </x-dashboard.accent-card>
 
-            <div class="flex min-h-0 flex-col content-card p-5">
+            <x-dashboard.accent-card accent-index="3" shell-overflow="hidden" class="flex min-h-0 flex-col" padding="p-5">
                 <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Mendekati Deadline</h3>
                 <p class="mt-1 text-base text-gray-500 dark:text-gray-400">
                     Project dan step prioritas dengan deadline terdekat.
@@ -352,7 +360,7 @@
                 <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-800">
                     {{ $upcomingDeadlines->onEachSide(2)->links() }}
                 </div>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
         <div class="min-h-0"
@@ -421,7 +429,7 @@
                     });
                 },
             }">
-            <div class="flex h-full min-h-0 flex-col content-card p-5">
+            <x-dashboard.accent-card accent-index="4" shell-overflow="hidden" class="flex h-full min-h-0 flex-col" padding="p-5">
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Timeline Projects</h3>
                     <div class="flex items-center gap-2">
@@ -497,12 +505,12 @@
                         </div>
                     </template>
                 </div>
-            </div>
+            </x-dashboard.accent-card>
         </div>
     </div>
 
     <div x-show="showTodoProjectModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoProjectModal = false">
-        <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+        <x-dashboard.accent-card accent-index="5" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Project</h4>
                 <button type="button" @click="showTodoProjectModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -582,11 +590,11 @@
                     <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Simpan Update Project</button>
                 </div>
             </form>
-        </div>
+        </x-dashboard.accent-card>
     </div>
 
     <div x-show="showTodoStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoStepModal = false">
-        <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+        <x-dashboard.accent-card accent-index="6" class="max-h-[90vh] w-full max-w-4xl overflow-y-auto" padding="p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Step Project</h4>
                 <button type="button" @click="showTodoStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -640,11 +648,11 @@
                     <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Simpan Update Step</button>
                 </div>
             </form>
-        </div>
+        </x-dashboard.accent-card>
     </div>
 
     <div x-show="showStatusModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStatusModal = false">
-        <div class="max-h-[90vh] w-full max-w-7xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+        <x-dashboard.accent-card accent-index="7" class="max-h-[90vh] w-full max-w-7xl overflow-y-auto" padding="p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Project - <span x-text="statusLabel"></span></h4>
                 <button type="button" @click="showStatusModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -705,7 +713,8 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </x-dashboard.accent-card>
     </div>
     </div>
+    </x-dashboard.accent-card>
 @endsection

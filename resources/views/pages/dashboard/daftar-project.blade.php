@@ -6,8 +6,15 @@
         $openProjectFromQuery = request()->integer('open_project');
     @endphp
 
-    <div
-        x-data="{
+    <x-dashboard.accent-card
+        accent-index="0"
+        shell-overflow="visible"
+        class="flex min-h-0 h-full flex-col"
+        padding="p-5 lg:p-6"
+    >
+        <div
+            class="flex min-h-0 flex-1 flex-col"
+            x-data="{
             openProjectId: @js($openProjectFromQuery > 0 ? $openProjectFromQuery : null),
             showProjectModal: false,
             showStepModal: false,
@@ -109,8 +116,7 @@
                 this.showReportModal = false;
             },
         }"
-        class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6"
-    >
+        >
         @if (session('status'))
             <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
                 {{ session('status') }}
@@ -124,7 +130,8 @@
             </p>
         </div>
 
-        <form method="GET" action="{{ route('admin.daftar-project.index') }}" x-ref="reportForm" class="mb-4 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+        <x-dashboard.accent-card accent-index="1" class="mb-4" padding="p-3">
+        <form method="GET" action="{{ route('admin.daftar-project.index') }}" x-ref="reportForm">
             <input type="hidden" name="use_ai_summary" x-model="reportUseAi" />
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
                 <div>
@@ -200,6 +207,7 @@
                 </a>
             </div>
         </form>
+        </x-dashboard.accent-card>
 
         <div class="min-h-0 flex-1 overflow-auto">
             <table class="min-w-full table-fixed border-collapse">
@@ -336,7 +344,7 @@
 
                         <tr x-show="openProjectId === {{ $project->id }}" x-transition.opacity class="border-b border-gray-100 dark:border-gray-800">
                             <td colspan="10" class="px-3 pb-4 pt-2">
-                                <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-white/[0.02]">
+                                <div class="rounded-xl border border-gray-200/80 bg-white/60 p-3 backdrop-blur-sm dark:border-slate-600/35 dark:bg-slate-950/75 dark:backdrop-blur-md">
                                     <div class="mb-2 flex items-center justify-between gap-2">
                                         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Step Project</h4>
                                         @if ($canManageProjects)
@@ -364,7 +372,7 @@
                                                         default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
                                                     };
                                                 @endphp
-                                                <div class="content-card-tight px-3 py-2">
+                                                <div class="rounded-lg border border-gray-200/80 bg-white/55 px-3 py-2 backdrop-blur-sm dark:border-slate-600/35 dark:bg-slate-950/60">
                                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                                         <p class="text-sm font-medium text-gray-800 dark:text-white/90">
                                                             {{ $loop->iteration }}. {{ $step->step_name }}
@@ -441,7 +449,7 @@
         </div>
 
         <div x-show="showProjectModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showProjectModal = false">
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="2" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Project</h4>
                     <button type="button" @click="showProjectModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -521,11 +529,11 @@
                         <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Simpan Update Project</button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
         <div x-show="showStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStepModal = false">
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="3" class="max-h-[90vh] w-full max-w-4xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Step Project</h4>
                     <button type="button" @click="showStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -579,11 +587,11 @@
                         <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Simpan Update Step</button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
         <div x-show="showAddStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddStepModal = false">
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="4" class="max-h-[90vh] w-full max-w-4xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Step Project</h4>
                     <button type="button" @click="showAddStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -636,10 +644,10 @@
                         <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Tambah Step</button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
         <div x-show="showReportModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showReportModal = false">
-            <div class="w-full max-w-md content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="5" class="w-full max-w-md" padding="p-5">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Generate Laporan</h4>
                 <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     Pilih metode pembuatan summary project pada laporan PDF.
@@ -655,10 +663,10 @@
                         Batal
                     </button>
                 </div>
-            </div>
+            </x-dashboard.accent-card>
         </div>
         <div x-show="showOfficerProjectFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerProjectFollowUpModal = false">
-            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="2" class="w-full max-w-2xl" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Project</h4>
                     <button type="button" @click="showOfficerProjectFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -672,10 +680,10 @@
                     </div>
                     <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">Simpan Tindak Lanjut Project</button>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
         <div x-show="showOfficerStepFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerStepFollowUpModal = false">
-            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="3" class="w-full max-w-2xl" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Step</h4>
                     <button type="button" @click="showOfficerStepFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -689,12 +697,13 @@
                     </div>
                     <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">Simpan Tindak Lanjut Step</button>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
         <datalist id="pic-user-options">
             @foreach ($picUsers as $picUser)
                 <option value="{{ $picUser->name }}"></option>
             @endforeach
         </datalist>
-    </div>
+        </div>
+    </x-dashboard.accent-card>
 @endsection

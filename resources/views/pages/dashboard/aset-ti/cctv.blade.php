@@ -21,8 +21,15 @@
         };
     @endphp
 
-    <div class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6"
-        x-data="{
+    <x-dashboard.accent-card
+        accent-index="0"
+        shell-overflow="visible"
+        class="flex min-h-0 h-full flex-col"
+        padding="p-5 lg:p-6"
+    >
+        <div
+            class="flex min-h-0 flex-1 flex-col"
+            x-data="{
             showAddForm: @js($errors->any() && old('branch')),
             showImportModal: @js($errors->has('import_file')),
             showEditModal: false,
@@ -113,10 +120,10 @@
                 @method('DELETE')
             </form>
 
-            <div class="min-h-0 flex-1 overflow-y-auto">
-                <table class="w-full table-fixed border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-800">
+            <div class="min-h-0 flex-1 overflow-y-auto overflow-x-auto">
+                <table class="w-full table-fixed border-separate border-spacing-0">
+                    <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-white dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
+                        <tr>
                             <th class="w-[8%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                 <a href="{{ $sortUrl('branch') }}" class="inline-flex items-center gap-1 hover:text-brand-500">Cabang <span>{{ $sortIndicator('branch') }}</span></a>
                             </th>
@@ -228,7 +235,7 @@
         </div>
 
         <div x-show="showImportModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showImportModal = false">
-            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="1" class="w-full max-w-2xl" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Import Data CCTV (Excel)</h4>
                     <button type="button" @click="showImportModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -251,11 +258,11 @@
                         </button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
         <div x-show="showAddForm" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddForm = false">
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="2" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Perangkat CCTV</h4>
                     <button type="button" @click="showAddForm = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -301,11 +308,11 @@
                         </button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
         <div x-show="showEditModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showEditModal = false">
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="3" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Edit Perangkat CCTV</h4>
                     <button type="button" @click="showEditModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -357,7 +364,8 @@
                         </button>
                     </div>
                 </form>
-            </div>
+            </x-dashboard.accent-card>
         </div>
-    </div>
+        </div>
+    </x-dashboard.accent-card>
 @endsection

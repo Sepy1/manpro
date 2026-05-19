@@ -15,6 +15,15 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            keyframes: {
+                'metallic-shimmer': {
+                    '0%': { transform: 'translateX(-130%) skewX(-14deg)' },
+                    '100%': { transform: 'translateX(230%) skewX(-14deg)' },
+                },
+            },
+            animation: {
+                'metallic-shimmer': 'metallic-shimmer 14s ease-in-out infinite',
+            },
         },
     },
 

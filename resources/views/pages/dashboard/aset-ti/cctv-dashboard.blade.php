@@ -130,16 +130,16 @@
     }">
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div class="space-y-4">
-                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('brand')">
-                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Merk DVR</h3>
+                <x-dashboard.accent-card accent-index="0" class="cursor-pointer" padding="p-5" @click="openChart('brand')">
+                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white">Statistik Merk DVR</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
                             x-data="createDonut(@js($brandDonut['items']))"
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                             style="background: conic-gradient({{ $brandDonut['gradient'] }});">
-                            <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200">
+                            <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-50">
                                 {{ $brandDonut['sum'] }} Unit
                             </div>
                             <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
@@ -161,18 +161,18 @@
                             @endforelse
                         </div>
                     </div>
-                </div>
+                </x-dashboard.accent-card>
 
-                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('harddisk')">
-                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Harddisk</h3>
+                <x-dashboard.accent-card accent-index="1" class="cursor-pointer" padding="p-5" @click="openChart('harddisk')">
+                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white">Statistik Harddisk</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
                             x-data="createDonut(@js($harddiskDonut['items']))"
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                             style="background: conic-gradient({{ $harddiskDonut['gradient'] }});">
-                            <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200">
+                            <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-50">
                                 {{ $harddiskDonut['sum'] }} Kantor
                             </div>
                             <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
@@ -194,19 +194,19 @@
                             @endforelse
                         </div>
                     </div>
-                </div>
+                </x-dashboard.accent-card>
             </div>
             <div class="space-y-4">
-                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('monitor')">
-                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Monitor / TV</h3>
+                <x-dashboard.accent-card accent-index="2" class="cursor-pointer" padding="p-5" @click="openChart('monitor')">
+                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white">Monitor / TV</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
                             x-data="createDonut(@js($monitorDonut['items']))"
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                             style="background: conic-gradient({{ $monitorDonut['gradient'] }});">
-                            <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200">
+                            <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-50">
                                 {{ $monitorDonut['sum'] }} Kantor
                             </div>
                             <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
@@ -228,17 +228,17 @@
                             @endforelse
                         </div>
                     </div>
-                </div>
-                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('channel')">
-                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Jumlah Channel</h3>
+                </x-dashboard.accent-card>
+                <x-dashboard.accent-card accent-index="3" class="cursor-pointer" padding="p-5" @click="openChart('channel')">
+                    <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white">Statistik Jumlah Channel</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
                             x-data="createDonut(@js($channelDonut['items']))"
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                             style="background: conic-gradient({{ $channelDonut['gradient'] }});">
-                            <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200">
+                            <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-50">
                                 {{ $channelDonut['sum'] }} Kantor
                             </div>
                             <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
@@ -260,18 +260,18 @@
                             @endforelse
                         </div>
                     </div>
-                </div>
+                </x-dashboard.accent-card>
             </div>
-            <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('connection')">
-                <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Cloud</h3>
+            <x-dashboard.accent-card accent-index="4" class="cursor-pointer" padding="p-5" @click="openChart('connection')">
+                <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white">Statistik Cloud</h3>
                 <div class="flex items-center gap-6">
                     <div class="relative h-44 w-44 shrink-0 rounded-full"
                         x-data="createDonut(@js($connectionDonut['items']))"
                         @mousemove="onMove($event)"
                         @mouseleave="clear()"
                         style="background: conic-gradient({{ $connectionDonut['gradient'] }});">
-                        <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200">
+                        <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-50">
                             {{ $connectionDonut['sum'] }} Kantor
                         </div>
                         <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
@@ -293,12 +293,12 @@
                         @endforelse
                     </div>
                 </div>
-            </div>
+            </x-dashboard.accent-card>
         </div>
 
-        <div class="content-card p-5">
+        <x-dashboard.accent-card accent-index="5" padding="p-5">
             <div class="mb-3 flex items-center justify-between gap-2">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
                     Daftar Kantor Yang Belum Melakukan Update Data
                 </h3>
                 <a href="{{ route('admin.aset-ti.cctv.dashboard.export-missing') }}" data-no-transition
@@ -341,13 +341,13 @@
             <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-800">
                 {{ $missingDvrRows->links() }}
             </div>
-        </div>
+        </x-dashboard.accent-card>
 
         <div x-show="showChartModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4"
             @click.self="showChartModal = false">
-            <div class="w-full max-w-5xl content-card p-6 dark:border-gray-800 dark:bg-gray-900">
+            <x-dashboard.accent-card accent-index="2" class="w-full max-w-5xl" padding="p-6">
                 <div class="mb-4 flex items-center justify-between">
-                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90" x-text="currentChart()?.title ?? 'Detail Chart'"></h4>
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white" x-text="currentChart()?.title ?? 'Detail Chart'"></h4>
                     <button type="button" @click="showChartModal = false"
                         class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">
                         Tutup
@@ -361,8 +361,8 @@
                             @mousemove="onMove($event)"
                             @mouseleave="clear()"
                         :style="`background: conic-gradient(${gradient});`">
-                            <div class="absolute inset-[22%] rounded-full bg-white dark:bg-gray-900"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-gray-200"
+                            <div class="absolute inset-[22%] rounded-full bg-white/95 dark:bg-slate-900"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-gray-50"
                                 x-text="`${currentChart()?.sum ?? 0} ${currentChart()?.unit ?? 'Unit'}`"></div>
                             <div x-show="hover" x-cloak class="pointer-events-none absolute z-20 rounded-md bg-gray-900/90 px-2 py-1 text-[11px] text-white"
                                 :style="`left:${tipX}px; top:${tipY}px;`">
@@ -382,7 +382,7 @@
                         </div>
                     </div>
                 </template>
-            </div>
+            </x-dashboard.accent-card>
         </div>
     </div>
 @endsection
