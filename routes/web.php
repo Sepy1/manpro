@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\Admin\ProjectController;
-use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\AsetTiController;
+use App\Http\Controllers\Admin\AssistantChatController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\ProfileManagementController;
+use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -30,6 +31,10 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
+
+    Route::post('/assistant/chat', [AssistantChatController::class, 'chat'])
+        ->middleware(['throttle:30,1'])
+        ->name('assistant.chat');
 
     Route::get('/insert-project', [ProjectController::class, 'create'])->name('insert-project.create');
     Route::post('/insert-project', [ProjectController::class, 'store'])->name('insert-project.store');

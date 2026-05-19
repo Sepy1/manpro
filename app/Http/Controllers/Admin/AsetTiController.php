@@ -25,6 +25,16 @@ class AsetTiController extends Controller
         ));
     }
 
+    /**
+     * Baris metrik dashboard Data Center untuk konsumen internal (AI assistant).
+     */
+    public function getDataCenterRowsForAssistant(): array
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        return $this->buildDataCenterRows();
+    }
+
     public function dataCenterMetrics(): JsonResponse
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
@@ -154,7 +164,7 @@ class AsetTiController extends Controller
                 ->timeout(60)
                 ->acceptJson()
                 ->withOptions(['verify' => $verifySsl])
-                ->get(rtrim($baseUrl, '/') . '/api/historicdata.json', [
+                ->get(rtrim($baseUrl, '/').'/api/historicdata.json', [
                     'id' => $objid,
                     'sdate' => $startDate->format('Y-m-d-H-i-s'),
                     'edate' => $endDate->format('Y-m-d-H-i-s'),
@@ -226,7 +236,7 @@ class AsetTiController extends Controller
             $response = Http::timeout(20)
                 ->acceptJson()
                 ->withOptions(['verify' => $verifySsl])
-                ->get(rtrim($baseUrl, '/') . '/api/table.json', [
+                ->get(rtrim($baseUrl, '/').'/api/table.json', [
                     'content' => 'sensors',
                     'output' => 'json',
                     // Selain traffic historis, metric diambil dari table sensors.

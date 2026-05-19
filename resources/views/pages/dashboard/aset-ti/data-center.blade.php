@@ -198,10 +198,6 @@
             return ticks;
         },
     }" class="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-            Pilih tab di bawah atau geser kiri/kanan pada area konten untuk berpindah halaman.
-        </p>
-
         <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2 dark:border-gray-700" role="tablist">
             <button type="button" role="tab" :aria-selected="activePanel === 0" @click="setDcPanel(0)"
                 class="rounded-t-lg px-3 py-2 text-sm font-medium transition"

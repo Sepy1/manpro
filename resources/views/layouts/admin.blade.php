@@ -55,6 +55,8 @@
             >
                 @yield('admin-content')
             </main>
+
+            <x-assistant.chat-widget />
         </div>
     </div>
 @endsection
