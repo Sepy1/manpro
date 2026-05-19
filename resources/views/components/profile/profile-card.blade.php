@@ -1,7 +1,7 @@
 <div x-data="{saveProfile(){
     console.log('Saving profile...');
 }}">
-    <div class="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">
+    <div class="content-card mb-6 p-5 lg:p-6">
         <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div class="flex w-full flex-col items-center gap-6 xl:flex-row">
                 <div class="h-20 w-20 overflow-hidden rounded-full border border-gray-200 dark:border-gray-800">

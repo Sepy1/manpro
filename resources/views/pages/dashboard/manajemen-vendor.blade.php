@@ -10,7 +10,7 @@
             </div>
         @endif
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="content-card p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Vendor</h3>
                 <button type="button" @click="showAddForm = !showAddForm"

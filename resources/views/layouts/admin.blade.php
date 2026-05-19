@@ -6,7 +6,8 @@
         @include('layouts.backdrop')
 
         <div
-            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden"
+            id="page-transition-root"
+            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden opacity-100 blur-0 transition-[margin,filter,opacity] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] will-change-[filter,opacity]"
             :class="{
                 'xl:ml-[290px]': $store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen,
                 'xl:ml-[90px]': !$store.sidebar.isExpanded && !$store.sidebar.isHovered

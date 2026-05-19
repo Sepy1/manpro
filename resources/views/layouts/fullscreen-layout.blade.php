@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('layouts.partials.theme-init')
 
     <title>{{ $title ?? 'Dashboard' }} | Manpro</title>
 
@@ -46,16 +47,9 @@
             });
         });
     </script>
-
-    <script>
-        (function() {
-            localStorage.setItem('theme', 'dark');
-            document.documentElement.classList.add('dark');
-        })();
-    </script>
 </head>
 
-<body class="h-screen overflow-hidden dark bg-gray-900 text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
+<body class="h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-gray-900 dark:text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
 const checkMobile = () => {
     if (window.innerWidth < 1280) {
         $store.sidebar.setMobileOpen(false);
@@ -96,9 +90,7 @@ document.addEventListener('click', (event) => {
     <x-common.preloader/>
     {{-- preloader end --}}
 
-    <div id="page-transition-root" class="transition-[filter,opacity] duration-300 ease-out opacity-100 blur-0 will-change-[filter,opacity]">
-        @yield('content')
-    </div>
+    @yield('content')
 
 </body>
 

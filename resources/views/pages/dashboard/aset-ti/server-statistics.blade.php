@@ -256,7 +256,7 @@
                 : (' · ' + n.toFixed(2) + ' GB');
             return pct + gbSuffix;
         },
-    }" class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+    }" class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6">
         <div class="mb-4">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Statistik Server Bulan Berjalan (PRTG)</h3>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-show="hasSubmitted">

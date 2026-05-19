@@ -8,7 +8,7 @@
 @endphp
 
 <aside id="sidebar"
-    class="fixed flex flex-col mt-0 top-0 px-5 left-0 bg-slate-50 text-slate-800 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-800 h-screen z-99999 border-r border-slate-200"
+    class="fixed left-0 top-0 z-[99999] flex h-screen flex-col border-r border-slate-200/80 bg-slate-50/95 px-4 text-slate-800 shadow-xl shadow-slate-900/[0.06] backdrop-blur-md transition-[width,transform,box-shadow] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] dark:border-gray-800/80 dark:bg-gray-900/95 dark:text-gray-200 dark:shadow-black/40 sm:px-5 rounded-r-2xl"
     x-data="{
         openSubmenus: {},
         init() {
@@ -85,8 +85,8 @@
             'xl:justify-center' : 'justify-start'">
             <button
                 type="button"
-                class="flex shrink-0 items-center justify-center w-10 h-10 text-slate-600 border border-slate-200 rounded-lg dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 xl:hidden"
-                :class="{ 'bg-slate-100 dark:bg-white/[0.03]': $store.sidebar.isMobileOpen }"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 text-slate-600 transition-all duration-200 hover:scale-105 hover:border-slate-300 hover:bg-white active:scale-95 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-white/[0.04] lg:h-11 lg:w-11 xl:hidden"
+                :class="{ 'border-sky-300/50 bg-sky-50 dark:border-sky-500/30 dark:bg-sky-500/10': $store.sidebar.isMobileOpen }"
                 @click="$store.sidebar.toggleMobileOpen()"
                 aria-label="Buka atau tutup menu">
                 <svg x-show="!$store.sidebar.isMobileOpen" width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -102,8 +102,8 @@
             </button>
             <button
                 type="button"
-                class="hidden xl:flex shrink-0 items-center justify-center w-10 h-10 text-slate-600 border border-slate-200 rounded-lg dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11"
-                :class="{ 'bg-slate-100 dark:bg-white/[0.03]': !$store.sidebar.isExpanded }"
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 text-slate-600 transition-all duration-200 hover:scale-105 hover:border-slate-300 hover:bg-white active:scale-95 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-white/[0.04] lg:h-11 lg:w-11 xl:flex"
+                :class="{ 'bg-slate-100/90 shadow-inner dark:bg-white/[0.04]': !$store.sidebar.isExpanded }"
                 @click="$store.sidebar.toggleExpanded()"
                 aria-label="Perlebar atau rapatkan sidebar">
                 <svg x-show="!$store.sidebar.isMobileOpen" width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -126,7 +126,7 @@
             </div>
             <span
                 x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
-                class="hidden xl:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-xs font-bold text-white"
+                class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-sky-600 text-xs font-bold text-white shadow-md ring-2 ring-white/20 transition-transform duration-200 hover:scale-105 xl:inline-flex"
             >
                 PM
             </span>
@@ -134,13 +134,13 @@
     </div>
 
     <!-- Navigation Menu -->
-    <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+    <div class="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain scroll-smooth">
         <nav class="mb-6">
             <div class="flex flex-col gap-4">
                 @foreach ($menuGroups as $groupIndex => $menuGroup)
                     <div>
                         <!-- Menu Group Title -->
-                        <h2 class="mb-4 text-xs uppercase flex leading-[20px] text-gray-400"
+                        <h2 class="mb-3 flex text-xs font-semibold uppercase leading-5 tracking-wider text-slate-400 transition-colors duration-200 dark:text-gray-500"
                             :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
                             'lg:justify-center' : 'justify-start'">
                             <template
@@ -165,25 +165,28 @@
                                             :class="[
                                                 isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ?
                                                 'menu-item-active' : 'menu-item-inactive',
-                                                !$store.sidebar.isExpanded && !$store.sidebar.isHovered ?
-                                                'xl:justify-center' : 'xl:justify-start'
+                                                !$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen ?
+                                                'xl:justify-center' : 'justify-start'
                                             ]">
 
                                             <!-- Icon -->
                                             <span :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }})
-                                                    ? 'text-sky-400'
+                                                    ? 'text-sky-500 dark:text-sky-400'
                                                     : 'text-slate-400 dark:text-gray-400'"
-                                                class="transition-colors duration-150">
+                                                class="transition-transform duration-200 group-hover:scale-110">
                                                 {!! MenuHelper::getIconSvg($item['icon']) !!}
                                             </span>
 
                                             <!-- Text -->
                                             <span
                                                 x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                                                x-transition:enter="transition ease-out duration-200"
+                                                x-transition:enter-start="opacity-0 -translate-x-1"
+                                                x-transition:enter-end="opacity-100 translate-x-0"
                                                 :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }})
-                                                    ? 'text-sky-400'
+                                                    ? 'text-sky-600 dark:text-sky-300'
                                                     : 'text-slate-700 dark:text-gray-200'"
-                                                class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
+                                                class="menu-item-text flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
                                                 {{ $item['name'] }}
                                                 @if (!empty($item['new']))
                                                     <span class="absolute right-10"
@@ -195,11 +198,30 @@
                                                 @endif
                                             </span>
 
+                                            <span
+                                                x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                                                class="ml-1 shrink-0 text-slate-400 transition-transform duration-200 dark:text-gray-500"
+                                                :class="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ? 'rotate-90 text-sky-500 dark:text-sky-400' : ''"
+                                                aria-hidden="true"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                                                    <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                                                </svg>
+                                            </span>
+
                                         </button>
 
                                         <!-- Submenu -->
-                                        <div x-show="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) && ($store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen)">
-                                            <ul class="mt-2 space-y-1 ml-9">
+                                        <div
+                                            x-show="isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) && ($store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen)"
+                                            x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0 -translate-y-1"
+                                            x-transition:enter-end="opacity-100 translate-y-0"
+                                            x-transition:leave="transition ease-in duration-150"
+                                            x-transition:leave-start="opacity-100 translate-y-0"
+                                            x-transition:leave-end="opacity-0 -translate-y-1"
+                                        >
+                                            <ul class="relative mt-2 space-y-0.5 border-l-2 border-slate-200/90 pl-3 ml-8 dark:border-gray-700/90">
                                                 @foreach ($item['subItems'] as $subItem)
                                                     <li>
                                                         @if (!empty($subItem['logout']))
@@ -213,12 +235,11 @@
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <a href="{{ $subItem['path'] }}" class="menu-dropdown-item"
+                                                            <a href="{{ $subItem['path'] }}" class="group/menu-sub menu-dropdown-item"
                                                                 :class="isActive('{{ $subItem['path'] }}') ?
                                                                     'menu-dropdown-item-active' :
-                                                                    'menu-dropdown-item-inactive'"
-                                                                :style="isActive('{{ $subItem['path'] }}') ? 'color: rgb(56 189 248);' : ''">
-                                                                <span class="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
+                                                                    'menu-dropdown-item-inactive'">
+                                                                <span class="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60 transition-opacity group-hover/menu-sub:opacity-100"></span>
                                                                 <span>{{ $subItem['name'] }}</span>
                                                                 <span class="flex items-center gap-1 ml-auto">
                                                                     @if (!empty($subItem['new']))
@@ -258,17 +279,20 @@
                                             <!-- Icon -->
                                             <span
                                                 :class="isActive('{{ $item['path'] }}')
-                                                    ? 'text-sky-400'
+                                                    ? 'text-sky-500 dark:text-sky-400'
                                                     : 'text-slate-400 dark:text-gray-400'"
-                                                class="transition-colors duration-150">
+                                                class="transition-transform duration-200 group-hover:scale-110">
                                                 {!! MenuHelper::getIconSvg($item['icon']) !!}
                                             </span>
 
                                             <!-- Text -->
                                             <span
                                                 x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                                                x-transition:enter="transition ease-out duration-200"
+                                                x-transition:enter-start="opacity-0 -translate-x-1"
+                                                x-transition:enter-end="opacity-100 translate-x-0"
                                                 :class="isActive('{{ $item['path'] }}')
-                                                    ? 'text-sky-400'
+                                                    ? 'text-sky-600 dark:text-sky-300'
                                                     : 'text-slate-700 dark:text-gray-200'"
                                                 class="menu-item-text flex items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
                                                 {{ $item['name'] }}
@@ -290,8 +314,33 @@
         </nav>
 
     </div>
-</aside>
 
-<!-- Mobile Overlay -->
-<div x-show="$store.sidebar.isMobileOpen" @click="$store.sidebar.setMobileOpen(false)"
-    class="fixed z-50 h-screen w-full bg-gray-900/50"></div>
+    <div class="mt-auto shrink-0 border-t border-slate-200/90 pt-3 dark:border-gray-800">
+        <button
+            type="button"
+            class="flex w-full items-center gap-2 rounded-xl py-2 text-left transition-all duration-200 hover:bg-slate-100/90 active:scale-[0.98] dark:hover:bg-white/[0.06]"
+            :class="[
+                (!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
+                'xl:justify-center' : 'justify-start xl:px-1'
+            ]"
+            @click="$store.theme.toggle()"
+            :aria-label="$store.theme.dark ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
+        >
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center text-slate-600 dark:text-gray-400">
+                {{-- Tema gelap aktif: tampilkan ikon matahari (beralih ke terang) --}}
+                <svg x-show="$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+                </svg>
+                {{-- Tema terang aktif: tampilkan ikon bulan (beralih ke gelap) --}}
+                <svg x-show="!$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+                </svg>
+            </span>
+            <span
+                x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                class="truncate text-sm font-semibold text-slate-700 dark:text-gray-200"
+                x-text="$store.theme.dark ? 'Tema terang' : 'Tema gelap'"
+            ></span>
+        </button>
+    </div>
+</aside>

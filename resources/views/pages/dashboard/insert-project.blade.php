@@ -23,7 +23,7 @@
             @csrf
 
             {{-- Card kiri --}}
-            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden content-card">
                 <div class="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 md:px-5">
                     <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Data Project</h3>
                 </div>
@@ -166,7 +166,7 @@
             </div>
 
             {{-- Card kanan --}}
-            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex min-h-0 h-full max-h-full min-w-0 flex-col overflow-hidden content-card">
                 <div class="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 md:px-5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Langkah Project</h3>

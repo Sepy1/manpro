@@ -4,6 +4,7 @@
 @php
     $currentYear = date('Y');
 @endphp
+  <div id="page-transition-root" class="opacity-100 blur-0 transition-[filter,opacity] duration-300 ease-out will-change-[filter,opacity]">
   <div class="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
       {{-- common grid shape --}}
       <x-common.common-grid-shape />
@@ -29,5 +30,6 @@
       <p class="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
           &copy; {{ $currentYear }} - TailAdmin
       </p>
+  </div>
   </div>
 @endsection

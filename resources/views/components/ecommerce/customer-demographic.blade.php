@@ -19,7 +19,7 @@
     $countriesList = !empty($countries) ? $countries : $defaultCountries;
 @endphp
 
-<div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+<div class="content-card p-5 sm:p-6">
     <div class="flex justify-between">
         <div>
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">

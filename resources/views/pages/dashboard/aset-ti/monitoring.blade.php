@@ -63,7 +63,7 @@
             if (percent < 50) return 'bg-amber-500';
             return 'bg-emerald-500';
         },
-    }" class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+    }" class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6">
         <div class="mb-4 flex items-center justify-between gap-2">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Monitoring Statistik Server (PRTG)</h3>
             <span class="text-xs text-gray-500 dark:text-gray-400">

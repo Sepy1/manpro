@@ -9,3 +9,72 @@ html {
 [x-cloak] {
     display: none !important;
 }
+
+@layer components {
+    /* Sidebar navigation (resources/views/layouts/sidebar.blade.php) */
+    .menu-item {
+        @apply relative flex w-full flex-nowrap items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200 ease-out;
+    }
+    .menu-item-inactive {
+        @apply text-slate-600 dark:text-gray-300;
+    }
+    .menu-item-inactive:hover {
+        @apply translate-x-0.5 bg-slate-100/90 dark:bg-white/[0.06];
+    }
+    .menu-item-active {
+        @apply bg-gradient-to-r from-sky-500/15 to-sky-400/5 text-sky-700 shadow-sm ring-1 ring-sky-500/20 dark:from-sky-500/20 dark:to-sky-400/10 dark:text-sky-300 dark:ring-sky-400/25;
+    }
+    .menu-dropdown-item {
+        @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200 ease-out;
+    }
+    .menu-dropdown-item-inactive {
+        @apply text-slate-600 dark:text-gray-400;
+    }
+    .menu-dropdown-item-inactive:hover {
+        @apply translate-x-1 bg-slate-100/80 dark:bg-white/[0.05];
+    }
+    .menu-dropdown-item-active {
+        @apply bg-sky-100/80 font-medium text-sky-700 dark:bg-sky-500/20 dark:text-sky-300;
+    }
+    .menu-dropdown-badge {
+        @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide;
+    }
+    .menu-dropdown-badge-active {
+        @apply bg-sky-500 text-white shadow-sm;
+    }
+    .menu-dropdown-badge-inactive {
+        @apply bg-slate-200 text-slate-600 dark:bg-gray-700 dark:text-gray-200;
+    }
+    .menu-dropdown-badge-pro {
+        @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide;
+    }
+    .menu-dropdown-badge-pro-active {
+        @apply bg-amber-500 text-white shadow-sm;
+    }
+    .menu-dropdown-badge-pro-inactive {
+        @apply bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200;
+    }
+
+    /**
+     * Kartu konten halaman — bayangan, ring halus, hover (perangkat pointer).
+     * Pakai kelas `content-card` mengganti pola rounded-2xl + border + bg-white.
+     */
+    .content-card {
+        @apply rounded-2xl border border-slate-200/85 bg-white shadow-lg shadow-slate-900/[0.05] ring-1 ring-slate-900/[0.035] transition-[box-shadow,ring-color] duration-300 ease-out dark:border-gray-800 dark:bg-white/[0.03] dark:shadow-black/35 dark:ring-white/[0.06];
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .content-card:hover {
+            @apply shadow-xl shadow-slate-900/[0.09] ring-slate-900/[0.06] dark:shadow-black/50 dark:ring-white/[0.09];
+        }
+    }
+
+    /* Kartu kecil / nested (filter chip, dsb.) */
+    .content-card-tight {
+        @apply rounded-lg border border-slate-200/85 bg-white/95 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.03] transition-[box-shadow] duration-200 dark:border-gray-700 dark:bg-gray-900/40 dark:shadow-black/20 dark:ring-white/[0.05];
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .content-card-tight:hover {
+            @apply shadow-md shadow-slate-900/[0.06] dark:shadow-black/30;
+        }
+    }
+}

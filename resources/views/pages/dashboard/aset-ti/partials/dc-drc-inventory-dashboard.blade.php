@@ -79,7 +79,7 @@
 >
     <div class="dc-drc-donut-grid grid min-h-0 flex-1 grid-cols-1 grid-rows-4 gap-2 overflow-hidden sm:grid-cols-2 sm:grid-rows-2">
         <div
-            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]"
+            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden content-card rounded-xl p-3 transition hover:border-brand-300"
             @click="openChart('host_type')"
         >
             <h3 class="mb-2 shrink-0 text-xs font-semibold leading-tight text-gray-800 dark:text-white/90">Baremetal vs VM Host</h3>
@@ -120,7 +120,7 @@
         </div>
 
         <div
-            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]"
+            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden content-card rounded-xl p-3 transition hover:border-brand-300"
             @click="openChart('brand')"
         >
             <h3 class="mb-2 shrink-0 text-xs font-semibold leading-tight text-gray-800 dark:text-white/90">NIC / Model</h3>
@@ -161,7 +161,7 @@
         </div>
 
         <div
-            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]"
+            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden content-card rounded-xl p-3 transition hover:border-brand-300"
             @click="openChart('vm_per_host')"
         >
             <h3 class="mb-2 shrink-0 text-xs font-semibold leading-tight text-gray-800 dark:text-white/90">VM per VM Host</h3>
@@ -202,7 +202,7 @@
         </div>
 
         <div
-            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]"
+            class="dc-drc-donut-card flex min-h-0 cursor-pointer flex-col overflow-hidden content-card rounded-xl p-3 transition hover:border-brand-300"
             @click="openChart('os')"
         >
             <h3 class="mb-2 shrink-0 text-xs font-semibold leading-tight text-gray-800 dark:text-white/90">Sistem operasi</h3>
@@ -257,7 +257,7 @@
             @click.self="showChartModal = false"
         >
             <div
-                class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900"
+                class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900"
                 @click.stop
             >
             <div class="mb-4 flex items-center justify-between">

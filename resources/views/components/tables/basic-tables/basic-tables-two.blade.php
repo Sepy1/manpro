@@ -98,7 +98,7 @@
         }
     }
 }">
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white pt-4 dark:border-white/[0.05] dark:bg-white/[0.03]">
+    <div class="overflow-hidden content-card pt-4">
         <!-- Header -->
         <div class="flex flex-col gap-4 px-6 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

@@ -33,7 +33,7 @@
             </div>
         @endif
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="content-card p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Profil User</h3>
             </div>
@@ -76,7 +76,7 @@
         </div>
 
         <div x-show="showEditProfileModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showEditProfileModal = false">
-            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Edit Profile</h4>
                     <button type="button" @click="showEditProfileModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -105,7 +105,7 @@
         </div>
 
         <div x-show="showPasswordModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showPasswordModal = false">
-            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Ubah Password</h4>
                     <button type="button" @click="showPasswordModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>

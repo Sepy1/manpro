@@ -233,7 +233,7 @@
                     </div>
 
                     <div class="min-h-0 flex-1 overflow-y-auto pr-1">
-            <div x-show="loading" x-cloak class="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300">
+            <div x-show="loading" x-cloak class="content-card p-5 text-sm text-gray-500 dark:text-gray-300">
                 Memuat dashboard Data Center...
             </div>
             <div x-show="errorMessage" x-cloak class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
@@ -241,14 +241,14 @@
             </div>
 
             <template x-if="!loading && rows.length === 0">
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300">
+                <div class="content-card p-5 text-sm text-gray-500 dark:text-gray-300">
                     Belum ada perangkat server dengan OBJID metric.
                 </div>
             </template>
 
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <template x-for="row in rows" :key="row.server">
-                    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+                    <div class="content-card p-5">
                         <h4 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90" x-text="row.server"></h4>
 
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">

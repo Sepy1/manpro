@@ -122,7 +122,7 @@
         class="flex min-h-0 h-full flex-col overflow-hidden text-base leading-relaxed md:text-lg"
     >
     <div class="grid shrink-0 grid-cols-1 gap-4 lg:grid-cols-4">
-        <button type="button" @click="openStatusModal('planned', 'Planned')" class="rounded-2xl border border-gray-200 bg-white p-4 text-left dark:border-gray-800 dark:bg-white/[0.03]">
+        <button type="button" @click="openStatusModal('planned', 'Planned')" class="content-card p-4 text-left">
             <p class="text-base font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-400">Planned</p>
             <p class="mt-2 text-4xl font-bold text-gray-800 dark:text-white/90">{{ $projectsByStatus['planned'] }}</p>
         </button>
@@ -142,7 +142,7 @@
 
     <div class="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-3">
         <div class="grid min-h-0 grid-cols-1 gap-4 xl:col-span-2 xl:grid-cols-2">
-            <div class="flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex min-h-0 flex-col content-card p-5">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Todo Project & Step</h3>
                 </div>
@@ -254,7 +254,7 @@
                 </div>
             </div>
 
-            <div class="flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex min-h-0 flex-col content-card p-5">
                 <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Mendekati Deadline</h3>
                 <p class="mt-1 text-base text-gray-500 dark:text-gray-400">
                     Project dan step prioritas dengan deadline terdekat.
@@ -421,7 +421,7 @@
                     });
                 },
             }">
-            <div class="flex h-full min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex h-full min-h-0 flex-col content-card p-5">
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Timeline Projects</h3>
                     <div class="flex items-center gap-2">
@@ -502,7 +502,7 @@
     </div>
 
     <div x-show="showTodoProjectModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoProjectModal = false">
-        <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Project</h4>
                 <button type="button" @click="showTodoProjectModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -586,7 +586,7 @@
     </div>
 
     <div x-show="showTodoStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showTodoStepModal = false">
-        <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Step Project</h4>
                 <button type="button" @click="showTodoStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -644,7 +644,7 @@
     </div>
 
     <div x-show="showStatusModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStatusModal = false">
-        <div class="max-h-[90vh] w-full max-w-7xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div class="max-h-[90vh] w-full max-w-7xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Project - <span x-text="statusLabel"></span></h4>
                 <button type="button" @click="showStatusModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>

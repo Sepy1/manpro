@@ -109,7 +109,7 @@
                 this.showReportModal = false;
             },
         }"
-        class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
+        class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6"
     >
         @if (session('status'))
             <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
@@ -364,7 +364,7 @@
                                                         default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
                                                     };
                                                 @endphp
-                                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900/40">
+                                                <div class="content-card-tight px-3 py-2">
                                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                                         <p class="text-sm font-medium text-gray-800 dark:text-white/90">
                                                             {{ $loop->iteration }}. {{ $step->step_name }}
@@ -441,7 +441,7 @@
         </div>
 
         <div x-show="showProjectModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showProjectModal = false">
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Project</h4>
                     <button type="button" @click="showProjectModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -525,7 +525,7 @@
         </div>
 
         <div x-show="showStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showStepModal = false">
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Step Project</h4>
                     <button type="button" @click="showStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -583,7 +583,7 @@
         </div>
 
         <div x-show="showAddStepModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddStepModal = false">
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Step Project</h4>
                     <button type="button" @click="showAddStepModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -639,7 +639,7 @@
             </div>
         </div>
         <div x-show="showReportModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showReportModal = false">
-            <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-md content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Generate Laporan</h4>
                 <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     Pilih metode pembuatan summary project pada laporan PDF.
@@ -658,7 +658,7 @@
             </div>
         </div>
         <div x-show="showOfficerProjectFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerProjectFollowUpModal = false">
-            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Project</h4>
                     <button type="button" @click="showOfficerProjectFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -675,7 +675,7 @@
             </div>
         </div>
         <div x-show="showOfficerStepFollowUpModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showOfficerStepFollowUpModal = false">
-            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Update Tindak Lanjut Step</h4>
                     <button type="button" @click="showOfficerStepFollowUpModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>

@@ -130,7 +130,7 @@
     }">
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div class="space-y-4">
-                <div class="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]" @click="openChart('brand')">
+                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('brand')">
                     <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Merk DVR</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
@@ -163,7 +163,7 @@
                     </div>
                 </div>
 
-                <div class="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]" @click="openChart('harddisk')">
+                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('harddisk')">
                     <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Harddisk</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div class="space-y-4">
-                <div class="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]" @click="openChart('monitor')">
+                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('monitor')">
                     <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Monitor / TV</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
@@ -229,7 +229,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]" @click="openChart('channel')">
+                <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('channel')">
                     <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Jumlah Channel</h3>
                     <div class="flex items-center gap-6">
                         <div class="relative h-44 w-44 shrink-0 rounded-full"
@@ -262,7 +262,7 @@
                     </div>
                 </div>
             </div>
-            <div class="cursor-pointer rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03]" @click="openChart('connection')">
+            <div class="cursor-pointer content-card p-5 transition hover:border-brand-300" @click="openChart('connection')">
                 <h3 class="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">Statistik Cloud</h3>
                 <div class="flex items-center gap-6">
                     <div class="relative h-44 w-44 shrink-0 rounded-full"
@@ -296,7 +296,7 @@
             </div>
         </div>
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="content-card p-5">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
                     Daftar Kantor Yang Belum Melakukan Update Data
@@ -345,7 +345,7 @@
 
         <div x-show="showChartModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4"
             @click.self="showChartModal = false">
-            <div class="w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-5xl content-card p-6 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90" x-text="currentChart()?.title ?? 'Detail Chart'"></h4>
                     <button type="button" @click="showChartModal = false"

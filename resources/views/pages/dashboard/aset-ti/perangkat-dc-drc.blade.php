@@ -21,7 +21,7 @@
         };
     @endphp
 
-    <div class="flex min-h-0 h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
+    <div class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6"
         x-data="{
             showAddForm: @js($errors->any() && old('server_name')),
             showImportModal: @js($errors->has('import_file')),
@@ -259,7 +259,7 @@
                                         @else
                                             <div class="space-y-2">
                                                 @foreach ($host->hostedVms as $vm)
-                                                    <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-900/40">
+                                                    <div class="content-card-tight px-3 py-2">
                                                         <div class="flex items-center justify-between gap-2">
                                                             <div class="min-w-0">
                                                                 <p class="truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ $vm->server_name }}</p>
@@ -384,7 +384,7 @@
         </div>
 
         <div x-show="showImportModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showImportModal = false">
-            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="w-full max-w-2xl content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Import Perangkat DC/DRC (Excel)</h4>
                     <button type="button" @click="showImportModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -411,7 +411,7 @@
         </div>
 
         <div x-show="showAddForm" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddForm = false">
-            <div class="max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-6xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Perangkat DC/DRC</h4>
                     <button type="button" @click="showAddForm = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
@@ -430,7 +430,7 @@
         </div>
 
         <div x-show="showEditModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showEditModal = false">
-            <div class="max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div class="max-h-[90vh] w-full max-w-6xl overflow-y-auto content-card p-5 dark:border-gray-800 dark:bg-gray-900">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Edit Perangkat DC/DRC</h4>
                     <button type="button" @click="showEditModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>

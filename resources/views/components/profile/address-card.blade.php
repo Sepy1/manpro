@@ -1,7 +1,7 @@
 <div x-data="{saveProfile(){
     console.log('Saving profile...');
 }}">
-    <div class="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+    <div class="content-card p-5 lg:p-6">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">Address</h4>
@@ -47,7 +47,7 @@
     </div>
     <x-ui.modal x-data="{ open: false }" @open-profile-address-modal.window="open = true" :isOpen="false" class="max-w-[700px]">
         <div
-            class="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+            class="no-scrollbar content-card relative w-full max-w-[700px] overflow-y-auto rounded-3xl p-4 dark:bg-gray-900 lg:p-11">
             <div class="px-2 pr-14">
                 <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
                     Edit Address
