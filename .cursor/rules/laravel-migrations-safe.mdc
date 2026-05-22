@@ -1,0 +1,11 @@
+---
+description: Laravel database changes must use migrate only — never destructive refresh/fresh unless user explicitly asks
+alwaysApply: true
+---
+
+# Migrasi database (Laravel)
+
+- Untuk menyelaraskan schema setelah ada file migrasi baru, gunakan **`php artisan migrate`** saja (tanpa opsi menghapus data).
+- **Jangan menjalankan** `php artisan migrate:fresh`, **`migrate:refresh`**, **`migrate:reset`**, atau perintah sejenis yang **menghapus / mengosongkan tabel atau data**, kecuali **pengguna secara eksplisit meminta** perintah itu dalam pesannya pada percakapan yang sama.
+
+Jika tes atau lingkungan khusus butuh DB bersih: minta pengguna menyetujuinya secara tegas dulu atau arahkan mereka menjalankan perintah itu sendiri dari mesin/database yang tidak memuat data penting.

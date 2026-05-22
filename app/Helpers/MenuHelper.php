@@ -74,6 +74,16 @@ class MenuHelper
                 ],
             ];
             $items[] = [
+                'icon' => 'forms',
+                'name' => 'CR Eksternal',
+                'subItems' => [
+                    [
+                        'name' => 'Daftar CR Eksternal',
+                        'path' => '/admin/cr-eksternal',
+                    ],
+                ],
+            ];
+            $items[] = [
                 'icon' => 'pages',
                 'name' => 'Parameter',
                 'subItems' => [
@@ -84,6 +94,18 @@ class MenuHelper
                     [
                         'name' => 'Manajemen Divisi',
                         'path' => '/admin/manajemen-divisi',
+                    ],
+                    [
+                        'name' => 'Manajemen Kantor',
+                        'path' => '/admin/manajemen-kantor',
+                    ],
+                    [
+                        'name' => 'Aplikasi (CR Eksternal)',
+                        'path' => '/admin/parameter/cr-aplikasi',
+                    ],
+                    [
+                        'name' => 'Alasan perubahan CR',
+                        'path' => '/admin/parameter/cr-alasan-perubahan',
                     ],
                     [
                         'name' => 'Manajemen User',
@@ -139,8 +161,8 @@ class MenuHelper
         return [
             [
                 'title' => 'Menu',
-                'items' => self::getMainNavItems()
-            ]
+                'items' => self::getMainNavItems(),
+            ],
         ];
     }
 

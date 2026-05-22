@@ -14,7 +14,7 @@
             <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Divisi</h3>
                 <button type="button" @click="showAddForm = !showAddForm"
-                    class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
+                    class="inline-flex h-10 items-center justify-center rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white shadow-md shadow-sky-900/25 ring-2 ring-sky-500/80 transition-colors hover:bg-sky-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-800 dark:bg-sky-500 dark:text-white dark:ring-sky-400/70 dark:hover:bg-sky-400">
                     Add Divisi
                 </button>
             </div>

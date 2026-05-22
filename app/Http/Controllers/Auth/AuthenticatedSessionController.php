@@ -8,8 +8,8 @@ use App\Models\User;
 use App\Models\UserActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -21,8 +21,11 @@ use Throwable;
 class AuthenticatedSessionController extends Controller
 {
     private const ADMIN_2FA_PENDING_USER_ID = 'admin_2fa.pending_user_id';
+
     private const ADMIN_2FA_PENDING_REMEMBER = 'admin_2fa.pending_remember';
+
     private const ADMIN_2FA_VERIFIED = 'admin_2fa.verified';
+
     private const ADMIN_2FA_TTL_MINUTES = 5;
 
     /**
@@ -52,7 +55,7 @@ class AuthenticatedSessionController extends Controller
         if ($user?->role === 'admin') {
             $remember = $request->boolean('remember');
 
-            if (!$this->dispatchAdminTwoFactorCode($user)) {
+            if (! $this->dispatchAdminTwoFactorCode($user)) {
                 Auth::guard('web')->logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -81,7 +84,7 @@ class AuthenticatedSessionController extends Controller
             $this->logUserLogin($user, $request);
         }
 
-        if (in_array($user?->role, ['admin', 'manager', 'officer', 'vendor'], true)) {
+        if (in_array($user?->role, ['admin', 'manager', 'officer', 'vendor', 'cabang'], true)) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -96,8 +99,9 @@ class AuthenticatedSessionController extends Controller
         }
 
         $pendingUser = User::query()->find($pendingUserId);
-        if (!$pendingUser || $pendingUser->role !== 'admin') {
+        if (! $pendingUser || $pendingUser->role !== 'admin') {
             $this->clearPendingAdminTwoFactor($request);
+
             return redirect()->route('login');
         }
 
@@ -129,14 +133,15 @@ class AuthenticatedSessionController extends Controller
 
         $payload = Cache::get($this->adminTwoFactorCacheKey($pendingUserId));
         $pendingUser = User::query()->find($pendingUserId);
-        if (!$pendingUser || $pendingUser->role !== 'admin' || !is_array($payload) || !isset($payload['otp_hash'])) {
+        if (! $pendingUser || $pendingUser->role !== 'admin' || ! is_array($payload) || ! isset($payload['otp_hash'])) {
             $this->clearPendingAdminTwoFactor($request);
+
             return redirect()->route('login')->withErrors([
                 'email' => 'Sesi verifikasi 2FA tidak valid. Silakan login ulang.',
             ]);
         }
 
-        if (!Hash::check((string) $validated['otp'], (string) $payload['otp_hash'])) {
+        if (! Hash::check((string) $validated['otp'], (string) $payload['otp_hash'])) {
             RateLimiter::hit($throttleKey, 60);
             $this->logFailedLoginAttempt($request, 'otp_invalid', (string) ($pendingUser->email ?? ''));
             throw ValidationException::withMessages([
@@ -169,12 +174,13 @@ class AuthenticatedSessionController extends Controller
         }
 
         $pendingUser = User::query()->find($pendingUserId);
-        if (!$pendingUser || $pendingUser->role !== 'admin') {
+        if (! $pendingUser || $pendingUser->role !== 'admin') {
             $this->clearPendingAdminTwoFactor($request);
+
             return redirect()->route('login');
         }
 
-        if (!$this->dispatchAdminTwoFactorCode($pendingUser)) {
+        if (! $this->dispatchAdminTwoFactorCode($pendingUser)) {
             return back()->withErrors([
                 'otp' => 'Gagal mengirim ulang OTP ke Telegram.',
             ]);
@@ -203,6 +209,7 @@ class AuthenticatedSessionController extends Controller
         $chatId = (string) config('services.telegram.chat_id');
         if ($botToken === '' || $chatId === '') {
             Log::warning('Telegram 2FA config missing');
+
             return false;
         }
 
@@ -213,9 +220,9 @@ class AuthenticatedSessionController extends Controller
 
         $message = implode("\n", [
             'MANPRO Admin 2FA',
-            'Kode OTP: ' . $otp,
-            'Berlaku: ' . self::ADMIN_2FA_TTL_MINUTES . ' menit',
-            'User: ' . $user->email,
+            'Kode OTP: '.$otp,
+            'Berlaku: '.self::ADMIN_2FA_TTL_MINUTES.' menit',
+            'User: '.$user->email,
         ]);
 
         $response = Http::asForm()
@@ -225,11 +232,12 @@ class AuthenticatedSessionController extends Controller
                 'text' => $message,
             ]);
 
-        if (!$response->successful() || !data_get($response->json(), 'ok', false)) {
+        if (! $response->successful() || ! data_get($response->json(), 'ok', false)) {
             Log::warning('Telegram 2FA send failed', [
                 'status' => $response->status(),
                 'body' => $response->json(),
             ]);
+
             return false;
         }
 
@@ -264,10 +272,10 @@ class AuthenticatedSessionController extends Controller
 
         $local = $parts[0];
         if (strlen($local) <= 2) {
-            return str_repeat('*', strlen($local)) . '@' . $parts[1];
+            return str_repeat('*', strlen($local)).'@'.$parts[1];
         }
 
-        return substr($local, 0, 2) . str_repeat('*', max(strlen($local) - 2, 1)) . '@' . $parts[1];
+        return substr($local, 0, 2).str_repeat('*', max(strlen($local) - 2, 1)).'@'.$parts[1];
     }
 
     private function logUserLogin(User $user, Request $request): void

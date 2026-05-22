@@ -5,15 +5,25 @@ use App\Http\Controllers\Admin\AssistantChatController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
+use App\Http\Controllers\Admin\ExternCrController;
+use App\Http\Controllers\Admin\KantorController;
+use App\Http\Controllers\Admin\KasKantorController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
+use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\ExternCrVerificationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/verifikasi/cr-eksternal/{externCr}', [ExternCrVerificationController::class, 'show'])
+    ->middleware('signed')
+    ->name('extern-cr.verify');
 
 Route::get('/', function () {
     return auth()->check()
@@ -22,7 +32,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    if (in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor'], true)) {
+    if (in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor', 'cabang'], true)) {
         return redirect()->route('admin.dashboard');
     }
 
@@ -86,6 +96,39 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::post('/manajemen-divisi', [DivisionController::class, 'store'])->name('manajemen-divisi.store');
     Route::put('/manajemen-divisi/{division}', [DivisionController::class, 'update'])->name('manajemen-divisi.update');
     Route::delete('/manajemen-divisi/{division}', [DivisionController::class, 'destroy'])->name('manajemen-divisi.delete');
+
+    Route::get('/parameter/cr-aplikasi', [ParameterExternCrApplicationController::class, 'index'])->name('parameter.cr-aplikasi.index');
+    Route::post('/parameter/cr-aplikasi', [ParameterExternCrApplicationController::class, 'store'])->name('parameter.cr-aplikasi.store');
+    Route::put('/parameter/cr-aplikasi/{application}', [ParameterExternCrApplicationController::class, 'update'])->name('parameter.cr-aplikasi.update');
+    Route::delete('/parameter/cr-aplikasi/{application}', [ParameterExternCrApplicationController::class, 'destroy'])->name('parameter.cr-aplikasi.delete');
+
+    Route::get('/parameter/cr-alasan-perubahan', [ParameterExternCrChangeReasonController::class, 'index'])->name('parameter.cr-alasan-perubahan.index');
+    Route::post('/parameter/cr-alasan-perubahan', [ParameterExternCrChangeReasonController::class, 'store'])->name('parameter.cr-alasan-perubahan.store');
+    Route::put('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'update'])->name('parameter.cr-alasan-perubahan.update');
+    Route::delete('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'destroy'])->name('parameter.cr-alasan-perubahan.delete');
+
+    Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
+    Route::patch('/cr-eksternal/{externCr}/status', [ExternCrController::class, 'updateStatus'])->name('cr-eksternal.status');
+    Route::get('/cr-eksternal/create', [ExternCrController::class, 'create'])->name('cr-eksternal.create');
+    Route::post('/cr-eksternal', [ExternCrController::class, 'store'])->name('cr-eksternal.store');
+    Route::get('/cr-eksternal/{externCr}/edit', [ExternCrController::class, 'edit'])->name('cr-eksternal.edit');
+    Route::get('/cr-eksternal/{externCr}/cetak', [ExternCrController::class, 'printPdf'])->name('cr-eksternal.print');
+    Route::put('/cr-eksternal/{externCr}', [ExternCrController::class, 'update'])->name('cr-eksternal.update');
+    Route::delete('/cr-eksternal/{externCr}', [ExternCrController::class, 'destroy'])->name('cr-eksternal.delete');
+    Route::get('/cr-eksternal/{externCr}/lampiran/{attachment}/unduh', [ExternCrController::class, 'downloadAttachment'])->name('cr-eksternal.attachments.download');
+    Route::delete('/cr-eksternal/{externCr}/lampiran/{attachment}', [ExternCrController::class, 'destroyAttachment'])->name('cr-eksternal.attachments.delete');
+
+    Route::get('/manajemen-kantor', [KantorController::class, 'index'])->name('manajemen-kantor.index');
+    Route::post('/manajemen-kantor', [KantorController::class, 'store'])->name('manajemen-kantor.store');
+    Route::get('/manajemen-kantor/export', [KantorController::class, 'export'])->name('manajemen-kantor.export');
+    Route::get('/manajemen-kantor/template', [KantorController::class, 'downloadTemplate'])->name('manajemen-kantor.template');
+    Route::post('/manajemen-kantor/import', [KantorController::class, 'import'])->name('manajemen-kantor.import');
+    Route::delete('/manajemen-kantor/all', [KantorController::class, 'destroyAll'])->name('manajemen-kantor.destroy-all');
+    Route::post('/manajemen-kantor/{kantor}/kas-kantor', [KasKantorController::class, 'store'])->name('manajemen-kantor.kas-kantor.store');
+    Route::put('/manajemen-kantor/{kantor}/kas-kantor/{kasKantor}', [KasKantorController::class, 'update'])->name('manajemen-kantor.kas-kantor.update');
+    Route::delete('/manajemen-kantor/{kantor}/kas-kantor/{kasKantor}', [KasKantorController::class, 'destroy'])->name('manajemen-kantor.kas-kantor.delete');
+    Route::put('/manajemen-kantor/{kantor}', [KantorController::class, 'update'])->name('manajemen-kantor.update');
+    Route::delete('/manajemen-kantor/{kantor}', [KantorController::class, 'destroy'])->name('manajemen-kantor.delete');
 
     Route::get('/manajemen-user', [UserManagementController::class, 'index'])->name('manajemen-user.index');
     Route::post('/manajemen-user', [UserManagementController::class, 'store'])->name('manajemen-user.store');

@@ -262,46 +262,71 @@
         </div>
 
         <div x-show="showAddForm" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showAddForm = false">
-            <x-dashboard.accent-card accent-index="2" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
+            <x-dashboard.accent-card accent-index="2" class="max-h-[90vh] w-full max-w-xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tambah Perangkat CCTV</h4>
                     <button type="button" @click="showAddForm = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
                 </div>
                 <form method="POST" action="{{ route('admin.aset-ti.cctv.store') }}"
                     enctype="multipart/form-data"
-                    class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    class="flex flex-col gap-4">
                     @csrf
-                    <input type="text" name="branch" value="{{ old('branch') }}" required placeholder="Cabang"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="office" value="{{ old('office') }}" required placeholder="Kantor kas"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="dvr_brand" value="{{ old('dvr_brand') }}" required placeholder="Merk DVR"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="number" name="channel_count" value="{{ old('channel_count') }}" min="1" placeholder="Jumlah channel"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="harddisk" value="{{ old('harddisk') }}" required placeholder="Harddisk"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="monitor" value="{{ old('monitor') }}" required placeholder="Monitor"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="connection_status" value="{{ old('connection_status') }}" placeholder="Koneksi (bebas)"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="device_status" value="{{ old('device_status') }}" placeholder="Status (bebas)"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <div class="md:col-span-2">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Cabang</label>
+                        <input type="text" name="branch" value="{{ old('branch') }}" required placeholder="Cabang"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Kantor kas</label>
+                        <input type="text" name="office" value="{{ old('office') }}" required placeholder="Kantor kas"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Merk DVR</label>
+                        <input type="text" name="dvr_brand" value="{{ old('dvr_brand') }}" required placeholder="Merk DVR"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Jumlah channel</label>
+                        <input type="number" name="channel_count" value="{{ old('channel_count') }}" min="1" placeholder="Jumlah channel"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Harddisk</label>
+                        <input type="text" name="harddisk" value="{{ old('harddisk') }}" required placeholder="Harddisk"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Monitor</label>
+                        <input type="text" name="monitor" value="{{ old('monitor') }}" required placeholder="Monitor"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Koneksi (bebas)</label>
+                        <input type="text" name="connection_status" value="{{ old('connection_status') }}" placeholder="Koneksi (bebas)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Status (bebas)</label>
+                        <input type="text" name="device_status" value="{{ old('device_status') }}" placeholder="Status (bebas)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Lampiran Foto DVR</label>
                         <input type="file" name="dvr_photo" accept="image/*"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-white dark:border-gray-700 dark:text-white/90" />
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Lampiran Foto Monitor</label>
                         <input type="file" name="monitor_photo" accept="image/*"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-white dark:border-gray-700 dark:text-white/90" />
                     </div>
-                    <div class="md:col-span-4">
-                        <textarea name="notes" rows="2" placeholder="Keterangan"
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Keterangan</label>
+                        <textarea name="notes" rows="3" placeholder="Keterangan"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">{{ old('notes') }}</textarea>
                     </div>
-                    <div class="md:col-span-4">
+                    <div>
                         <button type="submit"
                             class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
                             Simpan CCTV
@@ -312,32 +337,56 @@
         </div>
 
         <div x-show="showEditModal" x-cloak x-transition class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4" @click.self="showEditModal = false">
-            <x-dashboard.accent-card accent-index="3" class="max-h-[90vh] w-full max-w-5xl overflow-y-auto" padding="p-5">
+            <x-dashboard.accent-card accent-index="3" class="max-h-[90vh] w-full max-w-xl overflow-y-auto" padding="p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Edit Perangkat CCTV</h4>
                     <button type="button" @click="showEditModal = false" class="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">Tutup</button>
                 </div>
 
-                <form :action="editAction" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <form :action="editAction" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
                     @csrf
                     @method('PUT')
-                    <input type="text" name="branch" x-model="editForm.branch" required placeholder="Cabang"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="office" x-model="editForm.office" required placeholder="Kantor kas"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="dvr_brand" x-model="editForm.dvr_brand" required placeholder="Merk DVR"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="number" name="channel_count" x-model="editForm.channel_count" min="1" placeholder="Jumlah channel"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="harddisk" x-model="editForm.harddisk" required placeholder="Harddisk"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="monitor" x-model="editForm.monitor" required placeholder="Monitor"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="connection_status" x-model="editForm.connection_status" placeholder="Koneksi (bebas)"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <input type="text" name="device_status" x-model="editForm.device_status" placeholder="Status (bebas)"
-                        class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
-                    <div class="md:col-span-2">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Cabang</label>
+                        <input type="text" name="branch" x-model="editForm.branch" required placeholder="Cabang"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Kantor kas</label>
+                        <input type="text" name="office" x-model="editForm.office" required placeholder="Kantor kas"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Merk DVR</label>
+                        <input type="text" name="dvr_brand" x-model="editForm.dvr_brand" required placeholder="Merk DVR"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Jumlah channel</label>
+                        <input type="number" name="channel_count" x-model="editForm.channel_count" min="1" placeholder="Jumlah channel"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Harddisk</label>
+                        <input type="text" name="harddisk" x-model="editForm.harddisk" required placeholder="Harddisk"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Monitor</label>
+                        <input type="text" name="monitor" x-model="editForm.monitor" required placeholder="Monitor"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Koneksi (bebas)</label>
+                        <input type="text" name="connection_status" x-model="editForm.connection_status" placeholder="Koneksi (bebas)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Status (bebas)</label>
+                        <input type="text" name="device_status" x-model="editForm.device_status" placeholder="Status (bebas)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                    </div>
+                    <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Ganti Foto DVR (opsional)</label>
                         <input type="file" name="dvr_photo" accept="image/*"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-white dark:border-gray-700 dark:text-white/90" />
@@ -345,7 +394,7 @@
                             <a :href="editForm.dvr_photo_url" target="_blank" class="mt-1 inline-block text-xs text-brand-500 hover:underline">Lihat foto DVR saat ini</a>
                         </template>
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Ganti Foto Monitor (opsional)</label>
                         <input type="file" name="monitor_photo" accept="image/*"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-white dark:border-gray-700 dark:text-white/90" />
@@ -353,11 +402,12 @@
                             <a :href="editForm.monitor_photo_url" target="_blank" class="mt-1 inline-block text-xs text-brand-500 hover:underline">Lihat foto monitor saat ini</a>
                         </template>
                     </div>
-                    <div class="md:col-span-4">
-                        <textarea name="notes" rows="2" x-model="editForm.notes" placeholder="Keterangan"
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Keterangan</label>
+                        <textarea name="notes" rows="3" x-model="editForm.notes" placeholder="Keterangan"
                             class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"></textarea>
                     </div>
-                    <div class="md:col-span-4">
+                    <div>
                         <button type="submit"
                             class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
                             Simpan Update CCTV

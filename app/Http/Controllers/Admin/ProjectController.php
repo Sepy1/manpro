@@ -9,14 +9,14 @@ use App\Models\ProjectStep;
 use App\Models\User;
 use App\Models\Vendor;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
@@ -32,14 +32,14 @@ class ProjectController extends Controller
 
     private function ensureProjectViewer(): void
     {
-        abort_unless(in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor'], true), 403);
+        abort_unless(in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor', 'cabang'], true), 403);
     }
 
     private function canManageProjects(): bool
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -47,7 +47,7 @@ class ProjectController extends Controller
             return true;
         }
 
-        return $user->role === 'manager' && !empty($user->division);
+        return $user->role === 'manager' && ! empty($user->division);
     }
 
     private function canOfficerEditFollowUp(): bool
@@ -71,7 +71,7 @@ class ProjectController extends Controller
 
         $query = Project::query();
 
-        if (!$user) {
+        if (! $user) {
             return $query->whereRaw('1 = 0');
         }
 
@@ -80,14 +80,14 @@ class ProjectController extends Controller
         }
 
         if ($user->role === 'manager') {
-            if (!$user->division) {
+            if (! $user->division) {
                 return $query->whereRaw('1 = 0');
             }
 
             return $query->where('division', $user->division);
         }
 
-        if (in_array($user->role, ['officer', 'vendor'], true)) {
+        if (in_array($user->role, ['officer', 'vendor', 'cabang'], true)) {
             return $query->where(function (Builder $nested) use ($user): void {
                 $nested->where('pic_user_id', $user->id)
                     ->orWhereHas('steps', function (Builder $stepQuery) use ($user): void {
@@ -104,7 +104,7 @@ class ProjectController extends Controller
         abort_unless($this->canManageProjects(), 403);
 
         if (auth()->user()?->role === 'manager') {
-            abort_unless(!empty(auth()->user()?->division) && $project->division === auth()->user()?->division, 403);
+            abort_unless(! empty(auth()->user()?->division) && $project->division === auth()->user()?->division, 403);
         }
     }
 
@@ -137,7 +137,7 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
 
-        if (!in_array($user?->role, ['officer', 'vendor'], true)) {
+        if (! in_array($user?->role, ['officer', 'vendor', 'cabang'], true)) {
             return;
         }
 
@@ -192,7 +192,7 @@ class ProjectController extends Controller
             ->whereIn('project_id', $visibleProjectIds)
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
             ->whereNotNull('deadline')
-            ->when(in_array(auth()->user()?->role, ['officer', 'vendor'], true), function ($query): void {
+            ->when(in_array(auth()->user()?->role, ['officer', 'vendor', 'cabang'], true), function ($query): void {
                 $this->applyOfficerStepScope($query);
             })
             ->whereDate('deadline', '>=', Carbon::today())
@@ -216,7 +216,7 @@ class ProjectController extends Controller
             ->whereIn('project_id', $visibleProjectIds)
             ->whereIn('status', ['planned', 'in_progress', 'delayed'])
             ->whereNotNull('deadline')
-            ->when(in_array(auth()->user()?->role, ['officer', 'vendor'], true), function ($query): void {
+            ->when(in_array(auth()->user()?->role, ['officer', 'vendor', 'cabang'], true), function ($query): void {
                 $this->applyOfficerStepScope($query);
             })
             ->whereDate('deadline', '<', Carbon::today())
@@ -289,7 +289,7 @@ class ProjectController extends Controller
             ->flatMap(function (Project $project) {
                 return $project->steps
                     ->where('status', '!=', 'completed')
-                    ->filter(fn (ProjectStep $step) => !is_null($step->deadline))
+                    ->filter(fn (ProjectStep $step) => ! is_null($step->deadline))
                     ->map(function (ProjectStep $step) use ($project) {
                         return [
                             'project_name' => $project->name,
@@ -339,7 +339,7 @@ class ProjectController extends Controller
             ],
         ])->setPaper('a4', 'portrait');
 
-        $filename = 'laporan-project-' . now()->format('Ymd-His') . '.pdf';
+        $filename = 'laporan-project-'.now()->format('Ymd-His').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -355,7 +355,7 @@ class ProjectController extends Controller
 
         $overdueSteps = $projects
             ->flatMap(fn (Project $project) => $project->steps)
-            ->filter(fn (ProjectStep $step) => $step->status !== 'completed' && !is_null($step->deadline) && $step->deadline->isPast())
+            ->filter(fn (ProjectStep $step) => $step->status !== 'completed' && ! is_null($step->deadline) && $step->deadline->isPast())
             ->count();
 
         $delayHighlights = $projects
@@ -372,7 +372,7 @@ class ProjectController extends Controller
                             ->map(fn ($value) => trim($value))
                             ->implode(' | ');
 
-                        return trim($step->step_name . ($notes !== '' ? ": {$notes}" : ''));
+                        return trim($step->step_name.($notes !== '' ? ": {$notes}" : ''));
                     })
                     ->filter()
                     ->take(2)
@@ -385,14 +385,14 @@ class ProjectController extends Controller
             ->implode("\n\n");
 
         $overview = "Dalam periode laporan ini terdapat {$totalProjects} project dengan {$totalSteps} step. "
-            . "Komposisi status menunjukkan Planned {$plannedProjects}, In Progress {$inProgressProjects}, Completed {$completedProjects}, dan Delayed {$delayedProjects}. "
-            . "Terdapat {$overdueSteps} step yang melewati deadline dan belum completed.";
+            ."Komposisi status menunjukkan Planned {$plannedProjects}, In Progress {$inProgressProjects}, Completed {$completedProjects}, dan Delayed {$delayedProjects}. "
+            ."Terdapat {$overdueSteps} step yang melewati deadline dan belum completed.";
 
         if ($delayHighlights === '') {
-            return $overview . "\n\nBelum ditemukan catatan detail penyebab keterlambatan dari tindak lanjut pada data yang terfilter.";
+            return $overview."\n\nBelum ditemukan catatan detail penyebab keterlambatan dari tindak lanjut pada data yang terfilter.";
         }
 
-        return $overview . "\n\nIndikasi penyebab keterlambatan berdasarkan tindak lanjut step:\n\n{$delayHighlights}";
+        return $overview."\n\nIndikasi penyebab keterlambatan berdasarkan tindak lanjut step:\n\n{$delayHighlights}";
     }
 
     private function inferSuggestionFromFollowUp(string $followUpText): string
@@ -462,7 +462,7 @@ class ProjectController extends Controller
         $delayedProjects = $projects->where('status', 'delayed')->values();
 
         if ($delayedProjects->isEmpty()) {
-            return "Tidak ada project delayed pada data filter saat ini.";
+            return 'Tidak ada project delayed pada data filter saat ini.';
         }
 
         $aiPayload = $this->buildAiProjectPayload($delayedProjects, $filters);
@@ -474,16 +474,16 @@ class ProjectController extends Controller
         $delayedProjectCount = count($delayedProjectNames);
         $projectListText = implode(', ', $delayedProjectNames);
 
-        $prompt = "Buat executive summary Bahasa Indonesia hanya dari data JSON berikut (tanpa asumsi, tanpa informasi eksternal). "
-            . "Fokus HANYA pada project delayed. Untuk setiap project delayed, keluarkan urutan berikut:\n"
-            . "Project: <nama project>\n"
-            . "Analisa penyebab delay: <ringkas berbasis follow_up step delayed>\n"
-            . "Saran: <aksi langsung menindaklanjuti penyebab di atas>\n"
-            . "WAJIB tampilkan seluruh project delayed yang ada pada data (jumlah: {$delayedProjectCount}). "
-            . "Daftar project delayed yang harus dibahas seluruhnya: {$projectListText}.\n"
-            . "Pastikan Saran selalu muncul tepat setelah Analisa penyebab delay untuk project yang sama. "
-            . "Jika follow_up kosong, tulis bahwa data tidak cukup dan berikan saran pengumpulan data tindak lanjut.\n\n"
-            . json_encode($aiPayload, JSON_UNESCAPED_UNICODE);
+        $prompt = 'Buat executive summary Bahasa Indonesia hanya dari data JSON berikut (tanpa asumsi, tanpa informasi eksternal). '
+            ."Fokus HANYA pada project delayed. Untuk setiap project delayed, keluarkan urutan berikut:\n"
+            ."Project: <nama project>\n"
+            ."Analisa penyebab delay: <ringkas berbasis follow_up step delayed>\n"
+            ."Saran: <aksi langsung menindaklanjuti penyebab di atas>\n"
+            ."WAJIB tampilkan seluruh project delayed yang ada pada data (jumlah: {$delayedProjectCount}). "
+            ."Daftar project delayed yang harus dibahas seluruhnya: {$projectListText}.\n"
+            .'Pastikan Saran selalu muncul tepat setelah Analisa penyebab delay untuk project yang sama. '
+            ."Jika follow_up kosong, tulis bahwa data tidak cukup dan berikan saran pengumpulan data tindak lanjut.\n\n"
+            .json_encode($aiPayload, JSON_UNESCAPED_UNICODE);
 
         try {
             $response = Http::timeout(60)
@@ -494,7 +494,7 @@ class ProjectController extends Controller
                     'max_output_tokens' => 1800,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('OpenAI summary request failed', [
                     'status' => $response->status(),
                     'body' => $response->json(),
@@ -510,7 +510,7 @@ class ProjectController extends Controller
                 $text = implode("\n", $text);
             }
 
-            if (!is_string($text) || trim($text) === '') {
+            if (! is_string($text) || trim($text) === '') {
                 $text = data_get($result, 'output.0.content.0.text');
             }
 
@@ -594,7 +594,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'division' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
+            'category' => ['required', 'string', 'in:'.implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
             'follow_up' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
@@ -682,7 +682,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'division' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:' . implode(',', Project::CATEGORIES)],
+            'category' => ['required', 'string', 'in:'.implode(',', Project::CATEGORIES)],
             'description' => ['nullable', 'string'],
             'follow_up' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
