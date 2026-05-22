@@ -12,10 +12,11 @@ use App\Models\ExternCrChangeReason;
 use App\Support\DivisionMentionParser;
 use App\Support\ExternCrNomorGenerator;
 use App\Support\ExternCrPdfQr;
+use App\Support\ExternCrPrintedPdfAssembler;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -199,7 +200,7 @@ class ExternCrController extends Controller
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $externCr->load(['division', 'application', 'changeReason', 'creator', 'divisionsInvolved']);
+        $externCr->load(['attachments', 'division', 'application', 'changeReason', 'creator', 'divisionsInvolved']);
 
         $reasonsForPdf = ExternCrChangeReason::query()
             ->where(function ($q) use ($externCr) {
@@ -233,7 +234,52 @@ class ExternCrController extends Controller
             'divisiTerlibatDisplay' => $divisiTerlibatDisplay !== '' ? $divisiTerlibatDisplay : '—',
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->stream('CR-'.$externCr->nomor.'.pdf');
+        $mainBinary = $pdf->output();
+
+        $fileName = 'CR-'.$externCr->nomor.'.pdf';
+
+        $headers = [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ];
+
+        $sortedPdfAttachments = $externCr->attachments
+            ->sortBy(fn (ExternCrAttachment $a) => [$a->position, $a->id]);
+
+        $paths = [];
+        foreach ($sortedPdfAttachments as $attachment) {
+            if (! $this->attachmentIsPdfForMerge($attachment)) {
+                continue;
+            }
+
+            try {
+                $absolute = Storage::disk($attachment->disk)->path($attachment->path);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (is_readable($absolute)) {
+                $paths[] = $absolute;
+            }
+        }
+
+        if ($paths === []) {
+            return response($mainBinary, 200, $headers);
+        }
+
+        try {
+            $merged = ExternCrPrintedPdfAssembler::mergeMainWithPdfAttachments($mainBinary, $paths);
+
+            return response($merged, 200, $headers);
+        } catch (\Throwable $e) {
+            Log::warning('CR PDF: gagal gabung lampiran PDF, hanya formulir utama yang dikeluarkan.', [
+                'extern_cr_id' => $externCr->id,
+                'nomor' => $externCr->nomor,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response($mainBinary, 200, $headers);
+        }
     }
 
     public function downloadAttachment(ExternCr $externCr, ExternCrAttachment $attachment): StreamedResponse
@@ -256,6 +302,16 @@ class ExternCrController extends Controller
         $attachment->delete();
 
         return back()->with('status', 'Lampiran dihapus.');
+    }
+
+    private function attachmentIsPdfForMerge(ExternCrAttachment $attachment): bool
+    {
+        $name = $attachment->original_name ?: basename($attachment->path);
+        if (Str::lower((string) pathinfo((string) $name, PATHINFO_EXTENSION)) === 'pdf') {
+            return true;
+        }
+
+        return str_contains(Str::lower((string) ($attachment->mime ?? '')), 'pdf');
     }
 
     private function activeDivisions()
