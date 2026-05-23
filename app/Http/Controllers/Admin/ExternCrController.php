@@ -17,6 +17,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -234,7 +235,9 @@ class ExternCrController extends Controller
             'divisiTerlibatDisplay' => $divisiTerlibatDisplay !== '' ? $divisiTerlibatDisplay : '—',
         ])->setPaper('a4', 'portrait');
 
-        $mainBinary = $pdf->output();
+        // Tanpa ini, DomPDF memakai FlateDecode; FPDI (fallback penggabungan di Windows) sering gagal
+        // sehingga hanya formulir utama yang terkirim. Kompresi dinonaktifkan hanya untuk biner utama.
+        $mainBinary = $pdf->output(['compress' => false]);
 
         $fileName = 'CR-'.$externCr->nomor.'.pdf';
 
@@ -306,8 +309,13 @@ class ExternCrController extends Controller
 
     private function attachmentIsPdfForMerge(ExternCrAttachment $attachment): bool
     {
-        $name = $attachment->original_name ?: basename($attachment->path);
-        if (Str::lower((string) pathinfo((string) $name, PATHINFO_EXTENSION)) === 'pdf') {
+        $nameExt = strtolower((string) pathinfo((string) ($attachment->original_name ?: ''), PATHINFO_EXTENSION));
+        if ($nameExt === 'pdf') {
+            return true;
+        }
+
+        $pathExt = strtolower((string) pathinfo(basename((string) $attachment->path), PATHINFO_EXTENSION));
+        if ($pathExt === 'pdf') {
             return true;
         }
 
