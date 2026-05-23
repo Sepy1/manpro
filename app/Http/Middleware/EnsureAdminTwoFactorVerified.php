@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,13 +14,18 @@ class EnsureAdminTwoFactorVerified
     {
         $user = $request->user();
 
-        if ($user && $user->role === 'admin' && !$request->session()->get('admin_2fa.verified', false)) {
+        if (
+            $user
+            && $user->two_factor_enabled
+            && in_array($user->role, User::ROLES, true)
+            && ! $request->session()->get('admin_2fa.verified', false)
+        ) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Akses admin membutuhkan verifikasi 2FA. Silakan login kembali.',
+                'email' => 'Akun ini memerlukan verifikasi 2FA. Silakan login kembali untuk menerima OTP WhatsApp.',
             ]);
         }
 

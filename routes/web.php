@@ -17,13 +17,22 @@ use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\ExternCrSignedPdfDownloadController;
 use App\Http\Controllers\ExternCrVerificationController;
+use App\Http\Controllers\WhatsappWebhookController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/verifikasi/cr-eksternal/{externCr}', [ExternCrVerificationController::class, 'show'])
     ->middleware('signed')
     ->name('extern-cr.verify');
+
+Route::get('/unduh/cr-eksternal/{externCr}/bundel-pdf', ExternCrSignedPdfDownloadController::class)
+    ->middleware(['signed'])
+    ->name('extern-cr.signed-pdf');
+
+Route::get('/webhook/whatsapp', [WhatsappWebhookController::class, 'verify']);
+Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'ingest']);
 
 Route::get('/', function () {
     return auth()->check()
@@ -108,10 +117,17 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::delete('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'destroy'])->name('parameter.cr-alasan-perubahan.delete');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
-    Route::patch('/cr-eksternal/{externCr}/status', [ExternCrController::class, 'updateStatus'])->name('cr-eksternal.status');
     Route::get('/cr-eksternal/create', [ExternCrController::class, 'create'])->name('cr-eksternal.create');
     Route::post('/cr-eksternal', [ExternCrController::class, 'store'])->name('cr-eksternal.store');
     Route::get('/cr-eksternal/{externCr}/edit', [ExternCrController::class, 'edit'])->name('cr-eksternal.edit');
+    Route::get('/cr-eksternal/{externCr}/detail/modal', [ExternCrController::class, 'detailModalFragment'])->name('cr-eksternal.detail-modal');
+    Route::get('/cr-eksternal/{externCr}/data-otorisator', [ExternCrController::class, 'authorizersPayload'])
+        ->name('cr-eksternal.authorizers-data');
+    Route::post('/cr-eksternal/{externCr}/kirim-wa-otorisasi', [ExternCrController::class, 'sendWhatsappAuthorization'])
+        ->middleware(['throttle:20,1'])
+        ->name('cr-eksternal.send-wa-authorization');
+    Route::patch('/cr-eksternal/{externCr}/status', [ExternCrController::class, 'updateStatus'])->name('cr-eksternal.status');
+    Route::get('/cr-eksternal/{externCr}/histori/modal', [ExternCrController::class, 'historyModalFragment'])->name('cr-eksternal.history-modal');
     Route::get('/cr-eksternal/{externCr}/cetak', [ExternCrController::class, 'printPdf'])->name('cr-eksternal.print');
     Route::put('/cr-eksternal/{externCr}', [ExternCrController::class, 'update'])->name('cr-eksternal.update');
     Route::delete('/cr-eksternal/{externCr}', [ExternCrController::class, 'destroy'])->name('cr-eksternal.delete');

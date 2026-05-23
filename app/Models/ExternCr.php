@@ -30,13 +30,21 @@ class ExternCr extends Model
         'status',
         'divisions_terlibat_text',
         'deskripsi_permintaan',
+        'wa_authorization_decision',
+        'wa_authorization_at',
+        'wa_authorization_by_user_id',
     ];
+
+    public const WA_AUTH_APPROVED = 'approved';
+
+    public const WA_AUTH_REJECTED = 'rejected';
 
     protected function casts(): array
     {
         return [
             'tanggal' => 'date',
             'status' => ExternCrStatus::class,
+            'wa_authorization_at' => 'datetime',
         ];
     }
 
@@ -78,5 +86,26 @@ class ExternCr extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(ExternCrAttachment::class, 'extern_cr_id')->orderBy('position')->orderBy('id');
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(ExternCrHistory::class, 'extern_cr_id');
+    }
+
+    public function authorizationResponder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'wa_authorization_by_user_id');
+    }
+
+    public function whatsappAuthorizationDispatches(): HasMany
+    {
+        return $this->hasMany(WhatsappCrAuthorizationDispatch::class, 'extern_cr_id');
+    }
+
+    /** Apakah keputusan otorisasi WA sudah tercatat (setuju atau tidak). */
+    public function hasWaAuthorizationDecision(): bool
+    {
+        return $this->wa_authorization_decision !== null && $this->wa_authorization_decision !== '';
     }
 }

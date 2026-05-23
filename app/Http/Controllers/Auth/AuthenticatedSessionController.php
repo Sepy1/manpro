@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use App\Models\UserActivityLog;
+use App\Support\IndonesianWhatsappPhoneNormalizer;
+use App\Support\MahadataWhatsappOtpSender;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -52,7 +53,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        if ($user?->role === 'admin') {
+        if ($this->isPortalPanelUser($user) && $user->two_factor_enabled) {
             $remember = $request->boolean('remember');
 
             if (! $this->dispatchAdminTwoFactorCode($user)) {
@@ -62,7 +63,7 @@ class AuthenticatedSessionController extends Controller
                 $this->logFailedLoginAttempt($request, 'otp_send_failed', $user->email);
 
                 throw ValidationException::withMessages([
-                    'email' => 'Gagal mengirim kode 2FA Telegram. Periksa konfigurasi bot dan chat ID.',
+                    'email' => 'Gagal mengirim kode 2FA WhatsApp. Pastikan nomor HP sudah valid di Manajemen User, centang 2FA hanya untuk pengguna yang punya WA, serta periksa konfigurasi Mahadata.',
                 ]);
             }
 
@@ -76,7 +77,7 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
 
             return redirect()->route('admin.2fa.challenge')
-                ->with('status', 'Kode verifikasi sudah dikirim ke Telegram admin.');
+                ->with('status', 'Kode verifikasi sudah dikirim melalui WhatsApp.');
         }
 
         $request->session()->put(self::ADMIN_2FA_VERIFIED, true);
@@ -99,14 +100,23 @@ class AuthenticatedSessionController extends Controller
         }
 
         $pendingUser = User::query()->find($pendingUserId);
-        if (! $pendingUser || $pendingUser->role !== 'admin') {
+        if (! $this->isPortalPanelUser($pendingUser)) {
             $this->clearPendingAdminTwoFactor($request);
 
             return redirect()->route('login');
         }
 
+        if (! $pendingUser->two_factor_enabled) {
+            $this->clearPendingAdminTwoFactor($request);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Akun ini tidak menggunakan verifikasi 2FA. Silakan login ulang.',
+            ]);
+        }
+
         return view('auth.admin-2fa', [
             'maskedEmail' => $this->maskEmail($pendingUser->email),
+            'maskedPhone' => $this->maskWaRecipient($pendingUser->phone ? (string) $pendingUser->phone : ''),
         ]);
     }
 
@@ -133,7 +143,7 @@ class AuthenticatedSessionController extends Controller
 
         $payload = Cache::get($this->adminTwoFactorCacheKey($pendingUserId));
         $pendingUser = User::query()->find($pendingUserId);
-        if (! $pendingUser || $pendingUser->role !== 'admin' || ! is_array($payload) || ! isset($payload['otp_hash'])) {
+        if (! $this->isPortalPanelUser($pendingUser) || ! $pendingUser->two_factor_enabled || ! is_array($payload) || ! isset($payload['otp_hash'])) {
             $this->clearPendingAdminTwoFactor($request);
 
             return redirect()->route('login')->withErrors([
@@ -174,7 +184,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $pendingUser = User::query()->find($pendingUserId);
-        if (! $pendingUser || $pendingUser->role !== 'admin') {
+        if (! $this->isPortalPanelUser($pendingUser) || ! $pendingUser->two_factor_enabled) {
             $this->clearPendingAdminTwoFactor($request);
 
             return redirect()->route('login');
@@ -182,11 +192,11 @@ class AuthenticatedSessionController extends Controller
 
         if (! $this->dispatchAdminTwoFactorCode($pendingUser)) {
             return back()->withErrors([
-                'otp' => 'Gagal mengirim ulang OTP ke Telegram.',
+                'otp' => 'Gagal mengirim ulang OTP WhatsApp.',
             ]);
         }
 
-        return back()->with('status', 'OTP baru telah dikirim ke Telegram.');
+        return back()->with('status', 'OTP baru telah dikirim melalui WhatsApp.');
     }
 
     /**
@@ -205,10 +215,32 @@ class AuthenticatedSessionController extends Controller
 
     private function dispatchAdminTwoFactorCode(User $user): bool
     {
-        $botToken = (string) config('services.telegram.bot_token');
-        $chatId = (string) config('services.telegram.chat_id');
-        if ($botToken === '' || $chatId === '') {
-            Log::warning('Telegram 2FA config missing');
+        if (! $user->two_factor_enabled) {
+            return false;
+        }
+
+        $endpoint = trim((string) config('services.mahadata_whatsapp.endpoint'));
+        $token = trim((string) config('services.mahadata_whatsapp.token'));
+
+        if ($endpoint === '' || $token === '') {
+            Log::warning('Mahadata WhatsApp 2FA: endpoint atau token kosong.', [
+                'endpoint_set' => $endpoint !== '',
+                'token_set' => $token !== '',
+            ]);
+
+            return false;
+        }
+
+        $rawPhone = trim((string) ($user->phone ?? ''));
+        if ($rawPhone === '') {
+            Log::warning('Mahadata WhatsApp 2FA: pengguna belum mengisi nomor HP.', ['user_id' => $user->id]);
+
+            return false;
+        }
+
+        $waTo = IndonesianWhatsappPhoneNormalizer::toWaDigits62($rawPhone);
+        if ($waTo === null) {
+            Log::warning('Mahadata WhatsApp 2FA: nomor HP tersimpan tidak valid.', ['user_id' => $user->id]);
 
             return false;
         }
@@ -218,30 +250,30 @@ class AuthenticatedSessionController extends Controller
             'otp_hash' => Hash::make($otp),
         ], now()->addMinutes(self::ADMIN_2FA_TTL_MINUTES));
 
-        $message = implode("\n", [
-            'MANPRO Admin 2FA',
-            'Kode OTP: '.$otp,
-            'Berlaku: '.self::ADMIN_2FA_TTL_MINUTES.' menit',
-            'User: '.$user->email,
-        ]);
+        return app(MahadataWhatsappOtpSender::class)->send($waTo, $otp);
+    }
 
-        $response = Http::asForm()
-            ->timeout(10)
-            ->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                'chat_id' => $chatId,
-                'text' => $message,
-            ]);
+    private function isPortalPanelUser(?User $user): bool
+    {
+        return $user !== null && in_array($user->role, User::ROLES, true);
+    }
 
-        if (! $response->successful() || ! data_get($response->json(), 'ok', false)) {
-            Log::warning('Telegram 2FA send failed', [
-                'status' => $response->status(),
-                'body' => $response->json(),
-            ]);
-
-            return false;
+    private function maskWaRecipient(string $phoneDigits): string
+    {
+        if ($phoneDigits === '') {
+            return '—';
         }
 
-        return true;
+        $d = preg_replace('/\D+/', '', $phoneDigits);
+        $len = strlen($d);
+        if ($len < 6) {
+            return '—';
+        }
+
+        $head = substr($d, 0, 4);
+        $tail = substr($d, -3);
+
+        return $head.str_repeat('•', max($len - 7, 2)).$tail;
     }
 
     private function adminTwoFactorCacheKey(int $userId): string

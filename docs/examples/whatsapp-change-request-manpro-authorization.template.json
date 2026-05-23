@@ -1,0 +1,37 @@
+{
+  "messaging_product": "whatsapp",
+  "to": "6285725681860",
+  "type": "template",
+  "template": {
+    "name": "change_request_manpro",
+    "language": {
+      "code": "id"
+    },
+    "components": [
+      {
+        "type": "body",
+        "parameters": [
+          { "type": "text", "text": "Judul atau nama CR" },
+          { "type": "text", "text": "Nama pembuat (akun)" },
+          { "type": "text", "text": "Ringkasan deskripsi perubahan" },
+          {
+            "type": "text",
+            "text": "https://contoh-app.test/unduh/cr-eksternal/1/bundel-pdf"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "sub_type": "quick_reply",
+        "index": "0",
+        "parameters": [{ "type": "payload", "payload": "APPROVE_CR_token32karakterSatuPerPesan" }]
+      },
+      {
+        "type": "button",
+        "sub_type": "quick_reply",
+        "index": "1",
+        "parameters": [{ "type": "payload", "payload": "REJECT_CR_token32karakterYangSama" }]
+      }
+    ]
+  }
+}

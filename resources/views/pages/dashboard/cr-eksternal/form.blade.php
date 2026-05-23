@@ -54,10 +54,22 @@
                             Kembali ke daftar
                         </a>
                         @if ($edit)
-                            <a href="{{ route('admin.cr-eksternal.print', $externCr) }}" target="_blank" rel="noopener noreferrer" data-no-transition
-                                class="inline-flex h-10 items-center rounded-lg border border-slate-600 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-500 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">
+                            <x-async-pdf-link
+                                href="{{ route('admin.cr-eksternal.print', $externCr) }}"
+                                title="Form permintaan perubahan PDF"
+                                class="inline-flex h-10 items-center rounded-lg border border-slate-600 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-500 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                            >
                                 Cetak PDF
-                            </a>
+                            </x-async-pdf-link>
+                            <button type="button" title="Riwayat perubahan"
+                                class="inline-flex h-10 items-center rounded-lg border border-slate-600 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-500 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                                @click.prevent="$dispatch('open-extern-cr-history', @js([
+                                    'fragmentUrl' => route('admin.cr-eksternal.history-modal', $externCr),
+                                    'subtitle' => $externCr->nomor,
+                                    'namaLabel' => $externCr->nama,
+                                ]))">
+                                Riwayat
+                            </button>
                         @endif
                         <button type="submit" form="{{ $formId }}"
                             class="inline-flex h-10 items-center rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white shadow-md shadow-sky-900/25 ring-2 ring-sky-500/80 transition-colors hover:bg-sky-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-800 dark:bg-sky-500 dark:text-white dark:ring-sky-400/70 dark:hover:bg-sky-400">

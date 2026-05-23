@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.2fa' => EnsureAdminTwoFactorVerified::class,
             'menu.activity' => LogUserMenuActivity::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'webhook/whatsapp',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

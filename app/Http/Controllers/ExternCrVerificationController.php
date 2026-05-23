@@ -17,7 +17,7 @@ class ExternCrVerificationController extends Controller
             abort(403, 'Parameter tidak valid.');
         }
 
-        $externCr->load(['creator', 'division']);
+        $externCr->load(['creator', 'division', 'authorizationResponder']);
 
         return view('pages.extern-cr-verify', [
             'cr' => $externCr,

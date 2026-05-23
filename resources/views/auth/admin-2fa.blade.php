@@ -2,8 +2,10 @@
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        Kode OTP telah dikirim ke Telegram admin untuk akun <span class="font-semibold">{{ $maskedEmail }}</span>.
-        Masukkan kode 6 digit untuk melanjutkan login.
+        Kode OTP telah dikirim melalui <span class="font-semibold text-gray-900 dark:text-white">WhatsApp</span>
+        ke <span class="font-mono font-semibold text-gray-900 dark:text-white">{{ $maskedPhone }}</span>
+        untuk akun <span class="font-semibold">{{ $maskedEmail }}</span>.
+        Masukkan kode 6 digit untuk melanjutkan login (±5 menit).
     </div>
 
     <form method="POST" action="{{ route('admin.2fa.verify') }}">

@@ -24,6 +24,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'two_factor_enabled',
+        'can_authorize_extern_cr',
         'role',
         'division',
         'kantor_id',
@@ -50,6 +53,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_enabled' => 'boolean',
+            'can_authorize_extern_cr' => 'boolean',
         ];
     }
 

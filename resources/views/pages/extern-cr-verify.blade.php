@@ -13,6 +13,7 @@
         dt { font-size: .75rem; text-transform: uppercase; color: #64748b; margin-top: .75rem; }
         dd { margin: .2rem 0 0 0; font-weight: 600; }
         p.small { font-size: .85rem; color: #64748b; }
+        .reject { border: 1px solid #dc2626; background: #fef2f2; padding: 1rem 1.1rem; border-radius: 0.75rem; }
     </style>
 </head>
 <body>
@@ -35,19 +36,46 @@
         </dl>
         <p class="small">Tautan ini hanya sah jika Anda membukanya langsung dari hasil pemindaian kode QR resmi pada PDF formulir.</p>
     @else
-        <div class="pending">
-            <h1>Verifikasi persetujuan</h1>
-            <p>CR <strong>{{ $cr->nomor }}</strong>: <strong>Belum disetujui.</strong></p>
-            <p class="small">Fitur approval oleh admin akan diaktifkan kemudian. Setelah ada persetujuan, halaman dari QR dapat diperbarui agar menampilkan nama penyetuju dan status sah dokumen.</p>
-        </div>
-        <dl>
-            <dt>Nomor</dt>
-            <dd>{{ $cr->nomor }}</dd>
-            <dt>Nama / judul</dt>
-            <dd>{{ $cr->nama ?? '—' }}</dd>
-            <dt>Tanggal dokumen</dt>
-            <dd>{{ $cr->tanggal?->format('d/m/Y') ?? '—' }}</dd>
-        </dl>
-    @endif
+        @if (($cr->wa_authorization_decision ?? null) === \App\Models\ExternCr::WA_AUTH_APPROVED)
+            <div class="ok">
+                <h1>Persetujuan tercatat</h1>
+                <p>CR <strong>{{ $cr->nomor }}</strong> telah <strong>disetujui</strong> melalui WhatsApp.</p>
+            </div>
+            <dl>
+                <dt>Nama / judul</dt>
+                <dd>{{ $cr->nama ?? '—' }}</dd>
+                <dt>Penanggung jawab keputusan</dt>
+                <dd>{{ $cr->authorizationResponder?->name ?? '—' }}</dd>
+                <dt>Waktu keputusan</dt>
+                <dd>{{ optional($cr->wa_authorization_at)->format('d/m/Y H:i') ?? '—' }}</dd>
+            </dl>
+        @elseif (($cr->wa_authorization_decision ?? null) === \App\Models\ExternCr::WA_AUTH_REJECTED)
+            <div class="reject">
+                <h1>Persetujuan ditolak</h1>
+                <p>CR <strong>{{ $cr->nomor }}</strong> <strong>ditolak</strong> melalui WhatsApp.</p>
+            </div>
+            <dl>
+                <dt>Nama / judul</dt>
+                <dd>{{ $cr->nama ?? '—' }}</dd>
+                <dt>Penanggung jawab keputusan</dt>
+                <dd>{{ $cr->authorizationResponder?->name ?? '—' }}</dd>
+                <dt>Waktu keputusan</dt>
+                <dd>{{ optional($cr->wa_authorization_at)->format('d/m/Y H:i') ?? '—' }}</dd>
+            </dl>
+        @else
+            <div class="pending">
+                <h1>Verifikasi persetujuan</h1>
+                <p>CR <strong>{{ $cr->nomor }}</strong>: <strong>Menunggu keputusan otorisator</strong> (misalnya lewat WhatsApp).</p>
+                <p class="small">Jika Anda otorisator, gunakan tautan tombol pada pesan template atau balasan interaktif untuk menanggapi.</p>
+            </div>
+            <dl>
+                <dt>Nomor</dt>
+                <dd>{{ $cr->nomor }}</dd>
+                <dt>Nama / judul</dt>
+                <dd>{{ $cr->nama ?? '—' }}</dd>
+                <dt>Tanggal dokumen</dt>
+                <dd>{{ $cr->tanggal?->format('d/m/Y') ?? '—' }}</dd>
+            </dl>
+        @endif
 </body>
 </html>

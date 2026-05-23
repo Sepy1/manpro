@@ -418,6 +418,43 @@ php artisan optimize:clear
 ### [2025-12-29]
 - Added Date Picker in Statistics Chart
 
+## Admin 2FA (WhatsApp / Mahadata)
+
+Login **admin** menggunakan OTP enam digit dikirim lewat WhatsApp Cloud API Mahadata — **token & URL tidak boleh di-commit**.
+
+Tambahkan ke `.env` (gunakan URL & token Anda):
+
+```dotenv
+MAHADATA_WHATSAPP_MESSAGE_ENDPOINT="https://messaging.mahadata.io/v1/…/messages"
+MAHADATA_WHATSAPP_TOKEN="…"
+# Isi token saja (tanpa awalan Bearer — Laravel menambahkannya otomatis).
+MAHADATA_WHATSAPP_TEMPLATE_NAME="otp_branchless"
+MAHADATA_WHATSAPP_TEMPLATE_LANGUAGE_CODE="id"
+# MAHADATA_WHATSAPP_HTTP_TIMEOUT=30   # opsional, detik
+# MAHADATA_WHATSAPP_OTP_SEND_MODE=auto   # auto | body_only | full — lihat docs/dotenv-whatsapp.example
+# Notifikasi otorisasi CR eksternal (optional; sama endpoint & token)
+# MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME="change_request_manpro"
+# MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE="id"
+# MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE=false
+# MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true
+# EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES=10080
+
+# --- Webhook WhatsApp Cloud → Laravel (/webhook/whatsapp) ---
+# WHATSAPP_WEBHOOK_VERIFY_TOKEN=""
+# WHATSAPP_APP_SECRET=""
+# WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE=false
+# WHATSAPP_CR_APPROVE_LABELS=Setuju
+# WHATSAPP_CR_REJECT_LABELS=Tidak,Tolak
+```
+
+Di **Manajemen User**, setiap akun dapat mengaktifkan **2FA WhatsApp** serta **daftar otorisator CR eksternal** (penerima template notifikasi). Bila salah satu dicentang, **nomor HP wajib** (format Indonesia, dinormalisasi ke `628…`).
+
+### Notifikasi otorisasi CR eksternal (WhatsApp)
+
+Lihat **`docs/whatsapp-cr-authorization.md`** dan contoh POST JSON di **`docs/examples/whatsapp-change-request-manpro-authorization.template.json`**. Daftar lengkap nama variabel **`.env`** terkait WhatsApp ada di **`docs/dotenv-whatsapp.example`** (webhook inbound + Mahadata outbound).
+
+Konfigurasikan webhook Meta ke **`{APP_URL}/webhook/whatsapp`** menggunakan `WHATSAPP_WEBHOOK_VERIFY_TOKEN` dan `WHATSAPP_APP_SECRET`.
+
 ## License
 
 Refer to our [LICENSE](https://tailadmin.com/license) page for more information.

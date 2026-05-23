@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ExternCrHistoryEvent;
 use App\Enums\ExternCrStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Division;
@@ -9,15 +10,20 @@ use App\Models\ExternCr;
 use App\Models\ExternCrApplication;
 use App\Models\ExternCrAttachment;
 use App\Models\ExternCrChangeReason;
+use App\Models\ExternCrHistory;
+use App\Models\User;
 use App\Support\DivisionMentionParser;
+use App\Support\ExternCrHistoryRecorder;
+use App\Support\ExternCrMergedPdfBuilder;
 use App\Support\ExternCrNomorGenerator;
-use App\Support\ExternCrPdfQr;
-use App\Support\ExternCrPrintedPdfAssembler;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\IndonesianWhatsappPhoneNormalizer;
+use App\Support\MahadataWhatsappExternCrAuthorizationNotifier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -112,7 +118,17 @@ class ExternCrController extends Controller
 
         $cr->divisionsInvolved()->sync($divisionIdsInvolved);
 
+        ExternCrHistoryRecorder::created($cr);
         $this->storeUploadedAttachments($cr, $request);
+
+        try {
+            app(MahadataWhatsappExternCrAuthorizationNotifier::class)->notifyAuthorizersAboutNewCr($cr);
+        } catch (\Throwable $e) {
+            Log::warning('Notifikasi WA otorisasi CR eksternal gagal.', [
+                'extern_cr_id' => $cr->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('admin.cr-eksternal.index')
             ->with('status', 'CR Eksternal '.$cr->nomor.' berhasil dibuat.');
@@ -143,6 +159,8 @@ class ExternCrController extends Controller
             $validated['divisions_terlibat_text'] ?? null,
             false
         );
+
+        ExternCrHistoryRecorder::recordFormUpdateIfChanged($externCr, $validated, $divisionIdsInvolved);
 
         $externCr->update([
             'tanggal' => $validated['tanggal'],
@@ -180,109 +198,171 @@ class ExternCrController extends Controller
             ->with('status', 'CR '.$nomor.' dihapus.');
     }
 
-    public function updateStatus(Request $request, ExternCr $externCr): RedirectResponse
+    public function authorizersPayload(ExternCr $externCr): JsonResponse
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::enum(ExternCrStatus::class)],
+        if ($externCr->hasWaAuthorizationDecision()) {
+            return response()->json([
+                'wa_decision_locked' => true,
+                'message' => 'CR ini sudah memiliki keputusan otorisasi WhatsApp.',
+                'cr_id' => $externCr->id,
+                'cr_nomor' => $externCr->nomor,
+                'authorizers' => [],
+            ], 423);
+        }
+
+        return response()->json([
+            'wa_decision_locked' => false,
+            'cr_id' => $externCr->id,
+            'cr_nomor' => $externCr->nomor,
+            'authorizers' => $this->buildAuthorizersChecklistPayload($externCr),
+        ]);
+    }
+
+    public function sendWhatsappAuthorization(Request $request, ExternCr $externCr): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        if ($externCr->hasWaAuthorizationDecision()) {
+            return back()->with('flash_error', 'CR ini sudah diotorisasi lewat WhatsApp; tidak bisa mengirim undangan lagi.');
+        }
+
+        $validated = Validator::make($request->all(), [
+            'authorizer_id' => ['required', 'integer'],
         ]);
 
-        $status = ExternCrStatus::from($validated['status']);
-        $externCr->update(['status' => $status]);
+        if ($validated->fails()) {
+            return back()->with('flash_error', 'Pilih tepat satu otorisator yang akan menerima WhatsApp.');
+        }
 
-        return back()->with(
-            'status',
-            'Status CR '.$externCr->nomor.' diubah menjadi: '.$status->label().'.'
-        );
+        $chosenId = (int) ($validated->validated()['authorizer_id'] ?? 0);
+
+        $endpoint = trim((string) config('services.mahadata_whatsapp.endpoint'));
+        $token = trim((string) config('services.mahadata_whatsapp.token'));
+        $template = trim((string) config('services.mahadata_whatsapp.cr_authorization_template_name'));
+
+        if ($endpoint === '' || $token === '' || $template === '') {
+            return back()->with('flash_error', 'Konfigurasi Mahadata untuk otorisasi CR belum lengkap (endpoint pesan WhatsApp, token, dan nama template otorisasi).');
+        }
+
+        $allowedReceiverIds = $this->eligibleAuthorizerReceiverUserIds($externCr);
+        $sendIds = in_array($chosenId, $allowedReceiverIds, true) ? [$chosenId] : [];
+
+        if ($sendIds === []) {
+            return back()->with('flash_error', 'Pilihan otorisator tidak valid: harus satu pengguna dengan WA valid yang belum memberi keputusan untuk CR ini.');
+        }
+
+        try {
+            $success = app(MahadataWhatsappExternCrAuthorizationNotifier::class)->notifyAuthorizersOnDemand($externCr, $sendIds);
+        } catch (\Throwable $e) {
+            Log::warning('Kirim WA otorisasi CR eksternal (manual): exception.', [
+                'extern_cr_id' => $externCr->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('flash_error', 'Pengiriman WA gagal: silakan periksa log aplikasi atau coba lagi.');
+        }
+
+        $targetCount = 1;
+        ExternCrHistoryRecorder::waAuthorizationInviteDispatched($externCr, auth()->id(), $success, $targetCount);
+
+        if ($success === 0) {
+            return back()->with(
+                'flash_error',
+                'WhatsApp tidak terkirim ke otorisator terpilih. Periksa template Mahadata, nomor pengguna, dan `storage/logs/laravel.log` (cari Mahadata CR auth WA). '
+                .'Opsi: `MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS` / `MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS` di `.env` lalu `php artisan config:clear`.'
+            );
+        }
+
+        return back()->with('status', "Undangan otorisasi WA terkirim ke 1 otorisator untuk {$externCr->nomor}.");
+    }
+
+    public function detailModalFragment(ExternCr $externCr): View
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $externCr->load(['application', 'changeReason', 'attachments']);
+
+        $latestStatusChangeNote = $this->latestStatusChangeNoteForCurrentStatus($externCr);
+
+        return view('pages.dashboard.cr-eksternal.partials.detail-modal-body', [
+            'cr' => $externCr,
+            'latestStatusChangeNote' => $latestStatusChangeNote,
+        ]);
+    }
+
+    public function updateStatus(Request $request, ExternCr $externCr): JsonResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $validator = Validator::make($request->all(), [
+            'status' => ['required', Rule::enum(ExternCrStatus::class)],
+            'note' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok' => false,
+                'message' => $validator->errors()->first() ?: 'Validasi gagal.',
+                'errors' => $validator->errors()->toArray(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        $rawStatus = $validated['status'];
+        $newStatus = $rawStatus instanceof ExternCrStatus
+            ? $rawStatus
+            : ExternCrStatus::from((string) $rawStatus);
+
+        $oldStatus = $externCr->status;
+
+        $noteRaw = isset($validated['note']) ? trim((string) $validated['note']) : '';
+        $note = $noteRaw !== '' ? $noteRaw : null;
+
+        if ($oldStatus !== $newStatus) {
+            ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $newStatus, $note);
+            $externCr->update(['status' => $newStatus]);
+            $externCr->refresh();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => $oldStatus === $newStatus
+                ? 'Status tidak berubah.'
+                : 'Status diperbarui.',
+            'status_label' => $externCr->status->label(),
+        ]);
+    }
+
+    public function historyModalFragment(ExternCr $externCr): View
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $externCr->load(['division']);
+
+        $limit = 60;
+        $baseQuery = $externCr->histories()
+            ->with(['user'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        $totalCount = (clone $baseQuery)->count();
+        $histories = (clone $baseQuery)->limit($limit)->get();
+
+        return view('pages.dashboard.cr-eksternal.partials.history-card-body', [
+            'externCr' => $externCr,
+            'histories' => $histories,
+            'truncateHint' => $totalCount > $limit,
+        ]);
     }
 
     public function printPdf(ExternCr $externCr): Response
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $externCr->load(['attachments', 'division', 'application', 'changeReason', 'creator', 'divisionsInvolved']);
-
-        $reasonsForPdf = ExternCrChangeReason::query()
-            ->where(function ($q) use ($externCr) {
-                $q->where('is_active', true)
-                    ->orWhere('id', $externCr->extern_cr_change_reason_id);
-            })
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $logoPath = public_path('images/bkk.png');
-        $logoDataUri = null;
-        if (is_readable($logoPath)) {
-            $logoDataUri = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
-        }
-
-        $creatorSignedUrl = ExternCrPdfQr::signedVerifyUrl($externCr, ExternCrPdfQr::PURPOSE_CREATOR);
-        $approverSignedUrl = ExternCrPdfQr::signedVerifyUrl($externCr, ExternCrPdfQr::PURPOSE_APPROVER);
-
-        $divisiTerlibatDisplay = trim((string) ($externCr->divisions_terlibat_text ?? ''));
-        if ($divisiTerlibatDisplay === '' && $externCr->divisionsInvolved->isNotEmpty()) {
-            $divisiTerlibatDisplay = $externCr->divisionsInvolved->sortBy('name')->pluck('name')->implode(', ');
-        }
-
-        $pdf = Pdf::loadView('pages.dashboard.cr-eksternal.pdf-permintaan-perubahan', [
-            'cr' => $externCr,
-            'reasonsForPdf' => $reasonsForPdf,
-            'logoDataUri' => $logoDataUri,
-            'qrCreatorDataUri' => ExternCrPdfQr::dataUriForUrl($creatorSignedUrl),
-            'qrApproverDataUri' => ExternCrPdfQr::dataUriForUrl($approverSignedUrl),
-            'divisiTerlibatDisplay' => $divisiTerlibatDisplay !== '' ? $divisiTerlibatDisplay : '—',
-        ])->setPaper('a4', 'portrait');
-
-        // Tanpa ini, DomPDF memakai FlateDecode; FPDI (fallback penggabungan di Windows) sering gagal
-        // sehingga hanya formulir utama yang terkirim. Kompresi dinonaktifkan hanya untuk biner utama.
-        $mainBinary = $pdf->output(['compress' => false]);
-
-        $fileName = 'CR-'.$externCr->nomor.'.pdf';
-
-        $headers = [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
-        ];
-
-        $sortedPdfAttachments = $externCr->attachments
-            ->sortBy(fn (ExternCrAttachment $a) => [$a->position, $a->id]);
-
-        $paths = [];
-        foreach ($sortedPdfAttachments as $attachment) {
-            if (! $this->attachmentIsPdfForMerge($attachment)) {
-                continue;
-            }
-
-            try {
-                $absolute = Storage::disk($attachment->disk)->path($attachment->path);
-            } catch (\Throwable) {
-                continue;
-            }
-
-            if (is_readable($absolute)) {
-                $paths[] = $absolute;
-            }
-        }
-
-        if ($paths === []) {
-            return response($mainBinary, 200, $headers);
-        }
-
-        try {
-            $merged = ExternCrPrintedPdfAssembler::mergeMainWithPdfAttachments($mainBinary, $paths);
-
-            return response($merged, 200, $headers);
-        } catch (\Throwable $e) {
-            Log::warning('CR PDF: gagal gabung lampiran PDF, hanya formulir utama yang dikeluarkan.', [
-                'extern_cr_id' => $externCr->id,
-                'nomor' => $externCr->nomor,
-                'message' => $e->getMessage(),
-            ]);
-
-            return response($mainBinary, 200, $headers);
-        }
+        return ExternCrMergedPdfBuilder::streamedInlineResponse($externCr);
     }
 
     public function downloadAttachment(ExternCr $externCr, ExternCrAttachment $attachment): StreamedResponse
@@ -301,25 +381,151 @@ class ExternCrController extends Controller
         abort_unless(auth()->user()?->role === 'admin', 403);
         abort_unless($attachment->extern_cr_id === $externCr->id, 404);
 
+        $originalName = (string) ($attachment->original_name ?: basename((string) $attachment->path));
+
         Storage::disk($attachment->disk)->delete($attachment->path);
+        ExternCrHistoryRecorder::attachmentRemoved($externCr, $originalName);
         $attachment->delete();
 
         return back()->with('status', 'Lampiran dihapus.');
     }
 
-    private function attachmentIsPdfForMerge(ExternCrAttachment $attachment): bool
+    /** Catatan dari riwayat pergantian status terakhir yang menghasilkan status CR saat ini. */
+    private function latestStatusChangeNoteForCurrentStatus(ExternCr $externCr): ?string
     {
-        $nameExt = strtolower((string) pathinfo((string) ($attachment->original_name ?: ''), PATHINFO_EXTENSION));
-        if ($nameExt === 'pdf') {
-            return true;
+        $currentValue = $externCr->status->value;
+
+        $rows = ExternCrHistory::query()
+            ->where('extern_cr_id', $externCr->id)
+            ->where('event', ExternCrHistoryEvent::StatusChanged->value)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get(['properties']);
+
+        foreach ($rows as $row) {
+            $props = $row->properties ?? [];
+            if (($props['to'] ?? null) !== $currentValue) {
+                continue;
+            }
+
+            $n = isset($props['note']) && is_string($props['note']) ? trim($props['note']) : '';
+
+            return $n !== '' ? $n : null;
         }
 
-        $pathExt = strtolower((string) pathinfo(basename((string) $attachment->path), PATHINFO_EXTENSION));
-        if ($pathExt === 'pdf') {
-            return true;
+        return null;
+    }
+
+    /**
+     * Pengguna yang sudah mencatat keputusan otorisasi WA untuk CR ini (riwayat + kolom responder).
+     *
+     * @return list<int>
+     */
+    private function whatsappRespondedAuthorizerUserIds(ExternCr $externCr): array
+    {
+        $fromHistory = ExternCrHistory::query()
+            ->where('extern_cr_id', $externCr->id)
+            ->where('event', ExternCrHistoryEvent::WhatsappAuthorization->value)
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $byColumn = $externCr->wa_authorization_by_user_id !== null
+            ? [(int) $externCr->wa_authorization_by_user_id]
+            : [];
+
+        return array_values(array_unique(array_merge($fromHistory, $byColumn)));
+    }
+
+    /** ID pengguna yang boleh menerima undangan lagi: otorisator, WA valid, belum memberi keputusan. */
+    private function eligibleAuthorizerReceiverUserIds(ExternCr $externCr): array
+    {
+        $responded = array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
+
+        $users = User::query()
+            ->where('can_authorize_extern_cr', true)
+            ->whereIn('role', User::ROLES)
+            ->whereNotNull('phone')
+            ->get(['id', 'phone']);
+
+        $ids = [];
+        foreach ($users as $user) {
+            if (isset($responded[(int) $user->id])) {
+                continue;
+            }
+            if (IndonesianWhatsappPhoneNormalizer::toWaDigits62(trim((string) $user->phone)) === null) {
+                continue;
+            }
+            $ids[] = (int) $user->id;
         }
 
-        return str_contains(Str::lower((string) ($attachment->mime ?? '')), 'pdf');
+        return array_values(array_unique($ids));
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function buildAuthorizersChecklistPayload(ExternCr $externCr): array
+    {
+        $respondedFlip = array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
+
+        $users = User::query()
+            ->where('can_authorize_extern_cr', true)
+            ->whereIn('role', User::ROLES)
+            ->orderBy('name')
+            ->get(['id', 'name', 'role', 'phone']);
+
+        $rows = [];
+        $firstSelectableChosen = false;
+
+        foreach ($users as $user) {
+            $phoneRaw = trim((string) ($user->phone ?? ''));
+            $waDigits = IndonesianWhatsappPhoneNormalizer::toWaDigits62($phoneRaw);
+            $alreadyResponded = isset($respondedFlip[(int) $user->id]);
+            $waDigitsOk = $phoneRaw !== '' && $waDigits !== null;
+            $selectable = $waDigitsOk && ! $alreadyResponded;
+
+            $disabledReason = null;
+            if ($alreadyResponded) {
+                $disabledReason = 'Sudah memberi keputusan otorisasi';
+            } elseif ($phoneRaw === '' || ! $waDigitsOk) {
+                $disabledReason = 'Nomor WhatsApp tidak valid atau kosong';
+            }
+
+            $checkedDefault = false;
+            if ($selectable && ! $firstSelectableChosen) {
+                $checkedDefault = true;
+                $firstSelectableChosen = true;
+            }
+
+            $rows[] = [
+                'id' => (int) $user->id,
+                'name' => (string) $user->name,
+                'role' => (string) $user->role,
+                'phone_hint' => $this->waPhoneHintForUi($phoneRaw),
+                'selectable' => $selectable,
+                'already_responded' => $alreadyResponded,
+                'wa_valid' => $waDigits !== null && $phoneRaw !== '',
+                'checked_default' => $checkedDefault,
+                'disabled_reason' => $disabledReason,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** Menyembunyikan sebagian digit untuk ditampilkan di UI checklist. */
+    private function waPhoneHintForUi(string $phoneDigitsOrRaw): string
+    {
+        $d = preg_replace('/\D+/', '', $phoneDigitsOrRaw) ?? '';
+
+        return match (true) {
+            $d === '' => '—',
+            strlen($d) < 8 => Str::limit($d, 6).'…',
+            default => substr($d, 0, 4).str_repeat('•', strlen($d) - 7).substr($d, -3),
+        };
     }
 
     private function activeDivisions()
@@ -459,6 +665,7 @@ class ExternCrController extends Controller
                 'size_bytes' => $upload->getSize() ?: null,
                 'position' => $position,
             ]);
+            ExternCrHistoryRecorder::attachmentAdded($cr, $upload->getClientOriginalName());
         }
     }
 }

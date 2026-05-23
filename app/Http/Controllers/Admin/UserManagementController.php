@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\Kantor;
 use App\Models\User;
+use App\Support\IndonesianWhatsappPhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -50,6 +52,12 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(self::MANAGED_ROLES)],
+            'phone' => [
+                Rule::requiredIf(fn () => $request->boolean('two_factor_enabled') || $request->boolean('can_authorize_extern_cr')),
+                'nullable',
+                'string',
+                'max:32',
+            ],
             'division' => [
                 Rule::requiredIf(fn () => in_array($request->input('role'), ['manager', 'officer'], true)),
                 'nullable',
@@ -63,11 +71,23 @@ class UserManagementController extends Controller
                 Rule::exists('kantors', 'id')->where('is_active', true),
             ],
             'password' => ['required', 'string', 'min:8'],
+            'can_authorize_extern_cr' => ['sometimes', 'boolean'],
         ]);
+
+        $twoFa = $this->resolvedTwoFactorEnabled($request);
+        $canAuthorizeExternCr = $request->boolean('can_authorize_extern_cr');
+
+        $phoneWa = $this->normalizeWaPhonePayload(
+            $twoFa,
+            isset($validated['phone']) ? (string) $validated['phone'] : null,
+        );
 
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $phoneWa,
+            'two_factor_enabled' => $twoFa,
+            'can_authorize_extern_cr' => $canAuthorizeExternCr,
             'role' => $validated['role'],
             'division' => $this->normalizeDivision($validated),
             'kantor_id' => $this->normalizeKantor($validated),
@@ -87,6 +107,12 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'role' => ['required', Rule::in(self::MANAGED_ROLES)],
+            'phone' => [
+                Rule::requiredIf(fn () => $request->boolean('two_factor_enabled') || $request->boolean('can_authorize_extern_cr')),
+                'nullable',
+                'string',
+                'max:32',
+            ],
             'division' => [
                 Rule::requiredIf(fn () => in_array($request->input('role'), ['manager', 'officer'], true)),
                 'nullable',
@@ -100,11 +126,23 @@ class UserManagementController extends Controller
                 Rule::exists('kantors', 'id')->where('is_active', true),
             ],
             'password' => ['nullable', 'string', 'min:8'],
+            'can_authorize_extern_cr' => ['sometimes', 'boolean'],
         ]);
+
+        $twoFa = $this->resolvedTwoFactorEnabled($request);
+        $canAuthorizeExternCr = $request->boolean('can_authorize_extern_cr');
+
+        $phoneWa = $this->normalizeWaPhonePayload(
+            $twoFa,
+            isset($validated['phone']) ? (string) $validated['phone'] : null,
+        );
 
         $payload = [
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $phoneWa,
+            'two_factor_enabled' => $twoFa,
+            'can_authorize_extern_cr' => $canAuthorizeExternCr,
             'role' => $validated['role'],
             'division' => $this->normalizeDivision($validated),
             'kantor_id' => $this->normalizeKantor($validated),
@@ -159,5 +197,45 @@ class UserManagementController extends Controller
         $id = $validated['kantor_id'] ?? null;
 
         return $id !== null && $id !== '' ? (int) $id : null;
+    }
+
+    private function resolvedTwoFactorEnabled(Request $request): bool
+    {
+        return $request->boolean('two_factor_enabled');
+    }
+
+    private function normalizeWaPhonePayload(bool $twoFaEnabled, ?string $phoneInput): ?string
+    {
+        $raw = trim((string) ($phoneInput ?? ''));
+
+        if (! $twoFaEnabled) {
+            if ($raw === '') {
+                return null;
+            }
+
+            $normalizedOptional = IndonesianWhatsappPhoneNormalizer::toWaDigits62($raw);
+            if ($normalizedOptional === null) {
+                throw ValidationException::withMessages([
+                    'phone' => 'Format nomor HP tidak valid. Kosongkan jika tidak diperlukan atau gunakan format 08… / 628….',
+                ]);
+            }
+
+            return $normalizedOptional;
+        }
+
+        if ($raw === '') {
+            throw ValidationException::withMessages([
+                'phone' => 'Nomor HP wajib jika verifikasi 2FA WhatsApp diaktifkan.',
+            ]);
+        }
+
+        $normalized = IndonesianWhatsappPhoneNormalizer::toWaDigits62($raw);
+        if ($normalized === null) {
+            throw ValidationException::withMessages([
+                'phone' => 'Format nomor HP tidak valid. Contoh: 0812xxxxxxxx atau 62812xxxxxxxx.',
+            ]);
+        }
+
+        return $normalized;
     }
 }

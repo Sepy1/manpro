@@ -1,0 +1,92 @@
+# =============================================================================
+# VARIABEL .env TERKAIT WHATSAPP — salin ke `.env` Anda lalu isi nilai asli.
+# Jangan commit `.env` ke Git.
+# =============================================================================
+#
+# Ringkasan dua jalur:
+#   (A) Kirim pesan template lewat Mahadata — Authorization: Bearer MAHADATA_WHATSAPP_TOKEN
+#   (B) Terima event tombol / pesan dari WhatsApp Cloud → URL publik Laravel (/webhook/whatsapp)
+#
+# =============================================================================
+# WAJIB untuk login 2FA OTP (panel admin / user dengan 2FA aktif)
+# =============================================================================
+
+APP_URL=https://contoh-domain-anda.test
+
+# URL kirim pesan Mahadata (biasanya .../messages — minta ke dashboard Mahadata Anda)
+MAHADATA_WHATSAPP_MESSAGE_ENDPOINT=https://messaging.mahadata.io/v1/CONTOH_ID_WABA/messages
+
+# Token untuk header Authorization (bukan App Secret Meta). Tulis tanpa kata "Bearer" —
+# Laravel akan menambahkan `Bearer `. Jika Anda sempat menempel `Bearer xxx`, aplikasi menghapus duplikat.
+MAHADATA_WHATSAPP_TOKEN=ganti_dengan_token_mahadata_anda
+
+# Nama template WhatsApp yang disetujui Meta untuk OTP (satu variabel body teks = kode 6 digit).
+# Jika template Anda punya tombol URL dinamis, struktur komponen kiriman harus sama di kode.
+MAHADATA_WHATSAPP_TEMPLATE_NAME=otp_branchless
+
+# Kode bahasa template (biasanya id)
+MAHADATA_WHATSAPP_TEMPLATE_LANGUAGE_CODE=id
+
+# Timeout HTTP ke Mahadata (detik)
+MAHADATA_WHATSAPP_HTTP_TIMEOUT=30
+
+# OTP 2FA: auto (default) = coba kirim body+tombol URL, jika gagal ulang hanya body.
+# full = wajib template punya tombol URL ke-0 | body_only = hanya 1 variabel di body.
+MAHADATA_WHATSAPP_OTP_SEND_MODE=auto
+
+# =============================================================================
+# OPSIONAL — Notifikasi CR eksternal (template otorisator, tombol Setuju/Tidak)
+# =============================================================================
+
+# Kosongkan dua baris di atas jika Anda tidak pakai fitur ini; jika dipakai harus sama endpoint+token.
+MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=change_request_manpro
+MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE=id
+
+# true = kirim komponen tombol quick_reply + payload APPROVE_CR_/REJECT_CR_ (sesuai Laravel; lama APR_/REJ_ tetap diparse webhook)
+MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true
+
+# true = anggap sah id `messages[0].id` apa pun bentuknya (mis. Mahadata pakai prefiks msg_) — default true agar penyedia seperti Mahadata tidak salah dianggap gagal kirim
+MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true
+
+# true = otomatis kirim WA ke user yang dicentang “otorisasi CR” saat CR eksternal baru dibuat
+MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE=false
+
+# Masa berlaku (menit) link unduh PDF gabungan untuk parameter ke-4 template (signed URL)
+EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES=10080
+
+# =============================================================================
+# OPSIONAL — Webhook inbound Laravel (balasan tombol otorisasi CR)
+# Daftarkan di Meta/Mahadata: Callback URL = https://domain-anda/webhook/whatsapp
+# =============================================================================
+
+# String bebas — harus sama dengan “Verify token” di konfigurasi webhook developer
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=buat_string_random_panjang_ini
+
+# OPTIONAL: App Secret aplikasi WhatsApp di Meta (untuk header X-Hub-Signature-256).
+# Bisa dikosongkan; Laravel tetang menerima webhook tanpa validasi signature (kurang aman).
+WHATSAPP_APP_SECRET=
+
+# true = jangan cek signature sama sekali (hanya dev; production disarankan false)
+WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE=false
+
+# Fallback jika tombol tidak membawa payload APPROVE_CR_/REJECT_CR_: cocokkan judul tombol (pisah koma)
+WHATSAPP_CR_APPROVE_LABELS=Setuju
+WHATSAPP_CR_REJECT_LABELS=Tidak,Tolak
+
+# =============================================================================
+# CONTOH MINIMAL (hanya 2FA OTP jalan, tanpa CR webhook)
+# =============================================================================
+# APP_URL=https://...
+# MAHADATA_WHATSAPP_MESSAGE_ENDPOINT=https://...
+# MAHADATA_WHATSAPP_TOKEN=...
+# MAHADATA_WHATSAPP_TEMPLATE_NAME=otp_branchless
+# MAHADATA_WHATSAPP_TEMPLATE_LANGUAGE_CODE=id
+#
+# =============================================================================
+# CHEAT SHEET — dari mana nilainya?
+# =============================================================================
+# • MAHADATA_*        → dashboard / akun Mahadata (URL messages + token Bearer)
+# • Nama template     → WhatsApp Business Manager (template harus APPROVED)
+# • WHATSAPP_WEBHOOK_VERIFY_TOKEN → Anda buat sendiri, lalu sama di form webhook Meta
+# • WHATSAPP_APP_SECRET           → App dashboard Meta (jika dipakai untuk signature)
+# • APP_URL           → URL publik situs (HTTPS); dipakai webhook + link bertanda PDF

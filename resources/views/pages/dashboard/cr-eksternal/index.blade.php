@@ -3,10 +3,28 @@
 @section('admin-content')
     <x-common.page-breadcrumb pageTitle="CR Eksternal" />
 
-    <div class="flex w-full max-w-none min-h-0 flex-1 flex-col gap-4">
+        <div
+            class="flex w-full max-w-none min-h-0 flex-1 flex-col gap-4"
+            x-data="{
+                updateRowChip (d) {
+                    if (! d || typeof d.id === 'undefined') { return; }
+
+                    var tr = document.querySelector('tr[data-cr-id=\'' + String(d.id) + '\']');
+
+                    var chip = tr ? tr.querySelector('.cr-status-chip') : null;
+                    if (chip && d.label) { chip.textContent = d.label; }
+                }
+            }"
+            @extern-cr-row-status.window="updateRowChip($event.detail)"
+        >
         @if (session('status'))
             <div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
                 {{ session('status') }}
+            </div>
+        @endif
+        @if (session('flash_error'))
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/45 dark:bg-red-950/30 dark:text-red-200">
+                {{ session('flash_error') }}
             </div>
         @endif
 
@@ -44,32 +62,67 @@
                     </thead>
                     <tbody>
                         @forelse ($items as $row)
-                            <tr class="border-b border-gray-100 dark:border-gray-800">
+                            <tr
+                                data-cr-id="{{ $row->id }}"
+                                class="cursor-pointer border-b border-gray-100 transition-colors hover:bg-slate-50/80 dark:border-gray-800 dark:hover:bg-slate-900/60"
+                                @click="$dispatch('open-extern-cr-detail', @js([
+                                    'fragmentUrl' => route('admin.cr-eksternal.detail-modal', $row),
+                                    'updateUrl' => route('admin.cr-eksternal.status', $row),
+                                    'crId' => $row->id,
+                                    'subtitle' => $row->nomor,
+                                ]))"
+                            >
                                 <td class="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900 dark:text-white/90">{{ $row->nomor }}</td>
                                 <td class="max-w-[220px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->nama }}">{{ $row->nama ? $row->nama : '—' }}</td>
                                 <td class="whitespace-nowrap px-2 py-2 text-sm text-gray-700 dark:text-gray-300">{{ $row->tanggal?->format('d/m/Y') }}</td>
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->division?->name }}">{{ $row->division?->name ?? '-' }}</td>
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->application?->name }}">{{ $row->application?->name ?? '-' }}</td>
                                 <td class="px-2 py-2">
-                                    <form method="POST" action="{{ route('admin.cr-eksternal.status', $row) }}" class="min-w-[9.5rem]">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="status" autocomplete="off" title="Status CR"
-                                            class="h-9 w-full max-w-[12rem] rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs font-medium dark:border-gray-600 dark:text-white/90"
-                                            onchange="(this.form.requestSubmit || this.form.submit).call(this.form)">
-                                            @foreach (\App\Enums\ExternCrStatus::cases() as $case)
-                                                <option value="{{ $case->value }}" @selected($row->status->value === $case->value)>{{ $case->label() }}</option>
-                                            @endforeach
-                                        </select>
-                                    </form>
+                                    <span class="cr-status-chip inline-flex max-w-[13rem] items-center rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100" title="Klik baris untuk detail &amp; ubah status">
+                                        {{ $row->status->label() }}
+                                    </span>
                                 </td>
-                                <td class="whitespace-nowrap px-2 py-2 text-sm">
+                                <td class="whitespace-nowrap px-2 py-2 text-sm" @click.stop>
                                     <div class="flex flex-wrap gap-2">
-                                        <a href="{{ route('admin.cr-eksternal.print', $row) }}" target="_blank" rel="noopener noreferrer" data-no-transition
+                                        <x-async-pdf-link
+                                            href="{{ route('admin.cr-eksternal.print', $row) }}"
                                             title="Form permintaan perubahan PDF"
-                                            class="inline-flex h-8 items-center rounded-lg border border-slate-500 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-500 dark:text-slate-200 dark:hover:bg-slate-800">
+                                            class="inline-flex h-8 items-center rounded-lg border border-slate-500 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-500 dark:text-slate-200 dark:hover:bg-slate-800"
+                                        >
                                             PDF
-                                        </a>
+                                        </x-async-pdf-link>
+                                        <button type="button" title="Riwayat perubahan"
+                                            class="inline-flex h-8 items-center rounded-lg border border-slate-400 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-500 dark:text-slate-200 dark:hover:bg-slate-800"
+                                            @click.prevent="$dispatch('open-extern-cr-history', @js([
+                                                'fragmentUrl' => route('admin.cr-eksternal.history-modal', $row),
+                                                'subtitle' => $row->nomor,
+                                                'namaLabel' => $row->nama,
+                                            ]))">
+                                            Riwayat
+                                        </button>
+                                        @if ($row->hasWaAuthorizationDecision())
+                                            <button
+                                                type="button"
+                                                disabled
+                                                title="CR ini sudah memiliki keputusan otorisasi WhatsApp."
+                                                class="inline-flex h-8 cursor-not-allowed items-center rounded-lg border border-slate-300 px-2 text-xs font-medium text-slate-400 opacity-60 dark:border-slate-600 dark:text-slate-500"
+                                            >
+                                                Sudah otorisasi
+                                            </button>
+                                        @else
+                                            <button
+                                                type="button"
+                                                title="Pilih otorisator lalu kirim template WhatsApp"
+                                                class="inline-flex h-8 items-center rounded-lg border border-teal-500 px-2 text-xs font-medium text-teal-700 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-200 dark:hover:bg-teal-950/40"
+                                                @click.prevent="$dispatch('open-extern-cr-send-auth', @js([
+                                                    'authorizersJsonUrl' => route('admin.cr-eksternal.authorizers-data', $row),
+                                                    'sendUrl' => route('admin.cr-eksternal.send-wa-authorization', $row),
+                                                    'crNomor' => $row->nomor,
+                                                ]))"
+                                            >
+                                                Kirim Otorisasi
+                                            </button>
+                                        @endif
                                         <a href="{{ route('admin.cr-eksternal.edit', $row) }}" data-no-transition
                                             class="inline-flex h-8 items-center rounded-lg border border-brand-500 px-2 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
                                             Edit

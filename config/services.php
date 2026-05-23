@@ -41,9 +41,89 @@ return [
         'organization' => env('OPENAI_ORGANIZATION'),
     ],
 
-    'telegram' => [
-        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'chat_id' => env('TELEGRAM_CHAT_ID'),
+    /*
+     * OTP admin 2FA via Mahadata WhatsApp API (Bearer).
+     */
+    'mahadata_whatsapp' => [
+        /*
+         * Prioritas nama variabel utama; dukung alias salah ketik yang sering dipakai.
+         */
+        'endpoint' => (static function (): string {
+            foreach (
+                [
+                    env('MAHADATA_WHATSAPP_MESSAGE_ENDPOINT'),
+                    env('MAHADATA_WHATSAPP_ENDPOINT'),
+                    env('MAHADATA_WHATSAPP_URL'),
+                    env('MAHADATA_WHATSAPP_API_URL'),
+                ] as $candidate
+            ) {
+                $t = trim((string) ($candidate ?? ''));
+                if ($t !== '') {
+                    return $t;
+                }
+            }
+
+            return '';
+        })(),
+        /*
+         * Laravel mengirim `Authorization: Bearer <token>`; hapus prefiks Bearer bila tertulis di .env
+         * (menghindari header `Bearer Bearer …` yang sering menghasilkan 401).
+         */
+        'token' => preg_replace(
+            '#^Bearer\s+#i',
+            '',
+            trim((string) env('MAHADATA_WHATSAPP_TOKEN', ''))
+        ) ?? '',
+        'template_name' => env('MAHADATA_WHATSAPP_TEMPLATE_NAME', 'otp_branchless'),
+        'template_language_code' => env('MAHADATA_WHATSAPP_TEMPLATE_LANGUAGE_CODE', 'id'),
+        'timeout_seconds' => (int) env('MAHADATA_WHATSAPP_HTTP_TIMEOUT', 30),
+        /*
+         | OTP 2FA: auto = kirim body + tombol URL dulu; bila gagal, kirim lagi hanya body (template banyak yang tanpa tombol).
+         | full = selalu body + tombol URL (template harus punya URL button index 0).
+         | body_only = hanya body satu placeholder teks (= kode OTP).
+         */
+        'otp_send_mode' => strtolower((string) env('MAHADATA_WHATSAPP_OTP_SEND_MODE', 'auto')),
+        /*
+         | Notifikasi otorisasi CR eksternal (Mahadata sama dengan OTP: endpoint & token bersama).
+         | Template nama `change_request_manpro` atau setara harus mencocokkan jumlah placeholder body + struktur tombol di Meta Business.
+         */
+        'cr_authorization_template_name' => env(
+            'MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME',
+            'change_request_manpro'
+        ),
+        'cr_authorization_template_language_code' => env('MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE', 'id'),
+        'cr_authorization_include_quick_reply_buttons' => filter_var(
+            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+        'cr_authorization_notify_on_create' => filter_var(
+            env('MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE', false),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+        /*
+         | Mahadata/perantara sering mengembalikan `messages[0].id` berbentuk `msg_…` bukan `wamid.` resmi WhatsApp Cloud.
+         | Default true — agar tombol «Kirim otorisator» tidak dianggap gagal walau penyedia pakai bentuk itu (set false jika Anda hanya percaya `wamid.`).
+         */
+        'cr_authorization_accept_proxy_message_ids' => filter_var(
+            env('MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+    ],
+
+    /*
+     | Webhook callback WhatsApp Cloud API (pemrosesan inbound: tombol otorisasi CR).
+     | Endpoint aplikasi Anda: GET/POST {APP_URL}/webhook/whatsapp
+     */
+    'whatsapp' => [
+        'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'meta_app_secret' => env('WHATSAPP_APP_SECRET'),
+        'skip_signature_validation' => filter_var(env('WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE', false), FILTER_VALIDATE_BOOLEAN),
+        'cr_approve_button_titles' => array_values(array_filter(array_map('trim', explode(',', (string) env('WHATSAPP_CR_APPROVE_LABELS', 'Setuju'))))),
+        'cr_reject_button_titles' => array_values(array_filter(array_map('trim', explode(',', (string) env('WHATSAPP_CR_REJECT_LABELS', 'Tidak,Tolak'))))),
+    ],
+
+    'extern_cr' => [
+        'signed_pdf_url_ttl_minutes' => max(60, (int) env('EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES', 10080)),
     ],
 
     'prtg' => [
