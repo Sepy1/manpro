@@ -9,14 +9,18 @@ final class WhatsappTemplateTextSanitizer
 {
     /**
      * Meta menolak newline/tab dan lebih dari 4 spasi berurutan pada parameter body.
-     * Baris baru di deskripsi dll. diganti koma + spasi.
+     * Baris baru (termasuk dari HTML) diganti koma + spasi.
      */
     public static function bodyParameter(string $text, int $maxLength = 900): string
     {
-        $normalized = str_replace(["\r\n", "\r", "\n", "\t"], ', ', $text);
+        $normalized = strip_tags($text);
+        $normalized = html_entity_decode($normalized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalized = preg_replace('/<br\s*\/?>/i', ', ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/[\R\t\v\f\x0B]+/', ', ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\x{00a0}/u', ' ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\p{Z}{5,}/u', '    ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\p{Z}+/u', ' ', $normalized) ?? $normalized;
         $normalized = preg_replace('/,\s*,+/', ', ', $normalized) ?? $normalized;
-        $normalized = preg_replace('/ {5,}/', '    ', $normalized) ?? $normalized;
-        $normalized = preg_replace('/[ \t]+/', ' ', $normalized) ?? $normalized;
         $normalized = trim($normalized, " \t,");
 
         if ($normalized === '') {

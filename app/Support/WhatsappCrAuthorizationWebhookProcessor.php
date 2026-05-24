@@ -102,6 +102,8 @@ final class WhatsappCrAuthorizationWebhookProcessor
         /** @var array<string, mixed> $payload */
         $payload = $request->json()->all();
 
+        $hadDeliveryStatuses = $this->logDeliveryStatuses($payload);
+
         $processed = 0;
         $recognized = 0;
         foreach ($this->iterateInboundMessages($payload) as ['message' => $message]) {
@@ -114,12 +116,55 @@ final class WhatsappCrAuthorizationWebhookProcessor
             }
         }
 
-        if ($recognized === 0) {
+        if ($recognized === 0 && ! $hadDeliveryStatuses) {
             Log::notice('Webhook WhatsApp: POST diterima tetapi tidak ada balasan tombol template yang diproses.', [
                 'top_level_keys' => array_keys($payload),
                 'payload_snippet' => Str::limit(json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '', 800),
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function logDeliveryStatuses(array $payload): bool
+    {
+        $found = false;
+
+        foreach (data_get($payload, 'entry', []) as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            foreach (data_get($entry, 'changes', []) as $change) {
+                if (! is_array($change)) {
+                    continue;
+                }
+                foreach (data_get($change, 'value.statuses', []) as $status) {
+                    if (! is_array($status)) {
+                        continue;
+                    }
+                    $found = true;
+                    $statusType = (string) ($status['status'] ?? 'unknown');
+                    $messageId = (string) ($status['id'] ?? '');
+                    $errors = $status['errors'] ?? [];
+
+                    if ($statusType === 'failed' || (is_array($errors) && $errors !== [])) {
+                        Log::warning('Webhook WhatsApp: pengiriman pesan WA gagal (status webhook Meta/Mahadata).', [
+                            'message_id' => $messageId !== '' ? $messageId : null,
+                            'status' => $statusType,
+                            'errors' => $errors,
+                        ]);
+                    } else {
+                        Log::info('Webhook WhatsApp: status pengiriman pesan.', [
+                            'message_id' => $messageId !== '' ? $messageId : null,
+                            'status' => $statusType,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $found;
     }
 
     private function signatureIsValid(Request $request, string $rawBody): bool
@@ -466,6 +511,16 @@ final class WhatsappCrAuthorizationWebhookProcessor
             ];
         }
 
+        if ($type === 'text') {
+            $body = trim((string) (data_get($message, 'text.body') ?? data_get($message, 'body') ?? ''));
+            if ($body !== '') {
+                return [
+                    'payload_id' => '',
+                    'title' => $body,
+                ];
+            }
+        }
+
         return null;
     }
 
@@ -503,15 +558,29 @@ final class WhatsappCrAuthorizationWebhookProcessor
         }
 
         foreach ((array) config('services.whatsapp.cr_approve_button_titles', []) as $lbl) {
-            if (mb_strtolower(trim((string) $lbl)) === $needle) {
-                return ExternCr::WA_AUTH_APPROVED;
+            $label = mb_strtolower(trim((string) $lbl));
+            if ($label === '' || $label !== $needle) {
+                continue;
             }
+
+            return ExternCr::WA_AUTH_APPROVED;
+        }
+
+        if (str_starts_with($needle, 'setuju')) {
+            return ExternCr::WA_AUTH_APPROVED;
         }
 
         foreach ((array) config('services.whatsapp.cr_reject_button_titles', []) as $lbl) {
-            if (mb_strtolower(trim((string) $lbl)) === $needle) {
-                return ExternCr::WA_AUTH_REJECTED;
+            $label = mb_strtolower(trim((string) $lbl));
+            if ($label === '' || $label !== $needle) {
+                continue;
             }
+
+            return ExternCr::WA_AUTH_REJECTED;
+        }
+
+        if (str_starts_with($needle, 'tolak') || str_starts_with($needle, 'tidak')) {
+            return ExternCr::WA_AUTH_REJECTED;
         }
 
         return null;
