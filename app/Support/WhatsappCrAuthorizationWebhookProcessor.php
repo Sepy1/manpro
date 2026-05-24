@@ -95,6 +95,8 @@ final class WhatsappCrAuthorizationWebhookProcessor
             Log::warning('Webhook WhatsApp: signature tidak valid — payload ditolak.', [
                 'has_app_secret' => trim((string) config('services.whatsapp.meta_app_secret')) !== '',
                 'has_signature_header' => $request->header('X-Hub-Signature-256') !== null,
+                'header_names' => array_keys($request->headers->all()),
+                'event_type' => data_get($request->json()->all(), 'type'),
             ]);
             abort(403, 'Invalid signature');
         }
@@ -106,7 +108,9 @@ final class WhatsappCrAuthorizationWebhookProcessor
 
         $processed = 0;
         $recognized = 0;
+        $inboundCount = 0;
         foreach ($this->iterateInboundMessages($payload) as ['message' => $message]) {
+            $inboundCount++;
             $result = $this->processInboundMessage($message);
             if ($result === 'applied' || $result === 'already_decided') {
                 $recognized++;
@@ -116,10 +120,16 @@ final class WhatsappCrAuthorizationWebhookProcessor
             }
         }
 
-        if ($recognized === 0 && ! $hadDeliveryStatuses) {
-            Log::notice('Webhook WhatsApp: POST diterima tetapi tidak ada balasan tombol template yang diproses.', [
+        if ($inboundCount === 0 && ! $hadDeliveryStatuses) {
+            Log::notice('Webhook WhatsApp: POST diterima tetapi tidak ada pesan inbound yang dikenali.', [
                 'top_level_keys' => array_keys($payload),
+                'event_type' => data_get($payload, 'type') ?? data_get($payload, 'event'),
                 'payload_snippet' => Str::limit(json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '', 800),
+            ]);
+        } elseif ($recognized === 0 && $inboundCount > 0) {
+            Log::notice('Webhook WhatsApp: ada pesan inbound tetapi tidak diproses sebagai tombol otorisasi CR.', [
+                'inbound_count' => $inboundCount,
+                'event_type' => data_get($payload, 'type') ?? data_get($payload, 'event'),
             ]);
         }
     }
@@ -197,6 +207,13 @@ final class WhatsappCrAuthorizationWebhookProcessor
         if ($header === '' || ! Str::startsWith($header, 'sha256=')) {
             $secret = trim((string) config('services.whatsapp.meta_app_secret'));
             if ($secret === '') {
+                return true;
+            }
+
+            $eventType = strtolower(trim((string) data_get($request->json()->all(), 'type', '')));
+            if (str_contains($eventType, 'inbound') || str_contains($eventType, 'received')) {
+                Log::info('Webhook WhatsApp: inbound Mahadata tanpa X-Hub-Signature-256 — diterima (WHATSAPP_APP_SECRET di-set).');
+
                 return true;
             }
 
@@ -317,6 +334,25 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 }
             }
         }
+
+        foreach (['body', 'event_data'] as $directKey) {
+            $direct = $payload[$directKey] ?? null;
+            if (is_array($direct) && $this->looksLikeInboundMessage($direct)) {
+                yield ['message' => $this->normalizeProviderMessage($direct)];
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $raw
+     */
+    private function looksLikeInboundMessage(array $raw): bool
+    {
+        if (isset($raw['entry']) || isset($raw['messages'])) {
+            return false;
+        }
+
+        return isset($raw['from']) || isset($raw['sender']) || isset($raw['button']) || isset($raw['interactive']);
     }
 
     /**
@@ -337,6 +373,19 @@ final class WhatsappCrAuthorizationWebhookProcessor
 
         if (isset($message['context']) && is_array($message['context'])) {
             $message['context']['id'] ??= $message['context']['wamid'] ?? $message['context']['message_id'] ?? null;
+        }
+
+        if (isset($message['interactive']) && is_array($message['interactive'])) {
+            $interactive = &$message['interactive'];
+            if (! isset($interactive['button_reply']) && isset($interactive['buttonReply']) && is_array($interactive['buttonReply'])) {
+                $interactive['button_reply'] = [
+                    'id' => $interactive['buttonReply']['id'] ?? '',
+                    'title' => $interactive['buttonReply']['title'] ?? '',
+                ];
+            }
+            if (($interactive['type'] ?? null) === 'buttonReply') {
+                $interactive['type'] = 'button_reply';
+            }
         }
 
         return $message;
@@ -369,6 +418,13 @@ final class WhatsappCrAuthorizationWebhookProcessor
     {
         $button = $this->extractButtonReplyData($message);
         if ($button === null) {
+            Log::info('Webhook WhatsApp: pesan inbound diabaikan (bukan tombol quick reply).', [
+                'type' => $message['type'] ?? null,
+                'from' => $message['from'] ?? data_get($message, 'sender.phone'),
+                'keys' => array_keys($message),
+                'snippet' => Str::limit(json_encode($message, JSON_UNESCAPED_UNICODE) ?: '', 500),
+            ]);
+
             return 'ignored';
         }
 
@@ -511,13 +567,23 @@ final class WhatsappCrAuthorizationWebhookProcessor
      */
     private function extractButtonReplyData(array $message): ?array
     {
+        if (data_get($message, 'button.payload') !== null || data_get($message, 'button.text') !== null) {
+            return [
+                'payload_id' => trim((string) (data_get($message, 'button.payload') ?? data_get($message, 'button.id') ?? '')),
+                'title' => trim((string) (data_get($message, 'button.text') ?? data_get($message, 'button.title') ?? '')),
+            ];
+        }
+
         $type = strtolower(trim((string) ($message['type'] ?? '')));
 
-        if ($type === 'interactive' && data_get($message, 'interactive.type') === 'button_reply') {
-            return [
-                'payload_id' => trim((string) data_get($message, 'interactive.button_reply.id', '')),
-                'title' => trim((string) data_get($message, 'interactive.button_reply.title', '')),
-            ];
+        if ($type === 'interactive') {
+            $interactiveType = strtolower(trim((string) data_get($message, 'interactive.type', '')));
+            if (in_array($interactiveType, ['button_reply', 'buttonreply'], true)) {
+                return [
+                    'payload_id' => trim((string) (data_get($message, 'interactive.button_reply.id') ?? data_get($message, 'interactive.buttonReply.id') ?? '')),
+                    'title' => trim((string) (data_get($message, 'interactive.button_reply.title') ?? data_get($message, 'interactive.buttonReply.title') ?? '')),
+                ];
+            }
         }
 
         if ($type === 'button') {
