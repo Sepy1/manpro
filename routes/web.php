@@ -59,6 +59,11 @@ Route::get('/approval/{interactionToken}/tolak', [ExternCrAuthorizationControlle
 
 Route::match(['get', 'post'], '/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 
+if (config('app.debug')) {
+    Route::view('/preview/landing-otorisasi-cr', 'pages.extern-cr-approval-landing-preview')
+        ->name('preview.landing-otorisasi-cr');
+}
+
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')

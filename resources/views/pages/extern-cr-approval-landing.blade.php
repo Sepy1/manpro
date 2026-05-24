@@ -4,20 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
-    <title>Tindak Lanjut CR — {{ $cr->nomor }}</title>
+    <title>Otorisasi Change Request — {{ $cr->nomor }}</title>
     <style>
         :root {
-            --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            --fs-xs: 0.6875rem;
-            --fs-sm: 0.8125rem;
-            --fs-base: 0.875rem;
-            --fs-md: 0.9375rem;
+            --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             --text: #0f172a;
             --muted: #64748b;
             --border: #e2e8f0;
             --primary: #2563eb;
+            --primary-dark: #1d4ed8;
             --success: #16a34a;
+            --success-dark: #15803d;
             --danger: #dc2626;
+            --danger-dark: #b91c1c;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
@@ -27,221 +26,341 @@
         html {
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
-            font-size: 16px;
         }
 
         body {
             font-family: var(--font);
-            font-size: var(--fs-base);
-            line-height: 1.35;
             margin: 0;
-            height: 100dvh;
-            overflow: hidden;
+            min-height: 100dvh;
             color: var(--text);
-            background: linear-gradient(165deg, #eff6ff 0%, #f1f5f9 50%, #f8fafc 100%);
+            background: #eef2f7;
             padding:
-                calc(0.4rem + var(--safe-top))
-                0.5rem
-                calc(0.4rem + var(--safe-bottom));
+                calc(0.75rem + var(--safe-top))
+                0.75rem
+                calc(0.75rem + var(--safe-bottom));
         }
 
         .wrap {
-            max-width: 28rem;
-            height: 100%;
+            max-width: 26rem;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
         }
 
         .card {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
             background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 0.65rem;
-            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.07);
+            border-radius: 1rem;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
             overflow: hidden;
         }
 
+        /* ── Header ── */
         .card-header {
-            flex-shrink: 0;
-            padding: 0.55rem 0.7rem;
-            background: linear-gradient(135deg, #1e40af, #2563eb);
+            position: relative;
+            padding: 1.1rem 1rem 1.15rem;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 55%, #3b82f6 100%);
             color: #fff;
+            overflow: hidden;
         }
 
-        .card-header-top {
+        .card-header::after {
+            content: "";
+            position: absolute;
+            right: -1.5rem;
+            bottom: -2rem;
+            width: 9rem;
+            height: 9rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.07);
+            pointer-events: none;
+        }
+
+        .card-header::before {
+            content: "";
+            position: absolute;
+            right: 2rem;
+            bottom: -3.5rem;
+            width: 7rem;
+            height: 7rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+        }
+
+        .header-row {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.65rem;
+        }
+
+        .header-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.7rem;
+            min-width: 0;
+        }
+
+        .header-icon {
+            flex-shrink: 0;
+            width: 2.5rem;
+            height: 2.5rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
+            justify-content: center;
+            background: #fff;
+            border-radius: 0.55rem;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
         }
 
-        .card-header h1 {
-            margin: 0;
-            font-size: var(--fs-md);
+        .header-icon svg { display: block; }
+
+        .header-text { min-width: 0; }
+
+        .header-text h1 {
+            margin: 0 0 0.2rem;
+            font-size: 1.05rem;
             font-weight: 700;
             line-height: 1.25;
         }
 
+        .header-text p {
+            margin: 0;
+            font-size: 0.78rem;
+            line-height: 1.35;
+            opacity: 0.92;
+        }
+
         .badge {
             flex-shrink: 0;
-            font-size: var(--fs-xs);
+            font-size: 0.62rem;
             font-weight: 700;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            padding: 0.15rem 0.45rem;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            padding: 0.22rem 0.55rem;
             border-radius: 999px;
+            margin-top: 0.15rem;
         }
 
-        .card-body {
-            flex: 1;
-            min-height: 0;
+        /* ── Info rows ── */
+        .info-list {
+            padding: 0 1rem;
+        }
+
+        .info-row {
             display: flex;
-            flex-direction: column;
-            padding: 0.55rem 0.7rem 0.65rem;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--border);
         }
 
-        .meta-grid {
+        .info-row:last-child { border-bottom: none; }
+
+        .info-icon {
             flex-shrink: 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.35rem 0.55rem;
-            margin-bottom: 0.45rem;
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
         }
 
-        .meta-item.span-2 { grid-column: 1 / -1; }
+        .info-icon--blue { background: #eff6ff; color: #2563eb; }
+        .info-icon--purple { background: #f5f3ff; color: #7c3aed; }
+        .info-icon--green { background: #ecfdf5; color: #059669; }
+
+        .info-icon svg { display: block; }
+
+        .info-content { min-width: 0; flex: 1; }
 
         .field-label {
-            font-size: var(--fs-xs);
+            font-size: 0.65rem;
             font-weight: 700;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
             color: var(--muted);
-            margin-bottom: 0.1rem;
+            margin-bottom: 0.15rem;
         }
 
         .field-value {
-            font-size: var(--fs-sm);
-            font-weight: 600;
+            font-size: 0.9rem;
+            font-weight: 700;
             line-height: 1.3;
             overflow-wrap: anywhere;
         }
 
+        /* ── Description ── */
+        .description-section {
+            padding: 0.85rem 1rem 0;
+        }
+
         .description-box {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 0.45rem;
-        }
-
-        .description-scroll {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 0.4rem 0.45rem;
-            border: 1px solid var(--border);
-            border-radius: 0.45rem;
+            margin-top: 0.45rem;
+            padding: 0.75rem 0.85rem;
             background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 0.65rem;
         }
 
-        .field-value.description {
-            font-size: var(--fs-sm);
-            font-weight: 500;
-            line-height: 1.4;
+        .desc-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .desc-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.55rem;
+            font-size: 0.84rem;
+            line-height: 1.45;
+            color: #334155;
+        }
+
+        .desc-list li + li { margin-top: 0.45rem; }
+
+        .desc-num {
+            flex-shrink: 0;
+            width: 1.35rem;
+            height: 1.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border-radius: 999px;
+            margin-top: 0.05rem;
+        }
+
+        .desc-text {
+            flex: 1;
+            min-width: 0;
+            word-break: break-word;
+        }
+
+        .desc-plain {
+            margin: 0;
+            font-size: 0.84rem;
+            line-height: 1.45;
+            color: #334155;
             white-space: pre-line;
             word-break: break-word;
         }
 
+        /* ── Actions ── */
         .actions {
-            flex-shrink: 0;
+            padding: 0.85rem 1rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .btn-pdf {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 0.65rem;
+            font-family: var(--font);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-pdf:active { background: var(--primary-dark); transform: scale(0.99); }
+        .btn-pdf:disabled { opacity: 0.65; cursor: wait; }
+
+        .btn-pdf-left {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .btn-pdf svg { display: block; flex-shrink: 0; }
+
+        .decision-row {
             display: grid;
-            gap: 0.35rem;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem;
         }
 
-        .actions.has-decision-btns {
-            grid-template-columns: 1fr 1fr 1fr;
-        }
-
-        .btn {
-            display: inline-flex;
+        .btn-decision {
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 2.25rem;
-            padding: 0.35rem 0.45rem;
-            border-radius: 0.45rem;
-            text-decoration: none;
+            gap: 0.55rem;
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border: none;
+            border-radius: 0.65rem;
             font-family: var(--font);
-            font-size: var(--fs-sm);
+            font-size: 0.88rem;
             font-weight: 600;
             line-height: 1.1;
-            border: none;
+            color: #fff;
+            text-decoration: none;
             cursor: pointer;
-            width: 100%;
             touch-action: manipulation;
         }
 
-        .btn:active { opacity: 0.92; transform: scale(0.98); }
-        .btn:disabled { opacity: 0.6; cursor: wait; }
+        .btn-decision:active { transform: scale(0.99); opacity: 0.95; }
 
-        .btn-pdf { background: var(--primary); color: #fff; }
-        .btn-approve { background: var(--success); color: #fff; }
-        .btn-reject { background: var(--danger); color: #fff; }
+        .btn-approve {
+            background: var(--success);
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+        }
 
-        .footnote {
+        .btn-approve:active { background: var(--success-dark); }
+
+        .btn-reject {
+            background: var(--danger);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+        }
+
+        .btn-reject:active { background: var(--danger-dark); }
+
+        .btn-decision svg { display: block; flex-shrink: 0; }
+
+        /* ── Footer note ── */
+        .info-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin: 0 1rem 1rem;
+            padding: 0.65rem 0.75rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 0.55rem;
+            font-size: 0.75rem;
+            line-height: 1.35;
+            color: #1e40af;
+        }
+
+        .info-note svg {
             flex-shrink: 0;
-            margin: 0.35rem 0 0;
-            font-size: var(--fs-xs);
-            line-height: 1.3;
+            margin-top: 0.05rem;
+        }
+
+        .info-note--muted {
+            background: #f8fafc;
+            border-color: var(--border);
             color: var(--muted);
-            text-align: center;
         }
 
-        @media (min-width: 640px) {
-            body {
-                height: auto;
-                min-height: 100dvh;
-                overflow: auto;
-                padding: 1rem;
-            }
-
-            .wrap {
-                height: auto;
-                max-width: 32rem;
-            }
-
-            .card {
-                flex: none;
-            }
-
-            .card-header { padding: 0.75rem 0.85rem; }
-            .card-body { padding: 0.75rem 0.85rem 0.85rem; }
-
-            .description-box { flex: none; }
-            .description-scroll {
-                max-height: 9rem;
-                flex: none;
-            }
-
-            .actions.has-decision-btns {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .actions .btn-pdf { grid-column: 1 / -1; }
-
-            .btn {
-                min-height: 2.5rem;
-                font-size: var(--fs-base);
-            }
-        }
-
+        /* ── PDF overlay ── */
         .pdf-overlay {
             position: fixed;
             inset: 0;
@@ -258,20 +377,19 @@
         .pdf-toast {
             width: min(100%, 20rem);
             background: #fff;
-            border-radius: 0.65rem;
-            padding: 0.85rem 0.9rem;
-            font-size: var(--fs-sm);
+            border-radius: 0.75rem;
+            padding: 0.9rem 1rem;
         }
 
         .pdf-toast-title {
             margin: 0 0 0.25rem;
-            font-size: var(--fs-base);
+            font-size: 0.95rem;
             font-weight: 700;
         }
 
         .pdf-toast-text {
-            margin: 0 0 0.6rem;
-            font-size: var(--fs-sm);
+            margin: 0 0 0.65rem;
+            font-size: 0.84rem;
             color: var(--muted);
             line-height: 1.35;
         }
@@ -291,11 +409,16 @@
         }
 
         .progress-label {
-            margin-top: 0.3rem;
-            font-size: var(--fs-xs);
+            margin-top: 0.35rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--muted);
             text-align: right;
+        }
+
+        @media (min-width: 640px) {
+            body { padding: 1.25rem; }
+            .wrap { max-width: 28rem; }
         }
     </style>
 </head>
@@ -305,62 +428,163 @@
         if ($deskripsi === '') {
             $deskripsi = trim((string) ($cr->perubahan_diharapkan ?? ''));
         }
-        if ($deskripsi === '') {
-            $deskripsi = '—';
+
+        $descLines = [];
+        if ($deskripsi !== '') {
+            foreach (preg_split('/\R/u', $deskripsi) as $line) {
+                $line = trim((string) $line);
+                if ($line === '') {
+                    continue;
+                }
+                $line = preg_replace('/^\d+[\.\)]\s*/u', '', $line);
+                $descLines[] = $line;
+            }
         }
+
         $hasDecision = ($cr->wa_authorization_decision ?? null) === null;
     @endphp
 
     <div class="wrap">
         <div class="card">
             <div class="card-header">
-                <div class="card-header-top">
-                    <h1>Tindak lanjut CR</h1>
+                <div class="header-row">
+                    <div class="header-main">
+                        <div class="header-icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                <path d="M9 12h6M9 16h4"/>
+                            </svg>
+                        </div>
+                        <div class="header-text">
+                            <h1>Otorisasi Change Request</h1>
+                            <p>Mohon review dan berikan keputusan Anda</p>
+                        </div>
+                    </div>
                     <span class="badge">Otorisasi</span>
                 </div>
             </div>
 
-            <div class="card-body">
-                <div class="meta-grid">
-                    <div class="meta-item">
+            <div class="info-list">
+                <div class="info-row">
+                    <div class="info-icon info-icon--blue" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="16" rx="2"/>
+                            <path d="M7 8h4M7 12h6M7 16h3"/>
+                        </svg>
+                    </div>
+                    <div class="info-content">
                         <div class="field-label">Nomor CR</div>
                         <div class="field-value">{{ $cr->nomor }}</div>
                     </div>
-                    <div class="meta-item">
-                        <div class="field-label">Aplikasi</div>
-                        <div class="field-value">{{ $cr->application?->name ?? '—' }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon info-icon--blue" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
                     </div>
-                    <div class="meta-item span-2">
+                    <div class="info-content">
                         <div class="field-label">Nama Change Request</div>
                         <div class="field-value">{{ $cr->nama ?? '—' }}</div>
                     </div>
-                    <div class="meta-item span-2">
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon info-icon--purple" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="8" r="4"/>
+                            <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+                        </svg>
+                    </div>
+                    <div class="info-content">
                         <div class="field-label">Pembuat</div>
                         <div class="field-value">{{ $cr->creator?->name ?? '—' }}</div>
                     </div>
                 </div>
 
-                <div class="description-box">
-                    <div class="field-label">Deskripsi perubahan</div>
-                    <div class="description-scroll">
-                        <div class="field-value description">{{ $deskripsi }}</div>
+                <div class="info-row">
+                    <div class="info-icon info-icon--green" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="3" width="16" height="18" rx="1"/>
+                            <path d="M9 21V9h6v12M9 12h6M9 15h6"/>
+                        </svg>
+                    </div>
+                    <div class="info-content">
+                        <div class="field-label">Aplikasi</div>
+                        <div class="field-value">{{ $cr->application?->name ?? '—' }}</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="actions{{ $hasDecision ? ' has-decision-btns' : '' }}">
-                    <button type="button" class="btn btn-pdf js-download-pdf" data-pdf-url="{{ $pdfUrl }}">PDF</button>
-                    @if ($hasDecision)
-                        <a class="btn btn-approve" href="{{ $approveUrl }}">Setujui</a>
-                        <a class="btn btn-reject" href="{{ $rejectUrl }}">Tolak</a>
+            <div class="description-section">
+                <div class="field-label">Deskripsi perubahan</div>
+                <div class="description-box">
+                    @if (count($descLines) > 0)
+                        <ol class="desc-list">
+                            @foreach ($descLines as $i => $line)
+                                <li>
+                                    <span class="desc-num">{{ $i + 1 }}</span>
+                                    <span class="desc-text">{{ $line }}</span>
+                                </li>
+                            @endforeach
+                        </ol>
+                    @else
+                        <p class="desc-plain">—</p>
                     @endif
                 </div>
+            </div>
 
-                @if (! $hasDecision)
-                    <p class="footnote">Sudah ada keputusan: {{ $cr->wa_authorization_decision }}</p>
-                @else
-                    <p class="footnote">Keputusan pertama menjadi keputusan resmi.</p>
+            <div class="actions">
+                <button type="button" class="btn-pdf js-download-pdf" data-pdf-url="{{ $pdfUrl }}">
+                    <span class="btn-pdf-left">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/>
+                        </svg>
+                        Lihat Dokumen PDF
+                    </span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 6l6 6-6 6"/>
+                    </svg>
+                </button>
+
+                @if ($hasDecision)
+                    <div class="decision-row">
+                        <a class="btn-decision btn-approve" href="{{ $approveUrl }}">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Setujui
+                        </a>
+                        <a class="btn-decision btn-reject" href="{{ $rejectUrl }}">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M6 6l12 12M18 6L6 18"/>
+                            </svg>
+                            Tolak
+                        </a>
+                    </div>
                 @endif
             </div>
+
+            @if ($hasDecision)
+                <div class="info-note">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    <span>Keputusan pertama akan menjadi keputusan resmi</span>
+                </div>
+            @else
+                <div class="info-note info-note--muted">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    <span>Sudah ada keputusan: {{ $cr->wa_authorization_decision }}</span>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -382,10 +606,6 @@
             var label = document.getElementById('pdf-progress-label');
             var busy = false;
             var timer = null;
-
-            function isMobileLayout() {
-                return window.matchMedia('(max-width: 639px)').matches;
-            }
 
             function setProgress(value) {
                 var pct = Math.max(0, Math.min(100, Math.round(value)));
