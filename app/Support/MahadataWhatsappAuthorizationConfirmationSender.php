@@ -90,9 +90,9 @@ final class MahadataWhatsappAuthorizationConfirmationSender
         $pdfUrl = ExternCrPdfQr::temporarySignedPdfBundleUrl($externCr);
 
         return [
-            ['type' => 'text', 'text' => Str::limit($crLabel, 900)],
-            ['type' => 'text', 'text' => Str::limit($actionLabel, 900)],
-            ['type' => 'text', 'text' => Str::limit($pdfUrl, 900)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($crLabel)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($actionLabel)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pdfUrl)],
         ];
     }
 

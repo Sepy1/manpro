@@ -261,7 +261,6 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         if ($deskripsi === '') {
             $deskripsi = '—';
         }
-        $deskripsi = Str::limit($deskripsi, 900);
 
         $judulCr = trim((string) ($externCr->nama ?? ''));
         if ($judulCr === '') {
@@ -277,10 +276,10 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         }
 
         return [
-            ['type' => 'text', 'text' => Str::limit($judulCr, 900)],
-            ['type' => 'text', 'text' => Str::limit($pembuat, 900)],
-            ['type' => 'text', 'text' => $deskripsi],
-            ['type' => 'text', 'text' => Str::limit($pdfUrl, 900)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($judulCr)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pembuat)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($deskripsi)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pdfUrl)],
         ];
     }
 
