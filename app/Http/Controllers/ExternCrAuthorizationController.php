@@ -25,7 +25,7 @@ class ExternCrAuthorizationController extends Controller
             abort(404);
         }
 
-        $cr->load(['creator', 'division', 'authorizationResponder']);
+        $cr->load(['creator', 'division', 'authorizationResponder', 'application']);
 
         $token = WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix(
             (string) ($dispatch->interaction_token ?? '')
