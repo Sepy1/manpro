@@ -102,6 +102,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         }
 
         $bodyParams = $this->crAuthorizationTemplateBodyParameters($externCr);
+        $this->logMetaParameterIssues($bodyParams, $externCr);
         $buttonMode = $this->resolvedButtonMode();
 
         $users = User::query()
@@ -165,8 +166,12 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 Log::info('Mahadata CR auth WA: outbound dikonfirmasi.', [
                     'extern_cr_id' => $externCr->id,
                     'user_id' => $user->id,
+                    'dispatch_id' => $dispatch->id,
                     'message_id_snippet' => Str::limit($canonicalWaId, 26).'…',
                     'button_mode' => $buttonMode,
+                    'note' => WhatsappCrAuthorizationWebhookProcessor::isOfficialWhatsappCloudOutboundMessageId($canonicalWaId)
+                        ? 'wamid resmi'
+                        : 'id proxy Mahadata — tunggu webhook status delivered/failed',
                 ]);
 
                 continue;
@@ -279,8 +284,29 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($judulCr)],
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pembuat)],
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($deskripsi)],
-            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pdfUrl)],
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::urlParameter($pdfUrl)],
         ];
+    }
+
+    /**
+     * @param  list<array{type: string, text: string}>  $bodyParams
+     */
+    private function logMetaParameterIssues(array $bodyParams, ExternCr $externCr): void
+    {
+        foreach ($bodyParams as $index => $param) {
+            $text = (string) ($param['text'] ?? '');
+            $reason = WhatsappTemplateTextSanitizer::metaRejectReason($text);
+            if ($reason === null) {
+                continue;
+            }
+
+            Log::warning('Mahadata CR auth WA: parameter template masih ditolak Meta (#132018).', [
+                'extern_cr_id' => $externCr->id,
+                'placeholder_index' => $index + 1,
+                'reason' => $reason,
+                'text_snippet' => Str::limit($text, 120),
+            ]);
+        }
     }
 
     private function maskedDigitsForDebug(string $digits62): string

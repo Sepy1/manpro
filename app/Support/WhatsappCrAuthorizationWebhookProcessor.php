@@ -149,10 +149,13 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     $errors = $status['errors'] ?? [];
 
                     if ($statusType === 'failed' || (is_array($errors) && $errors !== [])) {
+                        $dispatch = $this->findDispatchForDeliveryStatusId($messageId);
                         Log::warning('Webhook WhatsApp: pengiriman pesan WA gagal (status webhook Meta/Mahadata).', [
                             'message_id' => $messageId !== '' ? $messageId : null,
                             'status' => $statusType,
                             'errors' => $errors,
+                            'dispatch_id' => $dispatch?->id,
+                            'extern_cr_id' => $dispatch?->extern_cr_id,
                         ]);
                     } else {
                         Log::info('Webhook WhatsApp: status pengiriman pesan.', [
@@ -165,6 +168,19 @@ final class WhatsappCrAuthorizationWebhookProcessor
         }
 
         return $found;
+    }
+
+    private function findDispatchForDeliveryStatusId(string $messageId): ?WhatsappCrAuthorizationDispatch
+    {
+        $messageId = trim($messageId);
+        if ($messageId === '') {
+            return null;
+        }
+
+        return WhatsappCrAuthorizationDispatch::query()
+            ->where('wam_id', $messageId)
+            ->orderByDesc('id')
+            ->first();
     }
 
     private function signatureIsValid(Request $request, string $rawBody): bool
