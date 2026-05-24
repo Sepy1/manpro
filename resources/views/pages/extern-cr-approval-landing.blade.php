@@ -360,6 +360,116 @@
             color: var(--muted);
         }
 
+        /* ── Reject modal ── */
+        .reject-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .reject-overlay.is-visible { display: flex; }
+
+        .reject-dialog {
+            width: min(100%, 22rem);
+            background: #fff;
+            border-radius: 0.85rem;
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+        }
+
+        .reject-dialog-header {
+            padding: 0.85rem 1rem;
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+            color: #fff;
+        }
+
+        .reject-dialog-header h2 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .reject-dialog-header p {
+            margin: 0.25rem 0 0;
+            font-size: 0.75rem;
+            opacity: 0.92;
+        }
+
+        .reject-dialog-body { padding: 0.85rem 1rem 1rem; }
+
+        .reject-label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .reject-textarea {
+            width: 100%;
+            min-height: 5.5rem;
+            padding: 0.65rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.55rem;
+            font-family: var(--font);
+            font-size: 0.84rem;
+            line-height: 1.4;
+            resize: vertical;
+        }
+
+        .reject-textarea:focus {
+            outline: none;
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+        }
+
+        .reject-hint {
+            margin: 0.35rem 0 0;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .reject-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.85rem;
+        }
+
+        .reject-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 2.35rem;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 0.55rem;
+            font-family: var(--font);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .reject-btn-cancel {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .reject-btn-submit {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+        }
+
+        .reject-btn-submit:disabled { opacity: 0.55; cursor: wait; }
+
         /* ── PDF overlay ── */
         .pdf-overlay {
             position: fixed;
@@ -558,12 +668,12 @@
                             </svg>
                             Setujui
                         </a>
-                        <a class="btn-decision btn-reject" href="{{ $rejectUrl }}">
+                        <button type="button" class="btn-decision btn-reject" id="open-reject-modal">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M6 6l12 12M18 6L6 18"/>
                             </svg>
                             Tolak
-                        </a>
+                        </button>
                     </div>
                 @endif
             </div>
@@ -574,7 +684,7 @@
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M12 8v4M12 16h.01"/>
                     </svg>
-                    <span>Keputusan pertama akan menjadi keputusan resmi</span>
+                    <span>Keputusan pertama akan menjadi keputusan resmi. Tautan berlaku {{ \App\Support\WhatsappCrAuthorizationExpiry::ttlLabel() }}.</span>
                 </div>
             @else
                 <div class="info-note info-note--muted">
@@ -587,6 +697,38 @@
             @endif
         </div>
     </div>
+
+    @if ($hasDecision)
+        <div class="reject-overlay" id="reject-overlay" aria-hidden="true">
+            <div class="reject-dialog" role="dialog" aria-modal="true" aria-labelledby="reject-dialog-title">
+                <div class="reject-dialog-header">
+                    <h2 id="reject-dialog-title">Tolak Change Request</h2>
+                    <p>Berikan alasan penolakan sebelum mengirim keputusan.</p>
+                </div>
+                <form method="POST" action="{{ $rejectUrl }}" class="reject-dialog-body" id="reject-form">
+                    @csrf
+                    <label class="reject-label" for="reject-reason">Alasan penolakan</label>
+                    <textarea
+                        id="reject-reason"
+                        name="reject_reason"
+                        class="reject-textarea"
+                        required
+                        minlength="10"
+                        maxlength="2000"
+                        placeholder="Jelaskan alasan penolakan CR ini…"
+                    >{{ old('reject_reason') }}</textarea>
+                    @error('reject_reason')
+                        <p class="reject-hint" style="color: var(--danger);">{{ $message }}</p>
+                    @enderror
+                    <p class="reject-hint">Minimal 10 karakter. Alasan akan tercatat di riwayat CR.</p>
+                    <div class="reject-actions">
+                        <button type="button" class="reject-btn reject-btn-cancel" id="close-reject-modal">Batal</button>
+                        <button type="submit" class="reject-btn reject-btn-submit" id="submit-reject">Kirim penolakan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 
     <div class="pdf-overlay" id="pdf-overlay" aria-hidden="true">
         <div class="pdf-toast" role="status" aria-live="polite">
@@ -667,6 +809,63 @@
                         });
                 });
             });
+        })();
+
+        (function () {
+            var rejectOverlay = document.getElementById('reject-overlay');
+            var openBtn = document.getElementById('open-reject-modal');
+            var closeBtn = document.getElementById('close-reject-modal');
+            var rejectForm = document.getElementById('reject-form');
+            var rejectReason = document.getElementById('reject-reason');
+
+            if (! rejectOverlay || ! openBtn) {
+                return;
+            }
+
+            function openRejectModal() {
+                rejectOverlay.classList.add('is-visible');
+                rejectOverlay.setAttribute('aria-hidden', 'false');
+                if (rejectReason) {
+                    rejectReason.focus();
+                }
+            }
+
+            function closeRejectModal() {
+                rejectOverlay.classList.remove('is-visible');
+                rejectOverlay.setAttribute('aria-hidden', 'true');
+            }
+
+            openBtn.addEventListener('click', openRejectModal);
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeRejectModal);
+            }
+
+            rejectOverlay.addEventListener('click', function (e) {
+                if (e.target === rejectOverlay) {
+                    closeRejectModal();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && rejectOverlay.classList.contains('is-visible')) {
+                    closeRejectModal();
+                }
+            });
+
+            if (rejectForm) {
+                rejectForm.addEventListener('submit', function () {
+                    var submitBtn = document.getElementById('submit-reject');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = 'Mengirim…';
+                    }
+                });
+            }
+
+            @if (($openRejectModal ?? false) || $errors->has('reject_reason'))
+                openRejectModal();
+            @endif
         })();
     </script>
 </body>

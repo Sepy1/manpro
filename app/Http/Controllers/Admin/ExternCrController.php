@@ -198,11 +198,13 @@ class ExternCrController extends Controller
             ->with('status', 'CR '.$nomor.' dihapus.');
     }
 
-    public function authorizersPayload(ExternCr $externCr): JsonResponse
+    public function authorizersPayload(Request $request, ExternCr $externCr): JsonResponse
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        if ($externCr->hasWaAuthorizationDecision()) {
+        $reauthorize = $request->boolean('reauthorize');
+
+        if ($externCr->hasWaAuthorizationDecision() && ! $reauthorize) {
             return response()->json([
                 'wa_decision_locked' => true,
                 'message' => 'CR ini sudah memiliki keputusan otorisasi WhatsApp.',
@@ -214,9 +216,10 @@ class ExternCrController extends Controller
 
         return response()->json([
             'wa_decision_locked' => false,
+            'reauthorize' => $reauthorize,
             'cr_id' => $externCr->id,
             'cr_nomor' => $externCr->nomor,
-            'authorizers' => $this->buildAuthorizersChecklistPayload($externCr),
+            'authorizers' => $this->buildAuthorizersChecklistPayload($externCr, $reauthorize),
         ]);
     }
 
@@ -224,16 +227,24 @@ class ExternCrController extends Controller
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        if ($externCr->hasWaAuthorizationDecision()) {
-            return back()->with('flash_error', 'CR ini sudah diotorisasi lewat WhatsApp; tidak bisa mengirim undangan lagi.');
+        $reauthorize = $request->boolean('reauthorize');
+
+        if ($externCr->hasWaAuthorizationDecision() && ! $reauthorize) {
+            return back()->with('flash_error', 'CR ini sudah diotorisasi lewat WhatsApp; gunakan Otorisasi ulang.');
         }
 
         $validated = Validator::make($request->all(), [
             'authorizer_id' => ['required', 'integer'],
+            'reauthorize' => ['sometimes', 'boolean'],
         ]);
 
         if ($validated->fails()) {
             return back()->with('flash_error', 'Pilih tepat satu otorisator yang akan menerima WhatsApp.');
+        }
+
+        if ($reauthorize && $externCr->hasWaAuthorizationDecision()) {
+            $this->resetWaAuthorizationForReauthorize($externCr);
+            $externCr->refresh();
         }
 
         $chosenId = (int) ($validated->validated()['authorizer_id'] ?? 0);
@@ -246,7 +257,7 @@ class ExternCrController extends Controller
             return back()->with('flash_error', 'Konfigurasi Mahadata untuk otorisasi CR belum lengkap (endpoint pesan WhatsApp, token, dan nama template otorisasi).');
         }
 
-        $allowedReceiverIds = $this->eligibleAuthorizerReceiverUserIds($externCr);
+        $allowedReceiverIds = $this->eligibleAuthorizerReceiverUserIds($externCr, $reauthorize);
         $sendIds = in_array($chosenId, $allowedReceiverIds, true) ? [$chosenId] : [];
 
         if ($sendIds === []) {
@@ -275,7 +286,24 @@ class ExternCrController extends Controller
             );
         }
 
-        return back()->with('status', "Undangan otorisasi WA terkirim ke 1 otorisator untuk {$externCr->nomor}.");
+        return back()->with('status', $reauthorize
+            ? "Otorisasi ulang: undangan WA terkirim ke 1 otorisator untuk {$externCr->nomor}."
+            : "Undangan otorisasi WA terkirim ke 1 otorisator untuk {$externCr->nomor}.");
+    }
+
+    private function resetWaAuthorizationForReauthorize(ExternCr $externCr): void
+    {
+        $previous = $externCr->wa_authorization_decision;
+
+        $externCr->forceFill([
+            'wa_authorization_decision' => null,
+            'wa_authorization_at' => null,
+            'wa_authorization_by_user_id' => null,
+            'wa_authorization_reject_reason' => null,
+        ]);
+        $externCr->save();
+
+        ExternCrHistoryRecorder::waAuthorizationReset($externCr, (int) auth()->id(), $previous);
     }
 
     public function detailModalFragment(ExternCr $externCr): View
@@ -442,9 +470,11 @@ class ExternCrController extends Controller
     }
 
     /** ID pengguna yang boleh menerima undangan lagi: otorisator, WA valid, belum memberi keputusan. */
-    private function eligibleAuthorizerReceiverUserIds(ExternCr $externCr): array
+    private function eligibleAuthorizerReceiverUserIds(ExternCr $externCr, bool $ignorePreviousResponses = false): array
     {
-        $responded = array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
+        $responded = $ignorePreviousResponses
+            ? []
+            : array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
 
         $users = User::query()
             ->where('can_authorize_extern_cr', true)
@@ -467,9 +497,11 @@ class ExternCrController extends Controller
     }
 
     /** @return list<array<string, mixed>> */
-    private function buildAuthorizersChecklistPayload(ExternCr $externCr): array
+    private function buildAuthorizersChecklistPayload(ExternCr $externCr, bool $ignorePreviousResponses = false): array
     {
-        $respondedFlip = array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
+        $respondedFlip = $ignorePreviousResponses
+            ? []
+            : array_flip($this->whatsappRespondedAuthorizerUserIds($externCr));
 
         $users = User::query()
             ->where('can_authorize_extern_cr', true)

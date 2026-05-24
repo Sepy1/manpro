@@ -17,6 +17,8 @@ final class WhatsappCrAuthorizationApplier
 
     public const RESULT_USER_UNAUTHORIZED = 'user_unauthorized';
 
+    public const RESULT_EXPIRED = 'expired';
+
     /**
      * @return array{
      *     result: string,
@@ -25,8 +27,12 @@ final class WhatsappCrAuthorizationApplier
      *     existing_decision: string|null
      * }
      */
-    public function applyByInteractionToken(string $interactionToken, string $decision, string $auditReference): array
-    {
+    public function applyByInteractionToken(
+        string $interactionToken,
+        string $decision,
+        string $auditReference,
+        ?string $rejectReason = null,
+    ): array {
         $token = strtolower(trim($interactionToken));
         if ($token === '' || ! preg_match('/^[a-z0-9]{32}$/', $token)) {
             return $this->emptyResult(self::RESULT_DISPATCH_NOT_FOUND);
@@ -45,7 +51,11 @@ final class WhatsappCrAuthorizationApplier
             return $this->emptyResult(self::RESULT_USER_UNAUTHORIZED);
         }
 
-        return $this->applyDecision($dispatch, $user, $decision, $auditReference);
+        if (WhatsappCrAuthorizationExpiry::isExpired($dispatch)) {
+            return $this->emptyResult(self::RESULT_EXPIRED);
+        }
+
+        return $this->applyDecision($dispatch, $user, $decision, $auditReference, $rejectReason);
     }
 
     /**
@@ -61,13 +71,14 @@ final class WhatsappCrAuthorizationApplier
         User $user,
         string $decision,
         string $auditReference,
+        ?string $rejectReason = null,
     ): array {
         $applied = false;
         $existingDecision = null;
         /** @var ExternCr|null $cr */
         $cr = null;
 
-        DB::transaction(function () use ($dispatch, $user, $decision, $auditReference, &$applied, &$existingDecision, &$cr): void {
+        DB::transaction(function () use ($dispatch, $user, $decision, $auditReference, $rejectReason, &$applied, &$existingDecision, &$cr): void {
             /** @var ExternCr|null $locked */
             $locked = ExternCr::query()
                 ->whereKey($dispatch->extern_cr_id)
@@ -86,14 +97,29 @@ final class WhatsappCrAuthorizationApplier
                 return;
             }
 
-            $locked->forceFill([
+            $fill = [
                 'wa_authorization_decision' => $decision,
                 'wa_authorization_at' => now(),
                 'wa_authorization_by_user_id' => $user->id,
-            ]);
+                'wa_authorization_reject_reason' => $decision === ExternCr::WA_AUTH_REJECTED
+                    ? trim((string) ($rejectReason ?? ''))
+                    : null,
+            ];
+
+            if ($fill['wa_authorization_reject_reason'] === '') {
+                $fill['wa_authorization_reject_reason'] = null;
+            }
+
+            $locked->forceFill($fill);
             $locked->save();
 
-            ExternCrHistoryRecorder::whatsappAuthorization($locked, $user->id, $decision, $auditReference);
+            ExternCrHistoryRecorder::whatsappAuthorization(
+                $locked,
+                $user->id,
+                $decision,
+                $auditReference,
+                $decision === ExternCr::WA_AUTH_REJECTED ? $rejectReason : null,
+            );
             $applied = true;
         });
 

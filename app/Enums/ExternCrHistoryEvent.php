@@ -11,6 +11,7 @@ enum ExternCrHistoryEvent: string
     case AttachmentDeleted = 'attachment_deleted';
     case WhatsappAuthorization = 'whatsapp_authorization';
     case WaAuthorizationInviteDispatched = 'wa_authorization_invite_dispatched';
+    case WaAuthorizationReset = 'wa_authorization_reset';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum ExternCrHistoryEvent: string
             self::AttachmentDeleted => 'Lampiran dihapus',
             self::WhatsappAuthorization => 'Otorisasi WhatsApp',
             self::WaAuthorizationInviteDispatched => 'Undangan otorisasi WA',
+            self::WaAuthorizationReset => 'Reset otorisasi WA',
         };
     }
 }

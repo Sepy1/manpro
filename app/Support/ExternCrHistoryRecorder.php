@@ -75,25 +75,75 @@ final class ExternCrHistoryRecorder
         ]);
     }
 
-    public static function whatsappAuthorization(ExternCr $cr, int $actorUserId, string $decision, string $buttonTitle): void
-    {
+    public static function whatsappAuthorization(
+        ExternCr $cr,
+        int $actorUserId,
+        string $decision,
+        string $auditReference,
+        ?string $rejectReason = null,
+    ): void {
         $verb = match ($decision) {
             ExternCr::WA_AUTH_APPROVED => 'Disetujui',
             ExternCr::WA_AUTH_REJECTED => 'Ditolak',
             default => $decision,
         };
 
+        $flowLabel = self::authorizationFlowLabel($auditReference);
+        $summary = 'Otorisasi CR: '.$verb.' via '.$flowLabel.'.';
+
+        if ($decision === ExternCr::WA_AUTH_REJECTED && $rejectReason !== null && trim($rejectReason) !== '') {
+            $snip = preg_replace('/\s+/', ' ', trim($rejectReason)) ?? '';
+            $summary .= ' Alasan: '.\Illuminate\Support\Str::limit($snip, 200, '…');
+        }
+
+        $properties = [
+            'decision' => $decision,
+            'decision_label' => $verb,
+            'audit_reference' => $auditReference,
+            'flow' => $flowLabel,
+            'channel' => 'whatsapp',
+        ];
+
+        if ($decision === ExternCr::WA_AUTH_REJECTED && $rejectReason !== null && trim($rejectReason) !== '') {
+            $properties['reject_reason'] = trim($rejectReason);
+        }
+
         ExternCrHistory::query()->create([
             'extern_cr_id' => $cr->id,
             'user_id' => $actorUserId,
             'event' => ExternCrHistoryEvent::WhatsappAuthorization,
-            'summary' => 'Otorisasi via WhatsApp: '.$verb.'. (tombol: '.$buttonTitle.')',
+            'summary' => $summary,
+            'properties' => $properties,
+        ]);
+    }
+
+    public static function waAuthorizationReset(ExternCr $cr, int $actorUserId, ?string $previousDecision): void
+    {
+        $prevLabel = match ($previousDecision) {
+            ExternCr::WA_AUTH_APPROVED => 'disetujui',
+            ExternCr::WA_AUTH_REJECTED => 'ditolak',
+            default => 'belum diketahui',
+        };
+
+        ExternCrHistory::query()->create([
+            'extern_cr_id' => $cr->id,
+            'user_id' => $actorUserId,
+            'event' => ExternCrHistoryEvent::WaAuthorizationReset,
+            'summary' => 'Keputusan otorisasi WA direset (sebelumnya '.$prevLabel.') untuk otorisasi ulang.',
             'properties' => [
-                'decision' => $decision,
-                'button_title' => $buttonTitle,
-                'channel' => 'whatsapp',
+                'previous_decision' => $previousDecision,
             ],
         ]);
+    }
+
+    private static function authorizationFlowLabel(string $auditReference): string
+    {
+        return match ($auditReference) {
+            'approval-link-approve' => 'halaman otorisasi (2FA)',
+            'approval-link-reject' => 'halaman otorisasi',
+            'link-approve', 'link-reject' => 'tautan WhatsApp',
+            default => $auditReference,
+        };
     }
 
     /** Admin memicu kirim ulang/notifikasi template otorisasi ke daftar otorisator WhatsApp. */

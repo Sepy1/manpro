@@ -72,7 +72,20 @@
                                     'subtitle' => $row->nomor,
                                 ]))"
                             >
-                                <td class="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900 dark:text-white/90">{{ $row->nomor }}</td>
+                                <td class="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900 dark:text-white/90">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span>{{ $row->nomor }}</span>
+                                        @if ($row->wa_authorization_decision === \App\Models\ExternCr::WA_AUTH_APPROVED)
+                                            <span class="inline-flex items-center rounded-md border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200" title="Otorisasi WhatsApp: disetujui">
+                                                Disetujui
+                                            </span>
+                                        @elseif ($row->wa_authorization_decision === \App\Models\ExternCr::WA_AUTH_REJECTED)
+                                            <span class="inline-flex items-center rounded-md border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-800 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200" title="Otorisasi WhatsApp: ditolak">
+                                                Ditolak
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="max-w-[220px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->nama }}">{{ $row->nama ? $row->nama : '—' }}</td>
                                 <td class="whitespace-nowrap px-2 py-2 text-sm text-gray-700 dark:text-gray-300">{{ $row->tanggal?->format('d/m/Y') }}</td>
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->division?->name }}">{{ $row->division?->name ?? '-' }}</td>
@@ -103,11 +116,16 @@
                                         @if ($row->hasWaAuthorizationDecision())
                                             <button
                                                 type="button"
-                                                disabled
-                                                title="CR ini sudah memiliki keputusan otorisasi WhatsApp."
-                                                class="inline-flex h-8 cursor-not-allowed items-center rounded-lg border border-slate-300 px-2 text-xs font-medium text-slate-400 opacity-60 dark:border-slate-600 dark:text-slate-500"
+                                                title="Reset keputusan lalu kirim undangan otorisasi WhatsApp baru"
+                                                class="inline-flex h-8 items-center rounded-lg border border-amber-500 px-2 text-xs font-medium text-amber-800 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                                                @click.prevent="$dispatch('open-extern-cr-send-auth', @js([
+                                                    'authorizersJsonUrl' => route('admin.cr-eksternal.authorizers-data', $row).'?reauthorize=1',
+                                                    'sendUrl' => route('admin.cr-eksternal.send-wa-authorization', $row),
+                                                    'crNomor' => $row->nomor,
+                                                    'reauthorize' => true,
+                                                ]))"
                                             >
-                                                Sudah otorisasi
+                                                Otorisasi ulang
                                             </button>
                                         @else
                                             <button

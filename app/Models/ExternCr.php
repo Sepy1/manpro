@@ -33,6 +33,7 @@ class ExternCr extends Model
         'wa_authorization_decision',
         'wa_authorization_at',
         'wa_authorization_by_user_id',
+        'wa_authorization_reject_reason',
     ];
 
     public const WA_AUTH_APPROVED = 'approved';

@@ -10,6 +10,7 @@
                     authorizersJsonUrl: '',
                     sendUrl: '',
                     crNomor: '',
+                    reauthorize: false,
                     authorizers: [],
                     selectedId: null,
                     submitting: false,
@@ -22,6 +23,7 @@
                         this.authorizersJsonUrl = '';
                         this.sendUrl = '';
                         this.crNomor = '';
+                        this.reauthorize = false;
                         this.authorizers = [];
                         this.selectedId = null;
                         this.error = '';
@@ -39,6 +41,7 @@
                         this.authorizersJsonUrl = detail.authorizersJsonUrl || '';
                         this.sendUrl = detail.sendUrl || '';
                         this.crNomor = detail.crNomor || '';
+                        this.reauthorize = detail.reauthorize === true;
                         if (! this.authorizersJsonUrl || ! this.sendUrl) {
                             return;
                         }
@@ -144,6 +147,14 @@
                         idInp.value = String(sid);
                         f.appendChild(idInp);
 
+                        if (this.reauthorize) {
+                            const reauth = document.createElement('input');
+                            reauth.type = 'hidden';
+                            reauth.name = 'reauthorize';
+                            reauth.value = '1';
+                            f.appendChild(reauth);
+                        }
+
                         document.body.appendChild(f);
                         f.submit();
                     },
@@ -174,12 +185,14 @@
         >
             <div class="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
                 <div class="min-w-0 flex-1">
-                    <h2 id="extern-cr-send-auth-title" class="text-base font-semibold text-slate-900 dark:text-white/95">
-                        Kirim otorisasi WhatsApp
+                    <h2 id="extern-cr-send-auth-title" class="text-base font-semibold text-slate-900 dark:text-white/95" x-text="reauthorize ? 'Otorisasi ulang WhatsApp' : 'Kirim otorisasi WhatsApp'">
                     </h2>
                     <p x-show="crNomor" class="mt-1 font-mono text-sm font-medium text-brand-700 dark:text-brand-300" x-text="crNomor"></p>
                     <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                        Pilih <strong>satu</strong> pengguna otorisator. Yang sudah memberi keputusan atau tidak punya WA valid tidak bisa dipilih.
+                        <span x-show="reauthorize">Keputusan otorisasi sebelumnya akan direset, lalu undangan baru dikirim ke </span>
+                        <span x-show="! reauthorize">Pilih </span>
+                        <strong>satu</strong> pengguna otorisator.
+                        <span x-show="! reauthorize"> Yang sudah memberi keputusan atau tidak punya WA valid tidak bisa dipilih.</span>
                     </p>
                 </div>
                 <button
@@ -251,7 +264,8 @@
                     @click="postSelected()"
                     :disabled="loading || submitting || error || selectableCount() === 0 || selectedId === null"
                 >
-                    <span x-show="! submitting">Kirim WhatsApp</span>
+                    <span x-show="! submitting && ! reauthorize">Kirim WhatsApp</span>
+                    <span x-show="! submitting && reauthorize" x-cloak>Kirim otorisasi ulang</span>
                     <span x-show="submitting" x-cloak>Mengirim…</span>
                 </button>
             </div>

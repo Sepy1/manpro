@@ -47,12 +47,17 @@ Route::get('/approval/{interactionToken}', [ExternCrAuthorizationController::cla
     ->where('interactionToken', '[a-z0-9]{32}')
     ->name('extern-cr.authorize.approval');
 
-Route::get('/approval/{interactionToken}/setuju', [ExternCrAuthorizationController::class, 'approvalApprove'])
+Route::match(['get', 'post'], '/approval/{interactionToken}/setuju', [ExternCrAuthorizationController::class, 'approvalApprove'])
     ->middleware(['throttle:30,1'])
     ->where('interactionToken', '[a-z0-9]{32}')
     ->name('extern-cr.authorize.approval.approve');
 
-Route::get('/approval/{interactionToken}/tolak', [ExternCrAuthorizationController::class, 'approvalReject'])
+Route::post('/approval/{interactionToken}/setuju/kirim-ulang', [ExternCrAuthorizationController::class, 'resendApprovalOtp'])
+    ->middleware(['throttle:10,1'])
+    ->where('interactionToken', '[a-z0-9]{32}')
+    ->name('extern-cr.authorize.approval.approve.resend');
+
+Route::match(['get', 'post'], '/approval/{interactionToken}/tolak', [ExternCrAuthorizationController::class, 'approvalReject'])
     ->middleware(['throttle:30,1'])
     ->where('interactionToken', '[a-z0-9]{32}')
     ->name('extern-cr.authorize.approval.reject');
