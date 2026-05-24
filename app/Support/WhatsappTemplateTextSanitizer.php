@@ -16,7 +16,7 @@ final class WhatsappTemplateTextSanitizer
         $normalized = strip_tags($text);
         $normalized = html_entity_decode($normalized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $normalized = preg_replace('/<br\s*\/?>/i', ', ', $normalized) ?? $normalized;
-        $normalized = preg_replace('/[\R\t\v\f\x0B]+/', ', ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/(?:\R|\t|\v|\f)+/u', ', ', $normalized) ?? $normalized;
         $normalized = preg_replace('/\x{00a0}/u', ' ', $normalized) ?? $normalized;
         $normalized = preg_replace('/\p{Z}{5,}/u', '    ', $normalized) ?? $normalized;
         $normalized = preg_replace('/\p{Z}+/u', ' ', $normalized) ?? $normalized;
