@@ -112,6 +112,18 @@ return [
             env('MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS', true),
             FILTER_VALIDATE_BOOLEAN
         ),
+        'cr_authorization_confirmation_template_name' => env(
+            'MAHADATA_WHATSAPP_CR_AUTH_CONFIRMATION_TEMPLATE_NAME',
+            'konfirmasi_otorisasi_manpro'
+        ),
+        'cr_authorization_confirmation_template_language_code' => env(
+            'MAHADATA_WHATSAPP_CR_AUTH_CONFIRMATION_TEMPLATE_LANGUAGE_CODE',
+            env('MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE', 'id')
+        ),
+        'cr_authorization_confirmation_enabled' => filter_var(
+            env('MAHADATA_WHATSAPP_CR_AUTH_CONFIRMATION_ENABLED', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
     ],
 
     /*

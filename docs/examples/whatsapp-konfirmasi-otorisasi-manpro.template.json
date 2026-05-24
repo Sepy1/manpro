@@ -1,0 +1,24 @@
+{
+  "messaging_product": "whatsapp",
+  "to": "6285725681860",
+  "type": "template",
+  "template": {
+    "name": "konfirmasi_otorisasi_manpro",
+    "language": {
+      "code": "id"
+    },
+    "components": [
+      {
+        "type": "body",
+        "parameters": [
+          { "type": "text", "text": "Nama CR / nomor dokumen" },
+          { "type": "text", "text": "Disetujui" },
+          {
+            "type": "text",
+            "text": "https://manpro.bkkjateng.co.id/unduh/cr-eksternal/1/bundel-pdf?expires=...&signature=..."
+          }
+        ]
+      }
+    ]
+  }
+}

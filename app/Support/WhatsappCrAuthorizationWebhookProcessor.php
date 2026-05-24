@@ -103,13 +103,18 @@ final class WhatsappCrAuthorizationWebhookProcessor
         $payload = $request->json()->all();
 
         $processed = 0;
+        $recognized = 0;
         foreach ($this->iterateInboundMessages($payload) as ['message' => $message]) {
-            if ($this->processInboundMessage($message)) {
+            $result = $this->processInboundMessage($message);
+            if ($result === 'applied' || $result === 'already_decided') {
+                $recognized++;
+            }
+            if ($result === 'applied') {
                 $processed++;
             }
         }
 
-        if ($processed === 0) {
+        if ($recognized === 0) {
             Log::notice('Webhook WhatsApp: POST diterima tetapi tidak ada balasan tombol template yang diproses.', [
                 'top_level_keys' => array_keys($payload),
                 'payload_snippet' => Str::limit(json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '', 800),
@@ -297,18 +302,19 @@ final class WhatsappCrAuthorizationWebhookProcessor
 
     /**
      * @param  array<string, mixed>  $message
+     * @return 'ignored'|'applied'|'already_decided'|'failed'
      */
-    private function processInboundMessage(array $message): bool
+    private function processInboundMessage(array $message): string
     {
         $button = $this->extractButtonReplyData($message);
         if ($button === null) {
-            return false;
+            return 'ignored';
         }
 
         $inboundId = (string) ($message['id'] ?? '');
         if ($inboundId !== '') {
             if (! Cache::add('whatsapp:inbound_msg:'.$inboundId, 1, now()->addDays(7))) {
-                return false;
+                return 'ignored';
             }
         }
 
@@ -316,7 +322,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
         $title = $button['title'];
 
         if ($btnPayloadId === '' && $title === '') {
-            return false;
+            return 'ignored';
         }
 
         $fromRaw = (string) ($message['from'] ?? data_get($message, 'sender.phone', ''));
@@ -324,7 +330,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
         if ($fromDigits === null) {
             Log::notice('Webhook WhatsApp: pengirim bukan nomor format yang dikenali.', ['from' => $fromRaw]);
 
-            return false;
+            return 'failed';
         }
 
         $contextWamId = (string) (
@@ -362,7 +368,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     'from' => $fromDigits,
                 ]);
 
-                return false;
+                return 'failed';
             }
         } else {
             $dispatch = $this->resolveDispatch($fromDigits, $contextWamId);
@@ -375,7 +381,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     'message_type' => $message['type'] ?? null,
                 ]);
 
-                return false;
+                return 'failed';
             }
             $decision = $this->normalizeDecisionTitle($title);
             if ($decision === null) {
@@ -384,7 +390,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     'button_id' => $btnPayloadId ?: null,
                 ]);
 
-                return false;
+                return 'failed';
             }
         }
 
@@ -392,7 +398,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
         if ($user === null || ! $user->can_authorize_extern_cr) {
             Log::notice('Webhook WhatsApp: pengguna tidak berhak otorisasi.', ['dispatch_id' => $dispatch->id]);
 
-            return false;
+            return 'failed';
         }
 
         $userWa = IndonesianWhatsappPhoneNormalizer::toWaDigits62(trim((string) ($user->phone ?? '')));
@@ -403,7 +409,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 'from' => $fromDigits,
             ]);
 
-            return false;
+            return 'failed';
         }
 
         $outcome = app(WhatsappCrAuthorizationApplier::class)->applyDecision($dispatch, $user, $decision, $auditReference);
@@ -415,15 +421,24 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 'decision' => $decision,
             ]);
 
-            return true;
+            return 'applied';
         }
 
-        Log::notice('Webhook WhatsApp: keputusan tidak diterapkan (mungkin sudah ada sebelumnya).', [
+        if ($outcome['result'] === WhatsappCrAuthorizationApplier::RESULT_ALREADY_DECIDED) {
+            Log::info('Webhook WhatsApp: ketukan tombol diabaikan — CR sudah punya keputusan.', [
+                'extern_cr_id' => $dispatch->extern_cr_id,
+                'existing_decision' => $outcome['existing_decision'],
+            ]);
+
+            return 'already_decided';
+        }
+
+        Log::notice('Webhook WhatsApp: keputusan tidak diterapkan.', [
             'extern_cr_id' => $dispatch->extern_cr_id,
             'result' => $outcome['result'],
         ]);
 
-        return false;
+        return 'failed';
     }
 
     /**

@@ -104,6 +104,8 @@ final class WhatsappCrAuthorizationApplier
         $cr->load(['creator', 'division', 'authorizationResponder']);
 
         if ($applied) {
+            app(MahadataWhatsappAuthorizationConfirmationSender::class)->sendAfterDecision($cr, $user, $decision);
+
             return [
                 'result' => self::RESULT_APPLIED,
                 'extern_cr' => $cr,

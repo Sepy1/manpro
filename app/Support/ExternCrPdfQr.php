@@ -20,6 +20,22 @@ final class ExternCrPdfQr
         ], absolute: true);
     }
 
+    /** Link unduh bundel PDF CR (sama placeholder {{4}} template permintaan otorisasi WA). */
+    public static function temporarySignedPdfBundleUrl(ExternCr $externCr): string
+    {
+        $ttlMinutes = max(
+            1,
+            (int) config('services.extern_cr.signed_pdf_url_ttl_minutes', 60 * 24 * 7)
+        );
+
+        return URL::temporarySignedRoute(
+            'extern-cr.signed-pdf',
+            now()->addMinutes($ttlMinutes),
+            ['externCr' => $externCr],
+            absolute: true
+        );
+    }
+
     public static function dataUriForUrl(string $url): string
     {
         $result = (new Builder)->build(

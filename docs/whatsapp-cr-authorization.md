@@ -34,6 +34,23 @@ WHATSAPP_CR_REJECT_LABELS=Tidak,Tolak
 
 Subscribe event **Inbound Message Received** di Mahadata.
 
+### Konfirmasi balasan ke otorisator
+
+Setelah otorisator mengetuk Setuju/Tolak (keputusan pertama), Laravel mengirim template **`konfirmasi_otorisasi_manpro`**:
+
+| Placeholder | Isi |
+|-------------|-----|
+| `{{1}}` | Nama / nomor CR |
+| `{{2}}` | `Disetujui` atau `Ditolak` |
+| `{{3}}` | Link unduh bundel PDF CR (signed URL, sama dengan placeholder {{4}} template permintaan otorisasi) |
+
+```env
+MAHADATA_WHATSAPP_CR_AUTH_CONFIRMATION_TEMPLATE_NAME=konfirmasi_otorisasi_manpro
+MAHADATA_WHATSAPP_CR_AUTH_CONFIRMATION_ENABLED=true
+```
+
+Contoh payload: **`docs/examples/whatsapp-konfirmasi-otorisasi-manpro.template.json`**
+
 Lihat **`docs/examples/whatsapp-change-request-manpro-authorization.template.json`** untuk contoh payload API.
 
 ### Opsional — tombol URL (bukan webhook)

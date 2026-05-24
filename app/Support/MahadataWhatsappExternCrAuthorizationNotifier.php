@@ -8,7 +8,6 @@ use App\Models\WhatsappCrAuthorizationDispatch;
 use Illuminate\Http\Client\Response as HttpClientResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -253,17 +252,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
     {
         $externCr->loadMissing('creator');
 
-        $ttlMinutes = max(
-            1,
-            (int) config('services.extern_cr.signed_pdf_url_ttl_minutes', 60 * 24 * 7)
-        );
-
-        $pdfUrl = URL::temporarySignedRoute(
-            'extern-cr.signed-pdf',
-            now()->addMinutes($ttlMinutes),
-            ['externCr' => $externCr],
-            absolute: true
-        );
+        $pdfUrl = ExternCrPdfQr::temporarySignedPdfBundleUrl($externCr);
 
         $deskripsi = trim((string) ($externCr->deskripsi_permintaan ?? ''));
         if ($deskripsi === '') {
