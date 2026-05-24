@@ -287,7 +287,7 @@ class ExternCrController extends Controller
 
         return back()->with('status', $reauthorize
             ? "Otorisasi ulang: undangan WA terkirim ke 1 otorisator untuk {$externCr->nomor}."
-            : "Undangan otorisasi WA terkirim ke 1 otorisator untuk {$externCr->nomor}.");
+            : "Permohonan otorisasi dikirim untuk {$externCr->nomor}.");
     }
 
     private function resetWaAuthorizationForReauthorize(ExternCr $externCr): void

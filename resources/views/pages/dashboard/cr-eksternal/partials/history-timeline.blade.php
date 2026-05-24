@@ -24,8 +24,8 @@
                     <span class="text-xs text-gray-600 dark:text-gray-300">{{ $row->created_at->format('d/m/Y H:i:s') }}</span>
                     <span class="text-xs text-gray-700 dark:text-gray-200">{{ $row->user?->name ?? '—' }}</span>
                 </div>
-                @if ($row->summary)
-                    <p class="mt-2 text-sm text-gray-900 dark:text-white/95">{{ $row->summary }}</p>
+                @if ($row->display_summary)
+                    <p class="mt-2 text-sm text-gray-900 dark:text-white/95">{{ $row->display_summary }}</p>
                 @endif
                 @if ($row->event === \App\Enums\ExternCrHistoryEvent::WhatsappAuthorization)
                     @php
