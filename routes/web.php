@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\ExternCrAuthorizationController;
 use App\Http\Controllers\ExternCrSignedPdfDownloadController;
 use App\Http\Controllers\ExternCrVerificationController;
 use App\Http\Controllers\WhatsappWebhookController;
@@ -31,8 +32,17 @@ Route::get('/unduh/cr-eksternal/{externCr}/bundel-pdf', ExternCrSignedPdfDownloa
     ->middleware(['signed'])
     ->name('extern-cr.signed-pdf');
 
-Route::get('/webhook/whatsapp', [WhatsappWebhookController::class, 'verify']);
-Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'ingest']);
+Route::get('/otorisasi/cr/setuju/{actionSuffix}', [ExternCrAuthorizationController::class, 'fromSetujuButton'])
+    ->middleware(['throttle:30,1'])
+    ->where('actionSuffix', '([a-z0-9]{32}|reject-[a-z0-9]{32})')
+    ->name('extern-cr.authorize.setuju');
+
+Route::get('/otorisasi/cr/tolak/{interactionToken}', [ExternCrAuthorizationController::class, 'reject'])
+    ->middleware(['throttle:30,1'])
+    ->where('interactionToken', '[a-z0-9]{32}')
+    ->name('extern-cr.authorize.reject');
+
+Route::match(['get', 'post'], '/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 
 Route::get('/', function () {
     return auth()->check()

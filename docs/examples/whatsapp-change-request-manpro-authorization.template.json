@@ -16,21 +16,21 @@
           { "type": "text", "text": "Ringkasan deskripsi perubahan" },
           {
             "type": "text",
-            "text": "https://contoh-app.test/unduh/cr-eksternal/1/bundel-pdf"
+            "text": "https://manpro.bkkjateng.co.id/unduh/cr-eksternal/1/bundel-pdf"
           }
         ]
       },
       {
         "type": "button",
-        "sub_type": "quick_reply",
+        "sub_type": "url",
         "index": "0",
-        "parameters": [{ "type": "payload", "payload": "APPROVE_CR_token32karakterSatuPerPesan" }]
+        "parameters": [{ "type": "text", "text": "abc123token32karakterUntukSetujui" }]
       },
       {
         "type": "button",
-        "sub_type": "quick_reply",
+        "sub_type": "url",
         "index": "1",
-        "parameters": [{ "type": "payload", "payload": "REJECT_CR_token32karakterYangSama" }]
+        "parameters": [{ "type": "text", "text": "reject-abc123token32karakterUntukSetujui" }]
       }
     ]
   }

@@ -92,8 +92,11 @@ return [
             'change_request_manpro'
         ),
         'cr_authorization_template_language_code' => env('MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE', 'id'),
-        'cr_authorization_include_quick_reply_buttons' => filter_var(
-            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', true),
+        'cr_authorization_include_url_buttons' => filter_var(
+            env(
+                'MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS',
+                env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', true)
+            ),
             FILTER_VALIDATE_BOOLEAN
         ),
         'cr_authorization_notify_on_create' => filter_var(
@@ -111,8 +114,8 @@ return [
     ],
 
     /*
-     | Webhook callback WhatsApp Cloud API (pemrosesan inbound: tombol otorisasi CR).
-     | Endpoint aplikasi Anda: GET/POST {APP_URL}/webhook/whatsapp
+     | Webhook callback WhatsApp Cloud API (opsional — kompatibilitas pesan quick reply lama).
+     | Otorisasi CR utama memakai tombol URL call-to-action ke route /otorisasi/cr/setuju|tolak/{token}.
      */
     'whatsapp' => [
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),

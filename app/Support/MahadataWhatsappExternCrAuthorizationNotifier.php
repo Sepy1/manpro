@@ -15,8 +15,7 @@ use Throwable;
 /**
  * Mengirim template WhatsApp Mahadata kepada pengguna dengan flag {@see User::$can_authorize_extern_cr}.
  *
- * Tombol quick reply mengirim **payload ID** bentuk APPROVE_CR_/REJECT_CR_ + {@see WhatsappCrAuthorizationDispatch::$interaction_token}
- * supaya webhook memetakan tepat satu CR satu penerima tanpa bergantung hanya pada teks "Setuju"/"Tidak".
+ * Tombol call-to-action (URL) template Meta: body {{1}}–{{4}}, Setujui {{5}} = token, Tolak {{6}} = reject-{token}.
  */
 final class MahadataWhatsappExternCrAuthorizationNotifier
 {
@@ -31,7 +30,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
     /**
      * Mengirim **satu** template otorisasi CR (isinya sama produksi: 4 teks placeholder) ke nomor apa pun —
-     * **tanpa** baris {@see WhatsappCrAuthorizationDispatch}, **tanpa** komponen quick reply — untuk menguji Mahadata/meta.
+     * **tanpa** baris {@see WhatsappCrAuthorizationDispatch}, **tanpa** komponen tombol URL — untuk menguji Mahadata/meta.
      */
     public function sendTestCrAuthorizationTemplate(ExternCr $externCr, string $waRecipientInput): bool
     {
@@ -107,7 +106,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
         $bodyParams = $this->crAuthorizationTemplateBodyParameters($externCr);
 
-        $includeQuickReply = (bool) config('services.mahadata_whatsapp.cr_authorization_include_quick_reply_buttons', false);
+        $includeUrlButtons = (bool) config('services.mahadata_whatsapp.cr_authorization_include_url_buttons', true);
 
         $users = User::query()
             ->where('can_authorize_extern_cr', true)
@@ -129,7 +128,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 continue;
             }
 
-            if ($includeQuickReply) {
+            if ($includeUrlButtons) {
                 $interactionToken = Str::lower(Str::random(32));
 
                 $dispatch = WhatsappCrAuthorizationDispatch::query()->create([
@@ -140,8 +139,9 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                     'recipient_wa_id' => $digits,
                 ]);
 
-                $approvePayload = WhatsappCrAuthorizationButtonCodes::approvePayload($interactionToken);
-                $rejectPayload = WhatsappCrAuthorizationButtonCodes::rejectPayload($interactionToken);
+                // Template Meta: body {{1}}–{{4}}, tombol Setujui {{5}}, tombol Tolak {{6}}.
+                $approveUrlSuffix = WhatsappCrAuthorizationButtonCodes::approveUrlButtonSuffix($interactionToken);
+                $rejectUrlSuffix = WhatsappCrAuthorizationButtonCodes::rejectUrlButtonSuffix($interactionToken);
 
                 $response = $this->postTemplateMessageRaw(
                     $endpoint,
@@ -150,8 +150,8 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                     $digits,
                     $bodyParams,
                     true,
-                    $approvePayload,
-                    $rejectPayload,
+                    $approveUrlSuffix,
+                    $rejectUrlSuffix,
                 );
 
                 $canonicalWaId = $this->validatedCanonicalOutboundMessageId($response);
@@ -162,7 +162,11 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                         'extern_cr_id' => $externCr->id,
                         'user_id' => $user->id,
                         'message_id_snippet' => Str::limit($canonicalWaId, 26).'…',
-                        'had_quick_reply' => true,
+                        'had_url_buttons' => true,
+                        'approve_url' => $this->setujuAuthorizationLink($approveUrlSuffix),
+                        'reject_url' => $this->setujuAuthorizationLink($rejectUrlSuffix),
+                        'template_var_5' => $approveUrlSuffix,
+                        'template_var_6' => $rejectUrlSuffix,
                     ]);
 
                     continue;
@@ -170,7 +174,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
                 $dispatch->delete();
 
-                Log::notice('Mahadata CR auth WA: kirim dengan quick reply gagal atau id bukan bentuk `wamid.`; mencoba ulang tanpa tombol.', [
+                Log::notice('Mahadata CR auth WA: kirim dengan tombol URL gagal; mencoba ulang tanpa tombol.', [
                     'extern_cr_id' => $externCr->id,
                     'user_id' => $user->id,
                     'mahadata_http_status' => $response?->status(),
@@ -190,15 +194,8 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
                 $trustedBodyId = $this->validatedCanonicalOutboundMessageId($responseBodyOnly);
                 if ($trustedBodyId !== null) {
-                    WhatsappCrAuthorizationDispatch::query()->create([
-                        'extern_cr_id' => $externCr->id,
-                        'user_id' => $user->id,
-                        'interaction_token' => null,
-                        'wam_id' => $trustedBodyId,
-                        'recipient_wa_id' => $digits,
-                    ]);
                     $success++;
-                    Log::info('Mahadata CR auth WA: fallback body-only berhasil (otomatisasi tombol webhook memakai judul/context).', [
+                    Log::info('Mahadata CR auth WA: fallback body-only berhasil (tanpa tombol Setuju/Tolak).', [
                         'extern_cr_id' => $externCr->id,
                         'user_id' => $user->id,
                         'message_id_snippet' => Str::limit($trustedBodyId, 26).'…',
@@ -207,7 +204,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                     continue;
                 }
 
-                $this->logCrAuthWaNotConfirmed($response, $externCr, $user, $template.' (quick_reply)');
+                $this->logCrAuthWaNotConfirmed($response, $externCr, $user, $template.' (url_button)');
                 $this->logCrAuthWaNotConfirmed($responseBodyOnly, $externCr, $user, $template.' (fallback body-only)');
 
                 continue;
@@ -238,6 +235,11 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         }
 
         return $success;
+    }
+
+    private function setujuAuthorizationLink(string $actionSuffix): string
+    {
+        return URL::route('extern-cr.authorize.setuju', ['actionSuffix' => $actionSuffix], absolute: true);
     }
 
     /**
@@ -328,7 +330,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             return null;
         }
 
-        Log::notice('Mahadata CR auth WA: menerima `messages[0].id` dari perantara yang bukan `wamid.` (ACCEPT_PROXY aktif). Webhook/context.id bisa berbeda dengan Cloud API langsung — set `.env` `MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=false` jika Anda hanya ingin menerima `wamid.`.', [
+        Log::notice('Mahadata CR auth WA: menerima `messages[0].id` dari perantara yang bukan `wamid.` (ACCEPT_PROXY aktif).', [
             'id_snippet' => Str::limit($id, 40).'…',
         ]);
 
@@ -437,8 +439,8 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             'json_envelope_id_hint' => $envelopeHint,
             'first_message_hard_failure' => $response !== null && $this->whatsappFirstMessageIndicatesHardFailure($response),
             'hint' => ($canonicalTrimmed !== '' && ! $messagesPathLooksOfficial)
-                ? 'Ada `messages[0].id` tetapi bukan awalan `wamid.` (mis. proxy `msg_*`). Aplikasi hanya menghitung kiriman sah bila dapat `wamid.` resmi WhatsApp Cloud. Hubungi Mahadata agar menyalurkan response Graph API apa adanya atau perbaiki ulang penyimpanan outbound.'
-                : 'Jika tidak ada `messages[0].id` bernilai `wamid.…`: respons mahadata/perantara bisa belum setara Cloud API — minta contoh payload sukses resmi atau uji lagi setelah penyedia mengembalikan `wamid`.',
+                ? 'Ada `messages[0].id` tetapi bukan awalan `wamid.` (mis. proxy `msg_*`).'
+                : 'Periksa template Meta: body {{1}}–{{4}}, tombol Setujui {{5}} = token, Tolak {{6}} = reject-{token}, base URL keduanya `…/otorisasi/cr/setuju/`.',
         ];
     }
 
@@ -481,9 +483,9 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         string $templateName,
         string $toDigits62,
         array $bodyTextParameters,
-        bool $includeQuickReplyButtons,
-        string $approveButtonPayloadId,
-        string $rejectButtonPayloadId,
+        bool $includeUrlButtons,
+        string $approveUrlSuffix,
+        string $rejectUrlSuffix,
     ): ?\Illuminate\Http\Client\Response {
         $language = (string) config('services.mahadata_whatsapp.cr_authorization_template_language_code', 'id');
 
@@ -494,28 +496,21 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             ],
         ];
 
-        if ($includeQuickReplyButtons) {
-            if (strlen($approveButtonPayloadId) > 120 || strlen($rejectButtonPayloadId) > 120) {
-                Log::warning('Mahadata CR auth WA: payload tombol melewati ~128 char aman WhatsApp.', [
-                    'approve_len' => strlen($approveButtonPayloadId),
-                    'reject_len' => strlen($rejectButtonPayloadId),
-                ]);
-            }
-
+        if ($includeUrlButtons) {
             $components[] = [
                 'type' => 'button',
-                'sub_type' => 'quick_reply',
+                'sub_type' => 'url',
                 'index' => '0',
                 'parameters' => [
-                    ['type' => 'payload', 'payload' => $approveButtonPayloadId],
+                    ['type' => 'text', 'text' => $approveUrlSuffix],
                 ],
             ];
             $components[] = [
                 'type' => 'button',
-                'sub_type' => 'quick_reply',
+                'sub_type' => 'url',
                 'index' => '1',
                 'parameters' => [
-                    ['type' => 'payload', 'payload' => $rejectButtonPayloadId],
+                    ['type' => 'text', 'text' => $rejectUrlSuffix],
                 ],
             ];
         }

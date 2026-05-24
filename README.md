@@ -436,10 +436,10 @@ MAHADATA_WHATSAPP_TEMPLATE_LANGUAGE_CODE="id"
 # MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME="change_request_manpro"
 # MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE="id"
 # MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE=false
-# MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true
+# MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true
 # EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES=10080
 
-# --- Webhook WhatsApp Cloud → Laravel (/webhook/whatsapp) ---
+# --- Webhook WhatsApp Cloud (opsional, kompatibilitas quick reply lama) ---
 # WHATSAPP_WEBHOOK_VERIFY_TOKEN=""
 # WHATSAPP_APP_SECRET=""
 # WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE=false
@@ -451,9 +451,9 @@ Di **Manajemen User**, setiap akun dapat mengaktifkan **2FA WhatsApp** serta **d
 
 ### Notifikasi otorisasi CR eksternal (WhatsApp)
 
-Lihat **`docs/whatsapp-cr-authorization.md`** dan contoh POST JSON di **`docs/examples/whatsapp-change-request-manpro-authorization.template.json`**. Daftar lengkap nama variabel **`.env`** terkait WhatsApp ada di **`docs/dotenv-whatsapp.example`** (webhook inbound + Mahadata outbound).
+Lihat **`docs/whatsapp-cr-authorization.md`** dan contoh POST JSON di **`docs/examples/whatsapp-change-request-manpro-authorization.template.json`**. Daftar lengkap nama variabel **`.env`** terkait WhatsApp ada di **`docs/dotenv-whatsapp.example`**.
 
-Konfigurasikan webhook Meta ke **`{APP_URL}/webhook/whatsapp`** menggunakan `WHATSAPP_WEBHOOK_VERIFY_TOKEN` dan `WHATSAPP_APP_SECRET`.
+Pastikan **`APP_URL`** HTTPS publik cocok dengan base URL tombol Setuju/Tolak di template Meta (`/otorisasi/cr/setuju/` dan `/otorisasi/cr/tolak/`).
 
 ## License
 

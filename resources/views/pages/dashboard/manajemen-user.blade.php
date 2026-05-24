@@ -168,7 +168,7 @@
                                 />
                                 <span>
                                     <span class="font-semibold text-gray-900 dark:text-white">Otorisasi CR eksternal (WhatsApp)</span>
-                                    <span class="mt-1 block text-xs leading-relaxed text-gray-600 dark:text-gray-400">Jika dicentang, pengguna ini termasuk penerima notifikasi template Mahadata saat ada CR eksternal baru (perlu nomor WA valid). Tombol “Setuju” / “Tidak” di WA membutuhkan webhook terpisah bila ingin menutup siklus approval.</span>
+                                    <span class="mt-1 block text-xs leading-relaxed text-gray-600 dark:text-gray-400">Jika dicentang, pengguna ini termasuk penerima notifikasi template Mahadata saat ada CR eksternal baru (perlu nomor WA valid). Tombol “Setuju” / “Tidak” di WA membuka tautan otorisasi web aplikasi.</span>
                                 </span>
                             </label>
                         </div>
@@ -313,7 +313,7 @@
                         <input type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-900" x-model="authorizeCr" />
                         <span>
                             <span class="font-semibold text-gray-900 dark:text-white">Penerima notifikasi otorisasi CR eksternal</span>
-                            <span class="mt-0.5 block text-xs leading-relaxed text-gray-600 dark:text-gray-400">Centang untuk mengirim template WhatsApp (Mahadata) ke nomor ini saat CR eksternal baru dibuat. Menangani “Setuju” / “Tidak” di aplikasi Anda memerlukan webhook WhatsApp terpisah.</span>
+                            <span class="mt-0.5 block text-xs leading-relaxed text-gray-600 dark:text-gray-400">Centang untuk mengirim template WhatsApp (Mahadata) ke nomor ini saat CR eksternal baru dibuat. Tombol “Setuju” / “Tidak” membuka halaman otorisasi web aplikasi.</span>
                         </span>
                     </label>
                 </div>

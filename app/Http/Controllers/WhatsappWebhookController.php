@@ -9,13 +9,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 class WhatsappWebhookController extends Controller
 {
-    public function verify(Request $request, WhatsappCrAuthorizationWebhookProcessor $processor): Response
+    public function handle(Request $request, WhatsappCrAuthorizationWebhookProcessor $processor): Response
     {
-        return $processor->verifySubscription($request);
-    }
+        if ($processor->isSubscriptionVerification($request)) {
+            return $processor->verifySubscription($request);
+        }
 
-    public function ingest(Request $request, WhatsappCrAuthorizationWebhookProcessor $processor): Response
-    {
+        if ($request->isMethod('GET')) {
+            return response('Forbidden', 403);
+        }
+
         try {
             $processor->handleInbound($request);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {

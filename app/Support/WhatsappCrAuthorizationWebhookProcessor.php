@@ -8,27 +8,84 @@ use App\Models\WhatsappCrAuthorizationDispatch;
 use Illuminate\Http\Client\Response as ClientResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 final class WhatsappCrAuthorizationWebhookProcessor
 {
+    public function isSubscriptionVerification(Request $request): bool
+    {
+        if ($this->hubParameter($request, 'mode') !== 'subscribe') {
+            return false;
+        }
+
+        return $this->hubParameter($request, 'challenge') !== '';
+    }
+
     public function verifySubscription(Request $request): Response
     {
-        if ((string) $request->query('hub.mode') !== 'subscribe') {
+        if ($this->hubParameter($request, 'mode') !== 'subscribe') {
             return response('Forbidden', 403);
         }
 
         $expected = trim((string) config('services.whatsapp.webhook_verify_token'));
-        $token = (string) $request->query('hub.verify_token', '');
+        $token = $this->hubParameter($request, 'verify_token');
 
-        if ($expected === '' || ! hash_equals($expected, $token)) {
+        if ($expected === '') {
+            Log::warning('Webhook WhatsApp: WHATSAPP_WEBHOOK_VERIFY_TOKEN kosong — verifikasi ditolak.');
+
             return response('Forbidden', 403);
         }
 
-        return response((string) $request->query('hub.challenge', ''), 200)->header('Content-Type', 'text/plain');
+        if (! hash_equals($expected, $token)) {
+            Log::notice('Webhook WhatsApp: verify token tidak cocok.', [
+                'method' => $request->method(),
+            ]);
+
+            return response('Forbidden', 403);
+        }
+
+        $challenge = $this->hubParameter($request, 'challenge');
+
+        Log::info('Webhook WhatsApp: verifikasi subscribe berhasil.', [
+            'method' => $request->method(),
+        ]);
+
+        return response($challenge, 200)->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
+    /**
+     * Meta/Mahadata bisa mengirim hub.* lewat query string, form, atau JSON (hub.mode / hub_mode).
+     */
+    private function hubParameter(Request $request, string $suffix): string
+    {
+        $candidates = [
+            'hub.'.$suffix,
+            'hub_'.$suffix,
+            $suffix,
+        ];
+
+        foreach ($candidates as $key) {
+            $fromQuery = $request->query($key);
+            if (is_scalar($fromQuery) && trim((string) $fromQuery) !== '') {
+                return trim((string) $fromQuery);
+            }
+
+            $fromInput = $request->input($key);
+            if (is_scalar($fromInput) && trim((string) $fromInput) !== '') {
+                return trim((string) $fromInput);
+            }
+        }
+
+        foreach (['hub.'.$suffix, $suffix] as $path) {
+            $nested = data_get($request->all(), $path);
+            if (is_scalar($nested) && trim((string) $nested) !== '') {
+                return trim((string) $nested);
+            }
+        }
+
+        return '';
     }
 
     public function handleInbound(Request $request): void
@@ -204,39 +261,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
             return;
         }
 
-        $this->persistAuthorizationIfFirst($dispatch, $user, $decision, $auditReference);
-    }
-
-    private function persistAuthorizationIfFirst(
-        WhatsappCrAuthorizationDispatch $dispatch,
-        User $user,
-        string $decision,
-        string $auditReference,
-    ): void {
-        DB::transaction(function () use ($dispatch, $user, $decision, $auditReference): void {
-            /** @var ExternCr|null $cr */
-            $cr = ExternCr::query()
-                ->whereKey($dispatch->extern_cr_id)
-                ->lockForUpdate()
-                ->first();
-
-            if ($cr === null) {
-                return;
-            }
-
-            if ($cr->wa_authorization_decision !== null && $cr->wa_authorization_decision !== '') {
-                return;
-            }
-
-            $cr->forceFill([
-                'wa_authorization_decision' => $decision,
-                'wa_authorization_at' => now(),
-                'wa_authorization_by_user_id' => $user->id,
-            ]);
-            $cr->save();
-
-            ExternCrHistoryRecorder::whatsappAuthorization($cr, $user->id, $decision, $auditReference);
-        });
+        app(WhatsappCrAuthorizationApplier::class)->applyDecision($dispatch, $user, $decision, $auditReference);
     }
 
     private function resolveDispatch(string $recipientDigits, string $contextWamId): ?WhatsappCrAuthorizationDispatch

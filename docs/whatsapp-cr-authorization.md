@@ -1,57 +1,54 @@
 Contoh POST — notifikasi otorisasi CR eksternal (Mahadata / WhatsApp Cloud)
 ===============================================================================
 
-### Payload tombol “Setuju” / “Tidak” (disarankan)
+### Tombol call-to-action (URL) Setuju / Tolak — selaras template Meta
 
-Saat **`MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true`**, Laravel mengisi **kedua tombol** dengan parameter **`type: payload`** (`payload` pertama = **`APPROVE_CR_<token>`** = setuju, kedua = **`REJECT_CR_<token>`** = tolak — token unik per penerima CR). Meta mengirim nilai tersebut kembali di **`interactive.button_reply.id`** ketika webhook diterima. Format lama **`APR_<token>`** / **`REJ_<token>`** masih diterima webhook untuk kompatibilitas mundur.
+Urutan variabel template `change_request_manpro`:
 
-- Tekst tombol bisa tetap seperti di template Anda (“Setuju” / “Tidak”).
-- **Template Anda di WhatsApp Manager harus menyediakan variabel/quick reply dengan payload dinamis** (sesuai aturan Meta untuk template Anda). Tanpa dukungan tersebut, kiriman API bisa gagal; hubungi Mahadata/Meta atau matikan tombol sampai template kompatibel.
-- Jika payload tidak digunakan, aplikasi boleh memakai **fallback** mencocokkan judul tombol dengan `WHATSAPP_CR_APPROVE_LABELS` / `WHATSAPP_CR_REJECT_LABELS` (kurang aman untuk banyak CR sekaligus).
+| Variabel Meta | Isi dari Laravel |
+|---------------|------------------|
+| `{{1}}`–`{{4}}` | Body: judul CR, pembuat, deskripsi, link PDF |
+| `{{5}}` (tombol **Setujui**, index 0) | `interaction_token` (32 karakter) |
+| `{{6}}` (tombol **Tolak**, index 1) | `reject-{interaction_token}` |
 
-### Tanpa WhatsApp App Secret
+Base URL di Meta Business Manager (keduanya boleh sama):
 
-Jika **`WHATSAPP_APP_SECRET`** Anda kosongkan, webhook **tetap diterima** (tanpa `X-Hub-Signature-256`). Gunakan jaringan/URL yang Anda percayai atau isi Secret bila telah tersedia.
+- **Setujui:** `https://manpro.bkkjateng.co.id/otorisasi/cr/setuju/{{5}}`
+- **Tolak:** `https://manpro.bkkjateng.co.id/otorisasi/cr/setuju/{{6}}`
+
+Contoh URL lengkap setelah otorisator mengetuk:
+
+- Setujui → `https://manpro.bkkjateng.co.id/otorisasi/cr/setuju/abc123…token32…`
+- Tolak → `https://manpro.bkkjateng.co.id/otorisasi/cr/setuju/reject-abc123…token32…`
+
+> **Opsional:** jika Anda ubah base tombol Tolak menjadi `…/otorisasi/cr/tolak/{{6}}`, Laravel cukup mengisi `{{6}}` dengan token saja (route `/otorisasi/cr/tolak/{token}` tetap tersedia).
+
+### Konfigurasi template Meta Business Manager
+
+1. Buat/ubah template `change_request_manpro` (atau nama sesuai `.env`).
+2. Body: empat placeholder teks (judul CR, pembuat, deskripsi, link PDF).
+3. Tambahkan **dua tombol URL** dengan base URL persis seperti di atas (harus diakhiri `/`).
+4. Pastikan `APP_URL` di `.env` sama dengan domain HTTPS yang terdaftar di template.
 
 ### Variabel lingkungan (salin dari `docs/dotenv-whatsapp.example`)
 
-Semua nama `ENV` untuk Mahadata + webhook + label tombol ada di **`docs/dotenv-whatsapp.example`**.
+Semua nama `ENV` untuk Mahadata + label tombol ada di **`docs/dotenv-whatsapp.example`**.
 
 Lihat **`docs/examples/whatsapp-change-request-manpro-authorization.template.json`** untuk badan HTTP JSON lengkap yang selaras dengan `MahadataWhatsappExternCrAuthorizationNotifier`:
 
 - **`body`** empat placeholder teks sesuai urutan di template Meta: nama/judul CR, pembuat, deskripsi singkat, link unduh gabungan PDF (URL bertanda sementara, route named `extern-cr.signed-pdf`).
-- **`button` quick_reply indeks `0` dan `1`** — label tombol seperti “Setuju” / “Tidak” ditetapkan di **Meta Business Manager**. Event ketukan dikirim ke webhook Laravel Anda.
+- **`button` url indeks `0` dan `1`** — label tombol seperti “Setuju” / “Tolak” ditetapkan di **Meta Business Manager**. Parameter teks = suffix token; Laravel membuka halaman otorisasi web.
 
-Webhook Laravel (implementasi aplikasi ini)
---------------------------------------------
+Webhook WhatsApp (opsional, kompatibilitas lama)
+------------------------------------------------
 
-**URL**: `GET` dan `POST` ke `{APP_URL}/webhook/whatsapp` (pastikan `APP_URL` HTTPS dan dapat dijangkau dari internet).
+Jalur **quick reply + webhook** tidak lagi dipakai untuk kiriman baru. Route **`/webhook/whatsapp`** tetap ada bila Anda masih menerima pesan lama dengan payload `APPROVE_CR_` / `REJECT_CR_`.
 
-**Verifikasi awal Meta (GET)**
+**URL**: `GET` dan `POST` ke `{APP_URL}/webhook/whatsapp` (satu route).
 
-- Meta memanggil `GET /webhook/whatsapp?hub.mode=subscribe&hub.challenge=...&hub.verify_token=...`.
-- Nilai `hub.verify_token` harus sama persis dengan `WHATSAPP_WEBHOOK_VERIFY_TOKEN` di `.env`.
+**Verifikasi (GET atau POST)** — Meta/Mahadata mengirim `hub.mode=subscribe`, `hub.verify_token`, `hub.challenge` (bisa di query string atau body JSON `hub_mode` / `hub_mode`). Laravel membalas **HTTP 200** dengan body = nilai `hub.challenge` (plain text).
 
-**Event masuk (POST)**
-
-- Laravel memverifikasi header **`X-Hub-Signature-256`** dengan **`WHATSAPP_APP_SECRET`** (App Secret aplikasi WhatsApp Cloud di Meta, bukan Bearer Mahadata).
-- Untuk **`interactive` / `button_reply`**, server mencocokkan `context.id` dengan **`wam_id`** yang disimpan saat kirim template (tabel `whatsapp_cr_authorization_dispatches`). Tanpa itu, digunakan fallback CR terbaru ke nomor yang sama yang belum punya keputusan (kurang ideal bila beberapa CR paralel).
-
-**Development**
-
-- `WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE=true` hanya boleh di lingkungan lokal tidak publik — di production tetap **`false`** + `WHATSAPP_APP_SECRET` wajib terisi.
-
-Pemetaan tombol ke keputusan
-----------------------------
-
-Sesuaikan `.env`:
-
-- `WHATSAPP_CR_APPROVE_LABELS` — default `Setuju`
-- `WHATSAPP_CR_REJECT_LABELS` — default `Tidak,Tolak`
-
-Judul tombol dicek **tanpa peka besar/kecil**.
-
-Jika WhatsApp mengembalikan error pengiriman terkait komponen tombol, set **`MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=false`** sampai struktur template cocok dengan body saja atau tombol Anda.
+Pastikan `WHATSAPP_WEBHOOK_VERIFY_TOKEN` di `.env` **sama persis** dengan Verify token di dashboard WABA/Mahadata.
 
 Mengaktifkan pengiriman otomatis saat CR baru
 ----------------------------------------------
@@ -60,28 +57,29 @@ Mengaktifkan pengiriman otomatis saat CR baru
 MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=change_request_manpro
 MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE=id
 MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE=true
-MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true
+MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true
 MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true
 EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES=10080
+APP_URL=https://domain-publik-anda.test
 ```
 
 Penerima adalah pengguna **Manajemen User** yang dicentang penerima otorisasi CR dengan nomor HP valid (`628…`).
 
 ### Uji kirim dummy (CLI, tanpa dispatch / tombol)
 
-Untuk memastikan template Meta + endpoint Mahadata “normal” sebelum mencoba tombol Setuju/Tidak dari aplikasi:
+Untuk memastikan template Meta + endpoint Mahadata “normal” sebelum mencoba tombol Setuju/Tolak dari aplikasi:
 
 ```bash
 php artisan mahadata:test-cr-auth-template <extern_cr_id> --to=628xxxxxxxxxx
 ```
 
 - `<extern_cr_id>` harus ada di tabel **extern_crs** (dipakai hanya sebagai sumber placeholder teks: nama CR, pembuat, deskripsi, link PDF bertanda).
-- Pengiriman **tidak** membuat baris `whatsapp_cr_authorization_dispatches` dan **tidak** menyertakan komponen quick reply.
-- Eksekusi dianggap **sukses** bila Laravel mendapat **`messages[0].id`** dari penyedia (**`wamid.`** seperti Cloud API atau **`msg_…`** kalau penyedia Mahadata/busa). Secara bawaan **`MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true`** agar respons `msg_…` tetap dihitung sukses — set **`false`** hanya jika Anda menolak id non‑`wamid.`.
+- Pengiriman **tidak** membuat baris `whatsapp_cr_authorization_dispatches` dan **tidak** menyertakan komponen tombol URL.
+- Eksekusi dianggap **sukses** bila Laravel mendapat **`messages[0].id`** dari penyedia.
 
 ### Pesan «Berhasil kirim» tetapi tidak sampai WhatsApp?
 
-1. Laravel (bawaan) menghitung **`msg_…`** di **`messages[0].id`** sebagai **sukses kirim HTTP** ketika **`MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true`** (nilai **default konfig**). Lepaskan (`false`) bila Anda hanya menerima **`wamid.`** sah Cloud API untuk audit ketat **`context.id`**.
-2. Bila **`MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true`** dan pertama kali gagal / id bukan `wamid.`, aplikasi mencoba **`fallback` satu kali kirim tanpa tombol quick reply**. Jika template Meta **memwajibkan** blok tombol, fallback bisa gagal: matikan tombol dengan env tersebut dan pastikan template hanya pakai placeholder **body**.
-3. **Cek pengguna CEJ:** otorisator harus `can_authorize_extern_cr = true`, ada **nomor HP** valid `08… / 628…`, **role** termasuk salah satu dari `admin`, `manager`, `officer`, `vendor`, `cabang`; otherwise tidak ikut dikirimi.
-4. Template harus aktif untuk nomor tersebut, kontak ada di WhatsApp, dan pembatas penyampaian template (`quality rating` / blokir user) bisa menunda tampilan di ponsel.
+1. Periksa **`APP_URL`** — harus HTTPS publik dan cocok dengan base URL tombol di template Meta.
+2. Bila **`MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true`** dan pertama kali gagal, aplikasi mencoba **`fallback` satu kali kirim tanpa tombol**. Jika template Meta **memwajibkan** blok tombol, fallback bisa gagal: matikan tombol dengan env tersebut dan pastikan template hanya pakai placeholder **body**.
+3. **Cek pengguna:** otorisator harus `can_authorize_extern_cr = true`, ada **nomor HP** valid `08… / 628…`, **role** termasuk salah satu dari `admin`, `manager`, `officer`, `vendor`, `cabang`.
+4. Template harus aktif untuk nomor tersebut, kontak ada di WhatsApp, dan pembatas penyampaian template bisa menunda tampilan di ponsel.
