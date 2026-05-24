@@ -3,14 +3,16 @@
 namespace App\Support;
 
 use App\Models\ExternCr;
+use Illuminate\Support\Facades\URL;
 
 /**
- * Prefiks payload quick reply (legacy) dan suffix tombol URL template Meta.
+ * Prefiks payload quick reply (legacy) dan URL tombol CTA template Meta.
  *
- * Template Meta `change_request_manpro` (contoh):
+ * Template Meta `change_request_manpro` (mode URL):
  * - body {{1}}–{{4}}
- * - tombol Setujui {{5}} → `{APP_URL}/otorisasi/cr/setuju/{token}`
- * - tombol Tolak {{6}} → `{APP_URL}/otorisasi/cr/setuju/reject-{token}` (base sama `/setuju/`)
+ * - tombol Setujui & Tolak: URL template = `{{1}}` (seluruh URL dinamis dari Laravel)
+ * - Setujui → `https://manpro.bkkjateng.co.id/{token32}`
+ * - Tolak → `https://manpro.bkkjateng.co.id/reject-{token32}`
  */
 final class WhatsappCrAuthorizationButtonCodes
 {
@@ -45,6 +47,26 @@ final class WhatsappCrAuthorizationButtonCodes
     public static function rejectUrlButtonSuffix(string $interactionToken): string
     {
         return self::REJECT_URL_PATH_PREFIX.self::approveUrlButtonSuffix($interactionToken);
+    }
+
+    /** URL lengkap tombol Setujui (parameter `{{1}}` template Meta = seluruh URL). */
+    public static function approveAuthorizationFullUrl(string $interactionToken): string
+    {
+        return URL::route(
+            'extern-cr.authorize.short',
+            ['actionSuffix' => self::approveUrlButtonSuffix($interactionToken)],
+            absolute: true,
+        );
+    }
+
+    /** URL lengkap tombol Tolak (parameter `{{1}}` template Meta = seluruh URL). */
+    public static function rejectAuthorizationFullUrl(string $interactionToken): string
+    {
+        return URL::route(
+            'extern-cr.authorize.short',
+            ['actionSuffix' => self::rejectUrlButtonSuffix($interactionToken)],
+            absolute: true,
+        );
     }
 
     /**

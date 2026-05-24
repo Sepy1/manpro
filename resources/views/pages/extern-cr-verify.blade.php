@@ -66,7 +66,7 @@
             <div class="pending">
                 <h1>Verifikasi persetujuan</h1>
                 <p>CR <strong>{{ $cr->nomor }}</strong>: <strong>Menunggu keputusan otorisator</strong> (misalnya lewat WhatsApp).</p>
-                <p class="small">Jika Anda otorisator, ketuk tombol Setuju atau Tolak pada pesan WhatsApp — keputusan diproses otomatis via webhook.</p>
+                <p class="small">Jika Anda otorisator, ketuk tombol Setujui atau Tolak pada pesan WhatsApp — halaman web akan terbuka untuk mencatat keputusan.</p>
             </div>
             <dl>
                 <dt>Nomor</dt>

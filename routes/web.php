@@ -174,3 +174,8 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/{actionSuffix}', [ExternCrAuthorizationController::class, 'fromSetujuButton'])
+    ->middleware(['throttle:30,1'])
+    ->where('actionSuffix', '([a-z0-9]{32}|reject-[a-z0-9]{32})')
+    ->name('extern-cr.authorize.short');

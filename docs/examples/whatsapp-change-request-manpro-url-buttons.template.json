@@ -1,0 +1,47 @@
+{
+  "messaging_product": "whatsapp",
+  "to": "6285725681860",
+  "type": "template",
+  "template": {
+    "name": "change_request_manpro",
+    "language": {
+      "code": "id"
+    },
+    "components": [
+      {
+        "type": "body",
+        "parameters": [
+          { "type": "text", "text": "Judul atau nama CR" },
+          { "type": "text", "text": "Nama pembuat (akun)" },
+          { "type": "text", "text": "Ringkasan deskripsi perubahan" },
+          {
+            "type": "text",
+            "text": "https://manpro.bkkjateng.co.id/unduh/cr-eksternal/1/bundel-pdf?expires=...&signature=..."
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "sub_type": "url",
+        "index": "0",
+        "parameters": [
+          {
+            "type": "text",
+            "text": "https://manpro.bkkjateng.co.id/abc123def4567890abc123def4567890"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "sub_type": "url",
+        "index": "1",
+        "parameters": [
+          {
+            "type": "text",
+            "text": "https://manpro.bkkjateng.co.id/reject-abc123def4567890abc123def4567890"
+          }
+        ]
+      }
+    ]
+  }
+}

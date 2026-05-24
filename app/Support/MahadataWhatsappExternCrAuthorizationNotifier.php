@@ -240,8 +240,12 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
     {
         return match ($buttonMode) {
             self::BUTTON_URL => [
-                WhatsappCrAuthorizationButtonCodes::approveUrlButtonSuffix($interactionToken),
-                WhatsappCrAuthorizationButtonCodes::rejectUrlButtonSuffix($interactionToken),
+                WhatsappTemplateTextSanitizer::urlParameter(
+                    WhatsappCrAuthorizationButtonCodes::approveAuthorizationFullUrl($interactionToken)
+                ),
+                WhatsappTemplateTextSanitizer::urlParameter(
+                    WhatsappCrAuthorizationButtonCodes::rejectAuthorizationFullUrl($interactionToken)
+                ),
             ],
             default => [
                 WhatsappCrAuthorizationButtonCodes::approvePayload($interactionToken),
