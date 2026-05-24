@@ -271,7 +271,7 @@ class ExternCrController extends Controller
             return back()->with(
                 'flash_error',
                 'WhatsApp tidak terkirim ke otorisator terpilih. Periksa template Mahadata, nomor pengguna, dan `storage/logs/laravel.log` (cari Mahadata CR auth WA). '
-                .'Opsi: `MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS` / `MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS` di `.env` lalu `php artisan config:clear`.'
+                .'Opsi: `MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS` / `MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS` di `.env` lalu `php artisan config:clear`.'
             );
         }
 

@@ -32,18 +32,21 @@ final class WhatsappCrAuthorizationWebhookProcessor
         $expected = trim((string) config('services.whatsapp.webhook_verify_token'));
         $token = $this->hubParameter($request, 'verify_token');
 
-        if ($expected === '') {
-            Log::warning('Webhook WhatsApp: WHATSAPP_WEBHOOK_VERIFY_TOKEN kosong — verifikasi ditolak.');
+        if ($expected !== '') {
+            if (! hash_equals($expected, $token)) {
+                Log::notice('Webhook WhatsApp: verify token tidak cocok.', [
+                    'method' => $request->method(),
+                ]);
 
-            return response('Forbidden', 403);
-        }
-
-        if (! hash_equals($expected, $token)) {
-            Log::notice('Webhook WhatsApp: verify token tidak cocok.', [
-                'method' => $request->method(),
+                return response('Forbidden', 403);
+            }
+        } elseif ($token !== '') {
+            // Mahadata/WABA mengisi token otomatis bila field Verify Token dikosongkan saat Add Endpoint.
+            Log::warning('Webhook WhatsApp: WHATSAPP_WEBHOOK_VERIFY_TOKEN belum di .env — verifikasi diterima. Salin token dari Mahadata ke .env:', [
+                'WHATSAPP_WEBHOOK_VERIFY_TOKEN' => $token,
             ]);
-
-            return response('Forbidden', 403);
+        } else {
+            Log::warning('Webhook WhatsApp: verify token kosong di .env dan request — verifikasi diterima sementara. Isi token yang sama di Mahadata dan .env.');
         }
 
         $challenge = $this->hubParameter($request, 'challenge');

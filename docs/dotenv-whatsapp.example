@@ -5,7 +5,7 @@
 #
 # Ringkasan dua jalur:
 #   (A) Kirim pesan template lewat Mahadata — Authorization: Bearer MAHADATA_WHATSAPP_TOKEN
-#   (B) Otorisator mengetuk tombol URL Setuju/Tolak → halaman web Laravel (/otorisasi/cr/…)
+#   (B) Tombol quick reply Setuju/Tolak → webhook Laravel (/webhook/whatsapp)
 #
 # =============================================================================
 # WAJIB untuk login 2FA OTP (panel admin / user dengan 2FA aktif)
@@ -42,8 +42,11 @@ MAHADATA_WHATSAPP_OTP_SEND_MODE=auto
 MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=change_request_manpro
 MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE=id
 
-# true = kirim komponen tombol URL call-to-action (Setuju/Tolak) dengan suffix token dinamis
-MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true
+# true = kirim komponen tombol quick_reply + payload APPROVE_CR_/REJECT_CR_ (default, pakai webhook)
+MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=true
+
+# false = nonaktifkan quick reply. Hanya aktifkan URL bila template Meta memakai Visit website:
+MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=false
 
 # true = anggap sah id `messages[0].id` apa pun bentuknya (mis. Mahadata pakai prefiks msg_) — default true agar penyedia seperti Mahadata tidak salah dianggap gagal kirim
 MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true
@@ -55,12 +58,13 @@ MAHADATA_WHATSAPP_CR_AUTH_NOTIFY_ON_CREATE=false
 EXTERN_CR_SIGNED_PDF_URL_TTL_MINUTES=10080
 
 # =============================================================================
-# OPSIONAL — Webhook inbound Laravel (hanya kompatibilitas quick reply lama)
-# Daftarkan di Meta/Mahadata: Callback URL = https://domain-anda/webhook/whatsapp
+# Webhook inbound Laravel (tombol quick reply otorisasi CR)
+# Daftarkan: https://domain-anda/webhook/whatsapp
 # =============================================================================
 
-# String bebas — harus sama dengan “Verify token” di konfigurasi webhook developer
-WHATSAPP_WEBHOOK_VERIFY_TOKEN=buat_string_random_panjang_ini
+# String bebas — isi di form Mahadata "Verify Token" ATAU kosongkan (Mahadata generate otomatis).
+# Jika Mahadata generate: setelah endpoint terdaftar, salin token yang ditampilkan Mahadata ke baris ini.
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=
 
 # OPTIONAL: App Secret aplikasi WhatsApp di Meta (untuk header X-Hub-Signature-256).
 # Bisa dikosongkan; Laravel tetang menerima webhook tanpa validasi signature (kurang aman).

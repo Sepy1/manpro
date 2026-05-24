@@ -22,15 +22,15 @@
       },
       {
         "type": "button",
-        "sub_type": "url",
+        "sub_type": "quick_reply",
         "index": "0",
-        "parameters": [{ "type": "text", "text": "abc123token32karakterUntukSetujui" }]
+        "parameters": [{ "type": "payload", "payload": "APPROVE_CR_token32karakterSatuPerPesan" }]
       },
       {
         "type": "button",
-        "sub_type": "url",
+        "sub_type": "quick_reply",
         "index": "1",
-        "parameters": [{ "type": "text", "text": "reject-abc123token32karakterUntukSetujui" }]
+        "parameters": [{ "type": "payload", "payload": "REJECT_CR_token32karakterYangSama" }]
       }
     ]
   }
