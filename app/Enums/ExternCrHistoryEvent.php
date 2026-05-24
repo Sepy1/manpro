@@ -22,7 +22,7 @@ enum ExternCrHistoryEvent: string
             self::AttachmentAdded => 'Lampiran ditambah',
             self::AttachmentDeleted => 'Lampiran dihapus',
             self::WhatsappAuthorization => 'Otorisasi WhatsApp',
-            self::WaAuthorizationInviteDispatched => 'Undangan otorisasi WA',
+            self::WaAuthorizationInviteDispatched => 'Permohonan otorisasi',
             self::WaAuthorizationReset => 'Reset otorisasi WA',
         };
     }

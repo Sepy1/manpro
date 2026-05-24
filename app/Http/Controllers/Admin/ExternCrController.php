@@ -275,8 +275,7 @@ class ExternCrController extends Controller
             return back()->with('flash_error', 'Pengiriman WA gagal: silakan periksa log aplikasi atau coba lagi.');
         }
 
-        $targetCount = 1;
-        ExternCrHistoryRecorder::waAuthorizationInviteDispatched($externCr, auth()->id(), $success, $targetCount);
+        ExternCrHistoryRecorder::waAuthorizationInviteDispatched($externCr, auth()->id(), $success, $chosenId);
 
         if ($success === 0) {
             return back()->with(

@@ -9,6 +9,7 @@ use App\Models\ExternCr;
 use App\Models\ExternCrApplication;
 use App\Models\ExternCrChangeReason;
 use App\Models\ExternCrHistory;
+use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
@@ -82,25 +83,32 @@ final class ExternCrHistoryRecorder
         string $auditReference,
         ?string $rejectReason = null,
     ): void {
-        $verb = match ($decision) {
-            ExternCr::WA_AUTH_APPROVED => 'Disetujui',
-            ExternCr::WA_AUTH_REJECTED => 'Ditolak',
-            default => $decision,
-        };
+        $actorName = User::query()->whereKey($actorUserId)->value('name') ?? '—';
+        $viaLabel = self::authorizationViaLabel($auditReference);
 
-        $flowLabel = self::authorizationFlowLabel($auditReference);
-        $summary = 'Otorisasi CR: '.$verb.' via '.$flowLabel.'.';
+        $summary = match ($decision) {
+            ExternCr::WA_AUTH_APPROVED => 'CR disetujui oleh '.$actorName.' melalui '.$viaLabel.'.',
+            ExternCr::WA_AUTH_REJECTED => 'CR ditolak oleh '.$actorName.' melalui '.$viaLabel.'.',
+            default => 'Keputusan otorisasi CR oleh '.$actorName.' melalui '.$viaLabel.'.',
+        };
 
         if ($decision === ExternCr::WA_AUTH_REJECTED && $rejectReason !== null && trim($rejectReason) !== '') {
             $snip = preg_replace('/\s+/', ' ', trim($rejectReason)) ?? '';
             $summary .= ' Alasan: '.\Illuminate\Support\Str::limit($snip, 200, '…');
         }
 
+        $verb = match ($decision) {
+            ExternCr::WA_AUTH_APPROVED => 'Disetujui',
+            ExternCr::WA_AUTH_REJECTED => 'Ditolak',
+            default => $decision,
+        };
+
         $properties = [
             'decision' => $decision,
             'decision_label' => $verb,
             'audit_reference' => $auditReference,
-            'flow' => $flowLabel,
+            'flow' => $viaLabel,
+            'actor_name' => $actorName,
             'channel' => 'whatsapp',
         ];
 
@@ -136,31 +144,38 @@ final class ExternCrHistoryRecorder
         ]);
     }
 
-    private static function authorizationFlowLabel(string $auditReference): string
+    private static function authorizationViaLabel(string $auditReference): string
     {
         return match ($auditReference) {
-            'approval-link-approve' => 'halaman otorisasi (2FA)',
-            'approval-link-reject' => 'halaman otorisasi',
+            'approval-link-approve' => '2FA WhatsApp',
+            'approval-link-reject' => 'halaman otorisasi WhatsApp',
             'link-approve', 'link-reject' => 'tautan WhatsApp',
             default => $auditReference,
         };
     }
 
-    /** Admin memicu kirim ulang/notifikasi template otorisasi ke daftar otorisator WhatsApp. */
-    public static function waAuthorizationInviteDispatched(ExternCr $cr, ?int $actorUserId, int $successCount, int $eligibleAuthorizerCount): void
-    {
+    /** Admin memicu kirim ulang/notifikasi template otorisasi ke otorisator WhatsApp. */
+    public static function waAuthorizationInviteDispatched(
+        ExternCr $cr,
+        ?int $actorUserId,
+        int $successCount,
+        int $recipientUserId,
+    ): void {
+        $recipientName = User::query()->whereKey($recipientUserId)->value('name') ?? '—';
+
+        $summary = $successCount > 0
+            ? 'Permohonan otorisasi dikirim ke '.$recipientName.'.'
+            : 'Permohonan otorisasi gagal dikirim ke '.$recipientName.'.';
+
         ExternCrHistory::query()->create([
             'extern_cr_id' => $cr->id,
             'user_id' => $actorUserId,
             'event' => ExternCrHistoryEvent::WaAuthorizationInviteDispatched,
-            'summary' => sprintf(
-                'Undangan otorisasi WhatsApp dikirim: %d dari %d otorisator (ikut daftar pengguna).',
-                $successCount,
-                $eligibleAuthorizerCount
-            ),
+            'summary' => $summary,
             'properties' => [
                 'success_count' => $successCount,
-                'eligible_authorizers' => $eligibleAuthorizerCount,
+                'recipient_user_id' => $recipientUserId,
+                'recipient_name' => $recipientName,
             ],
         ]);
     }
