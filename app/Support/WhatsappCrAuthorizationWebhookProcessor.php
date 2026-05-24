@@ -123,6 +123,10 @@ final class WhatsappCrAuthorizationWebhookProcessor
             return true;
         }
 
+        if ($this->providerVerifyTokenHeaderIsValid($request)) {
+            return true;
+        }
+
         $header = (string) $request->header('X-Hub-Signature-256', '');
         if ($header === '' || ! Str::startsWith($header, 'sha256=')) {
             $secret = trim((string) config('services.whatsapp.meta_app_secret'));
@@ -136,6 +140,34 @@ final class WhatsappCrAuthorizationWebhookProcessor
         foreach ($this->signatureSecrets() as $secret) {
             $expectedMac = hash_hmac('sha256', $rawBody, $secret);
             if (hash_equals('sha256='.$expectedMac, $header)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function providerVerifyTokenHeaderIsValid(Request $request): bool
+    {
+        $expected = trim((string) config('services.whatsapp.webhook_verify_token'));
+        if ($expected === '') {
+            return false;
+        }
+
+        $candidates = [
+            $request->header('X-Webhook-Token'),
+            $request->header('X-Verify-Token'),
+            $request->header('X-Mahadata-Webhook-Token'),
+            $request->header('X-Hub-Verify-Token'),
+        ];
+
+        $auth = (string) $request->header('Authorization', '');
+        if (Str::startsWith($auth, 'Bearer ')) {
+            $candidates[] = trim(substr($auth, 7));
+        }
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && $candidate !== '' && hash_equals($expected, trim($candidate))) {
                 return true;
             }
         }
@@ -182,7 +214,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 }
                 foreach (($value['messages'] ?? []) as $message) {
                     if (is_array($message)) {
-                        yield ['message' => $message];
+                        yield ['message' => $this->normalizeProviderMessage($message)];
                     }
                 }
             }
@@ -190,7 +222,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
 
         foreach ($payload['messages'] ?? [] as $message) {
             if (is_array($message)) {
-                yield ['message' => $message];
+                yield ['message' => $this->normalizeProviderMessage($message)];
             }
         }
 
@@ -198,10 +230,50 @@ final class WhatsappCrAuthorizationWebhookProcessor
         if (is_array($nestedMessages)) {
             foreach ($nestedMessages as $message) {
                 if (is_array($message)) {
-                    yield ['message' => $message];
+                    yield ['message' => $this->normalizeProviderMessage($message)];
                 }
             }
         }
+
+        foreach ([
+            'whatsappInboundMessage',
+            'whatsapp_inbound_message',
+            'inboundMessage',
+            'inbound_message',
+        ] as $wrapperKey) {
+            foreach ([$payload, is_array($payload['data'] ?? null) ? $payload['data'] : []] as $container) {
+                if ($container === []) {
+                    continue;
+                }
+                $wrapped = $container[$wrapperKey] ?? null;
+                if (is_array($wrapped)) {
+                    yield ['message' => $this->normalizeProviderMessage($wrapped)];
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $raw
+     * @return array<string, mixed>
+     */
+    private function normalizeProviderMessage(array $raw): array
+    {
+        $message = $raw;
+
+        if (! isset($message['from']) && isset($message['sender']) && is_array($message['sender'])) {
+            $message['from'] = $message['sender']['phone'] ?? $message['sender']['wa_id'] ?? $message['sender']['id'] ?? null;
+        }
+
+        if (! isset($message['id']) && isset($message['wamid'])) {
+            $message['id'] = $message['wamid'];
+        }
+
+        if (isset($message['context']) && is_array($message['context'])) {
+            $message['context']['id'] ??= $message['context']['wamid'] ?? $message['context']['message_id'] ?? null;
+        }
+
+        return $message;
     }
 
     /**
@@ -255,7 +327,12 @@ final class WhatsappCrAuthorizationWebhookProcessor
             return false;
         }
 
-        $contextWamId = (string) (data_get($message, 'context.id') ?? data_get($message, 'context.message_id') ?? '');
+        $contextWamId = (string) (
+            data_get($message, 'context.id')
+            ?? data_get($message, 'context.wamid')
+            ?? data_get($message, 'context.message_id')
+            ?? ''
+        );
 
         $auditReference = $btnPayloadId !== '' ? $btnPayloadId : $title;
 
@@ -384,6 +461,14 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 ->where('wam_id', $contextWamId)
                 ->first();
             if ($exact !== null && $exact->recipient_wa_id === $recipientDigits) {
+                return $exact;
+            }
+
+            $exact = WhatsappCrAuthorizationDispatch::query()
+                ->where('recipient_wa_id', $recipientDigits)
+                ->where('wam_id', $contextWamId)
+                ->first();
+            if ($exact !== null) {
                 return $exact;
             }
         }
