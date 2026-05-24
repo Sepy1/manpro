@@ -89,9 +89,13 @@ return [
          */
         'cr_authorization_template_name' => env(
             'MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME',
-            'change_request_manpro'
+            'notif_cr_manpro'
         ),
         'cr_authorization_template_language_code' => env('MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE', 'id'),
+        'cr_authorization_single_url_button' => filter_var(
+            env('MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
         'cr_authorization_include_quick_reply_buttons' => filter_var(
             env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', true),
             FILTER_VALIDATE_BOOLEAN

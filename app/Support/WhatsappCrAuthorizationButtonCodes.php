@@ -6,13 +6,12 @@ use App\Models\ExternCr;
 use Illuminate\Support\Facades\URL;
 
 /**
- * Prefiks payload quick reply (legacy) dan URL tombol CTA template Meta.
+ * Payload quick reply (legacy) dan suffix URL tombol CTA template Meta.
  *
- * Template Meta `change_request_manpro` (mode URL):
- * - body {{1}}–{{4}}
- * - tombol Setujui & Tolak: URL template = `{{1}}` (seluruh URL dinamis dari Laravel)
- * - Setujui → `https://manpro.bkkjateng.co.id/{token32}`
- * - Tolak → `https://manpro.bkkjateng.co.id/reject-{token32}`
+ * Template `notif_cr_manpro`:
+ * - body {{1}} nomor CR, {{2}} nama CR, {{3}} pembuat, {{4}} deskripsi
+ * - tombol «Tindak Lanjut»: base Meta `https://manpro.bkkjateng.co.id/approval/{{1}}`
+ *   → Laravel mengisi {{1}} dengan `interaction_token` (32 char)
  */
 final class WhatsappCrAuthorizationButtonCodes
 {
@@ -20,13 +19,13 @@ final class WhatsappCrAuthorizationButtonCodes
 
     public const PREFIX_REJECT = 'REJECT_CR_';
 
-    /** Suffix dinamis tombol Tolak bila base URL Meta sama dengan Setujui (`…/setuju/{{6}}`). */
+    /** Suffix dinamis tombol Tolak (mode dua tombol URL legacy). */
     public const REJECT_URL_PATH_PREFIX = 'reject-';
 
-    /** @deprecated Hanya untuk webhook pesan lama; pengiriman baru memakai {@see self::PREFIX_APPROVE} */
+    /** @deprecated Hanya untuk webhook pesan lama */
     private const LEGACY_PREFIX_APPROVE = 'APR_';
 
-    /** @deprecated Hanya untuk webhook pesan lama; pengiriman baru memakai {@see self::PREFIX_REJECT} */
+    /** @deprecated Hanya untuk webhook pesan lama */
     private const LEGACY_PREFIX_REJECT = 'REJ_';
 
     public static function approvePayload(string $interactionToken): string
@@ -49,7 +48,23 @@ final class WhatsappCrAuthorizationButtonCodes
         return self::REJECT_URL_PATH_PREFIX.self::approveUrlButtonSuffix($interactionToken);
     }
 
-    /** URL lengkap tombol Setujui (parameter `{{1}}` template Meta = seluruh URL). */
+    /** Suffix URL tombol «Tindak Lanjut» (`…/approval/{{1}}` di Meta). */
+    public static function approvalLandingUrlSuffix(string $interactionToken): string
+    {
+        return self::approveUrlButtonSuffix($interactionToken);
+    }
+
+    /** URL lengkap halaman tindak lanjut otorisasi. */
+    public static function approvalLandingFullUrl(string $interactionToken): string
+    {
+        return URL::route(
+            'extern-cr.authorize.approval',
+            ['interactionToken' => self::approvalLandingUrlSuffix($interactionToken)],
+            absolute: true,
+        );
+    }
+
+    /** @deprecated Mode dua tombol URL — Setujui langsung */
     public static function approveAuthorizationFullUrl(string $interactionToken): string
     {
         return URL::route(
@@ -59,7 +74,7 @@ final class WhatsappCrAuthorizationButtonCodes
         );
     }
 
-    /** URL lengkap tombol Tolak (parameter `{{1}}` template Meta = seluruh URL). */
+    /** @deprecated Mode dua tombol URL — Tolak langsung */
     public static function rejectAuthorizationFullUrl(string $interactionToken): string
     {
         return URL::route(

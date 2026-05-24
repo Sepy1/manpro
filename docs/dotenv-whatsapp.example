@@ -39,14 +39,15 @@ MAHADATA_WHATSAPP_OTP_SEND_MODE=auto
 # =============================================================================
 
 # Kosongkan dua baris di atas jika Anda tidak pakai fitur ini; jika dipakai harus sama endpoint+token.
-MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=change_request_manpro
+MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=notif_cr_manpro
 MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE=id
 
-# false = nonaktifkan quick reply (webhook inbound). Aktifkan URL bila template Meta memakai Visit website:
+# false = quick reply (webhook). true = tombol URL.
 MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS=false
-
-# true = tombol Setujui/Tolak membuka browser ke /otorisasi/cr/setuju/{token} (tanpa webhook inbound)
 MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true
+
+# true = satu tombol «Tindak Lanjut» → /approval/{token} (template notif_cr_manpro)
+MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON=true
 
 # true = anggap sah id `messages[0].id` apa pun bentuknya (mis. Mahadata pakai prefiks msg_) — default true agar penyedia seperti Mahadata tidak salah dianggap gagal kirim
 MAHADATA_WHATSAPP_CR_AUTH_ACCEPT_PROXY_MESSAGE_IDS=true

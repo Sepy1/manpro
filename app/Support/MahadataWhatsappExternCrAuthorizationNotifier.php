@@ -65,6 +65,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             self::BUTTON_NONE,
             '',
             '',
+            [],
         );
 
         $canonical = $this->validatedCanonicalOutboundMessageId($response);
@@ -126,7 +127,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             }
 
             if ($buttonMode === self::BUTTON_NONE) {
-                $response = $this->postTemplateMessageRaw($endpoint, $token, $template, $digits, $bodyParams, self::BUTTON_NONE, '', '');
+                $response = $this->postTemplateMessageRaw($endpoint, $token, $template, $digits, $bodyParams, self::BUTTON_NONE, '', '', []);
                 if ($this->validatedCanonicalOutboundMessageId($response) !== null) {
                     $success++;
                 } else {
@@ -146,7 +147,8 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 'recipient_wa_id' => $digits,
             ]);
 
-            [$approveValue, $rejectValue] = $this->buttonValuesForMode($buttonMode, $interactionToken);
+            [$approveValue, $rejectValue] = $this->quickReplyButtonValues($interactionToken);
+            $urlButtonParameters = $this->urlButtonParameters($interactionToken);
 
             $response = $this->postTemplateMessageRaw(
                 $endpoint,
@@ -157,6 +159,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 $buttonMode,
                 $approveValue,
                 $rejectValue,
+                $urlButtonParameters,
             );
 
             $canonicalWaId = $this->validatedCanonicalOutboundMessageId($response);
@@ -169,6 +172,9 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                     'dispatch_id' => $dispatch->id,
                     'message_id_snippet' => Str::limit($canonicalWaId, 26).'…',
                     'button_mode' => $buttonMode,
+                    'approval_url' => $buttonMode === self::BUTTON_URL
+                        ? WhatsappCrAuthorizationButtonCodes::approvalLandingFullUrl($interactionToken)
+                        : null,
                     'note' => WhatsappCrAuthorizationWebhookProcessor::isOfficialWhatsappCloudOutboundMessageId($canonicalWaId)
                         ? 'wamid resmi'
                         : 'id proxy Mahadata — tunggu webhook status delivered/failed',
@@ -195,6 +201,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 self::BUTTON_NONE,
                 '',
                 '',
+                [],
             );
 
             $trustedBodyId = $this->validatedCanonicalOutboundMessageId($responseBodyOnly);
@@ -236,22 +243,37 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
     }
 
     /** @return array{0: string, 1: string} */
-    private function buttonValuesForMode(string $buttonMode, string $interactionToken): array
+    private function quickReplyButtonValues(string $interactionToken): array
     {
-        return match ($buttonMode) {
-            self::BUTTON_URL => [
+        return [
+            WhatsappCrAuthorizationButtonCodes::approvePayload($interactionToken),
+            WhatsappCrAuthorizationButtonCodes::rejectPayload($interactionToken),
+        ];
+    }
+
+    /**
+     * Suffix dinamis untuk tombol URL template Meta (`…/approval/{{1}}` atau mode legacy).
+     *
+     * @return list<string>
+     */
+    private function urlButtonParameters(string $interactionToken): array
+    {
+        if ((bool) config('services.mahadata_whatsapp.cr_authorization_single_url_button', true)) {
+            return [
                 WhatsappTemplateTextSanitizer::urlParameter(
-                    WhatsappCrAuthorizationButtonCodes::approveAuthorizationFullUrl($interactionToken)
+                    WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix($interactionToken)
                 ),
-                WhatsappTemplateTextSanitizer::urlParameter(
-                    WhatsappCrAuthorizationButtonCodes::rejectAuthorizationFullUrl($interactionToken)
-                ),
-            ],
-            default => [
-                WhatsappCrAuthorizationButtonCodes::approvePayload($interactionToken),
-                WhatsappCrAuthorizationButtonCodes::rejectPayload($interactionToken),
-            ],
-        };
+            ];
+        }
+
+        return [
+            WhatsappTemplateTextSanitizer::urlParameter(
+                WhatsappCrAuthorizationButtonCodes::approveAuthorizationFullUrl($interactionToken)
+            ),
+            WhatsappTemplateTextSanitizer::urlParameter(
+                WhatsappCrAuthorizationButtonCodes::rejectAuthorizationFullUrl($interactionToken)
+            ),
+        ];
     }
 
     /**
@@ -260,8 +282,6 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
     private function crAuthorizationTemplateBodyParameters(ExternCr $externCr): array
     {
         $externCr->loadMissing('creator');
-
-        $pdfUrl = ExternCrPdfQr::temporarySignedPdfBundleUrl($externCr);
 
         $deskripsi = trim((string) ($externCr->deskripsi_permintaan ?? ''));
         if ($deskripsi === '') {
@@ -279,16 +299,21 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             $judulCr = '—';
         }
 
+        $nomorCr = trim((string) ($externCr->nomor ?? ''));
+        if ($nomorCr === '') {
+            $nomorCr = $judulCr;
+        }
+
         $pembuat = trim((string) ($externCr->creator?->name ?? ''));
         if ($pembuat === '') {
             $pembuat = 'Belum ditetapkan';
         }
 
         return [
+            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($nomorCr)],
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($judulCr)],
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($pembuat)],
             ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::bodyParameter($deskripsi)],
-            ['type' => 'text', 'text' => WhatsappTemplateTextSanitizer::urlParameter($pdfUrl)],
         ];
     }
 
@@ -413,6 +438,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
     /**
      * @param  list<array{type: string, text: string}>  $bodyTextParameters
+     * @param  list<string>  $urlButtonParameters
      */
     private function postTemplateMessageRaw(
         string $endpoint,
@@ -423,6 +449,7 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
         string $buttonMode,
         string $approveButtonValue,
         string $rejectButtonValue,
+        array $urlButtonParameters = [],
     ): ?HttpClientResponse {
         $language = (string) config('services.mahadata_whatsapp.cr_authorization_template_language_code', 'id');
 
@@ -458,22 +485,19 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 ],
             ];
         } elseif ($buttonMode === self::BUTTON_URL) {
-            $components[] = [
-                'type' => 'button',
-                'sub_type' => 'url',
-                'index' => '0',
-                'parameters' => [
-                    ['type' => 'text', 'text' => $approveButtonValue],
-                ],
-            ];
-            $components[] = [
-                'type' => 'button',
-                'sub_type' => 'url',
-                'index' => '1',
-                'parameters' => [
-                    ['type' => 'text', 'text' => $rejectButtonValue],
-                ],
-            ];
+            foreach (array_values($urlButtonParameters) as $index => $urlParameter) {
+                if ($urlParameter === '') {
+                    continue;
+                }
+                $components[] = [
+                    'type' => 'button',
+                    'sub_type' => 'url',
+                    'index' => (string) $index,
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $urlParameter],
+                    ],
+                ];
+            }
         }
 
         $payload = [

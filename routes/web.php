@@ -42,6 +42,21 @@ Route::get('/otorisasi/cr/tolak/{interactionToken}', [ExternCrAuthorizationContr
     ->where('interactionToken', '[a-z0-9]{32}')
     ->name('extern-cr.authorize.reject');
 
+Route::get('/approval/{interactionToken}', [ExternCrAuthorizationController::class, 'approvalLanding'])
+    ->middleware(['throttle:30,1'])
+    ->where('interactionToken', '[a-z0-9]{32}')
+    ->name('extern-cr.authorize.approval');
+
+Route::get('/approval/{interactionToken}/setuju', [ExternCrAuthorizationController::class, 'approvalApprove'])
+    ->middleware(['throttle:30,1'])
+    ->where('interactionToken', '[a-z0-9]{32}')
+    ->name('extern-cr.authorize.approval.approve');
+
+Route::get('/approval/{interactionToken}/tolak', [ExternCrAuthorizationController::class, 'approvalReject'])
+    ->middleware(['throttle:30,1'])
+    ->where('interactionToken', '[a-z0-9]{32}')
+    ->name('extern-cr.authorize.approval.reject');
+
 Route::match(['get', 'post'], '/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 
 Route::get('/', function () {
