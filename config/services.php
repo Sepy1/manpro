@@ -122,7 +122,7 @@ return [
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
         'meta_app_secret' => env('WHATSAPP_APP_SECRET'),
         'skip_signature_validation' => filter_var(env('WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE', false), FILTER_VALIDATE_BOOLEAN),
-        'cr_approve_button_titles' => array_values(array_filter(array_map('trim', explode(',', (string) env('WHATSAPP_CR_APPROVE_LABELS', 'Setuju'))))),
+        'cr_approve_button_titles' => array_values(array_filter(array_map('trim', explode(',', (string) env('WHATSAPP_CR_APPROVE_LABELS', 'Setuju,Setujui'))))),
         'cr_reject_button_titles' => array_values(array_filter(array_map('trim', explode(',', (string) env('WHATSAPP_CR_REJECT_LABELS', 'Tidak,Tolak'))))),
     ],
 

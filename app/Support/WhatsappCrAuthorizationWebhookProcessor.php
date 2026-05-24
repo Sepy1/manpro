@@ -41,7 +41,6 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 return response('Forbidden', 403);
             }
         } elseif ($token !== '') {
-            // Mahadata/WABA mengisi token otomatis bila field Verify Token dikosongkan saat Add Endpoint.
             Log::warning('Webhook WhatsApp: WHATSAPP_WEBHOOK_VERIFY_TOKEN belum di .env — verifikasi diterima. Salin token dari Mahadata ke .env:', [
                 'WHATSAPP_WEBHOOK_VERIFY_TOKEN' => $token,
             ]);
@@ -58,9 +57,6 @@ final class WhatsappCrAuthorizationWebhookProcessor
         return response($challenge, 200)->header('Content-Type', 'text/plain; charset=UTF-8');
     }
 
-    /**
-     * Meta/Mahadata bisa mengirim hub.* lewat query string, form, atau JSON (hub.mode / hub_mode).
-     */
     private function hubParameter(Request $request, string $suffix): string
     {
         $candidates = [
@@ -96,54 +92,83 @@ final class WhatsappCrAuthorizationWebhookProcessor
         $raw = $request->getContent();
 
         if (! $this->signatureIsValid($request, $raw)) {
+            Log::warning('Webhook WhatsApp: signature tidak valid — payload ditolak.', [
+                'has_app_secret' => trim((string) config('services.whatsapp.meta_app_secret')) !== '',
+                'has_signature_header' => $request->header('X-Hub-Signature-256') !== null,
+            ]);
             abort(403, 'Invalid signature');
         }
 
         /** @var array<string, mixed> $payload */
         $payload = $request->json()->all();
 
-        foreach ($this->iterateButtonReplyMessages($payload) as ['message' => $message]) {
-            $this->processButtonReply($message);
+        $processed = 0;
+        foreach ($this->iterateInboundMessages($payload) as ['message' => $message]) {
+            if ($this->processInboundMessage($message)) {
+                $processed++;
+            }
+        }
+
+        if ($processed === 0) {
+            Log::notice('Webhook WhatsApp: POST diterima tetapi tidak ada balasan tombol template yang diproses.', [
+                'top_level_keys' => array_keys($payload),
+                'payload_snippet' => Str::limit(json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '', 800),
+            ]);
         }
     }
 
     private function signatureIsValid(Request $request, string $rawBody): bool
     {
         if ((bool) config('services.whatsapp.skip_signature_validation', false)) {
-            Log::notice('Webhook WhatsApp: pemeriksaan tanda tangan dinonaktifkan (WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE).');
-
-            return true;
-        }
-
-        $secret = trim((string) config('services.whatsapp.meta_app_secret'));
-        if ($secret === '') {
-            Log::notice('Webhook WhatsApp: WHATSAPP_APP_SECRET kosong — payload diterima tanpa X-Hub-Signature-256 (sesuai konfigurasi Anda).');
-
             return true;
         }
 
         $header = (string) $request->header('X-Hub-Signature-256', '');
         if ($header === '' || ! Str::startsWith($header, 'sha256=')) {
+            $secret = trim((string) config('services.whatsapp.meta_app_secret'));
+            if ($secret === '') {
+                return true;
+            }
+
             return false;
         }
 
-        $expectedMac = hash_hmac('sha256', $rawBody, $secret);
+        foreach ($this->signatureSecrets() as $secret) {
+            $expectedMac = hash_hmac('sha256', $rawBody, $secret);
+            if (hash_equals('sha256='.$expectedMac, $header)) {
+                return true;
+            }
+        }
 
-        return hash_equals('sha256='.$expectedMac, $header);
+        return false;
+    }
+
+    /** @return list<string> */
+    private function signatureSecrets(): array
+    {
+        $secrets = [];
+        foreach ([
+            config('services.whatsapp.meta_app_secret'),
+            config('services.whatsapp.webhook_verify_token'),
+        ] as $candidate) {
+            $secret = trim((string) ($candidate ?? ''));
+            if ($secret !== '') {
+                $secrets[] = $secret;
+            }
+        }
+
+        return array_values(array_unique($secrets));
     }
 
     /**
      * @param  array<string, mixed>  $payload
      * @return \Generator<int, array{message: array<string, mixed>}>
      */
-    private function iterateButtonReplyMessages(array $payload): \Generator
+    private function iterateInboundMessages(array $payload): \Generator
     {
-        $entries = $payload['entry'] ?? [];
-        if (! is_array($entries)) {
-            return;
-        }
+        $payload = $this->normalizeWebhookPayload($payload);
 
-        foreach ($entries as $entry) {
+        foreach ($payload['entry'] ?? [] as $entry) {
             if (! is_array($entry)) {
                 continue;
             }
@@ -156,9 +181,23 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     continue;
                 }
                 foreach (($value['messages'] ?? []) as $message) {
-                    if (! is_array($message)) {
-                        continue;
+                    if (is_array($message)) {
+                        yield ['message' => $message];
                     }
+                }
+            }
+        }
+
+        foreach ($payload['messages'] ?? [] as $message) {
+            if (is_array($message)) {
+                yield ['message' => $message];
+            }
+        }
+
+        $nestedMessages = data_get($payload, 'value.messages');
+        if (is_array($nestedMessages)) {
+            foreach ($nestedMessages as $message) {
+                if (is_array($message)) {
                     yield ['message' => $message];
                 }
             }
@@ -166,41 +205,57 @@ final class WhatsappCrAuthorizationWebhookProcessor
     }
 
     /**
-     * @param  array<string, mixed>  $message
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
      */
-    private function processButtonReply(array $message): void
+    private function normalizeWebhookPayload(array $payload): array
     {
-        $inboundId = (string) ($message['id'] ?? '');
-        if ($inboundId !== '') {
-            if (! Cache::add('whatsapp:inbound_msg:'.$inboundId, 1, now()->addDays(7))) {
-                return;
+        foreach (['payload', 'data', 'body', 'event_data', 'message'] as $wrap) {
+            $inner = $payload[$wrap] ?? null;
+            if (! is_array($inner)) {
+                continue;
+            }
+            if (isset($inner['entry']) || isset($inner['messages']) || isset($inner['value'])) {
+                return $inner;
             }
         }
 
-        if (($message['type'] ?? '') !== 'interactive') {
-            return;
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    private function processInboundMessage(array $message): bool
+    {
+        $button = $this->extractButtonReplyData($message);
+        if ($button === null) {
+            return false;
         }
 
-        if (data_get($message, 'interactive.type') !== 'button_reply') {
-            return;
+        $inboundId = (string) ($message['id'] ?? '');
+        if ($inboundId !== '') {
+            if (! Cache::add('whatsapp:inbound_msg:'.$inboundId, 1, now()->addDays(7))) {
+                return false;
+            }
         }
 
-        $btnPayloadId = trim((string) data_get($message, 'interactive.button_reply.id', ''));
-        $title = trim((string) data_get($message, 'interactive.button_reply.title', ''));
+        $btnPayloadId = $button['payload_id'];
+        $title = $button['title'];
 
         if ($btnPayloadId === '' && $title === '') {
-            return;
+            return false;
         }
 
-        $fromRaw = (string) ($message['from'] ?? '');
+        $fromRaw = (string) ($message['from'] ?? data_get($message, 'sender.phone', ''));
         $fromDigits = IndonesianWhatsappPhoneNormalizer::toWaDigits62($fromRaw);
         if ($fromDigits === null) {
             Log::notice('Webhook WhatsApp: pengirim bukan nomor format yang dikenali.', ['from' => $fromRaw]);
 
-            return;
+            return false;
         }
 
-        $contextWamId = (string) data_get($message, 'context.id', '');
+        $contextWamId = (string) (data_get($message, 'context.id') ?? data_get($message, 'context.message_id') ?? '');
 
         $auditReference = $btnPayloadId !== '' ? $btnPayloadId : $title;
 
@@ -214,14 +269,23 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 ->where('interaction_token', $parsedPayload['interaction_token'])
                 ->where('recipient_wa_id', $fromDigits)
                 ->first();
+
+            if ($dispatch === null) {
+                $dispatch = WhatsappCrAuthorizationDispatch::query()
+                    ->where('interaction_token', $parsedPayload['interaction_token'])
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
             $decision = $parsedPayload['decision'];
 
             if ($dispatch === null) {
-                Log::notice('Webhook WhatsApp: payload APPROVE_CR_/REJECT_CR_ (atau APR_/REJ_ lama) tidak cocok baris kiriman atau nomor penerima salah.', [
+                Log::notice('Webhook WhatsApp: payload APPROVE_CR_/REJECT_CR_ tidak cocok dispatch.', [
                     'interaction_token_snip' => Str::limit((string) ($parsedPayload['interaction_token'] ?? ''), 12, '…'),
+                    'from' => $fromDigits,
                 ]);
 
-                return;
+                return false;
             }
         } else {
             $dispatch = $this->resolveDispatch($fromDigits, $contextWamId);
@@ -231,18 +295,19 @@ final class WhatsappCrAuthorizationWebhookProcessor
                     'context_wam_id' => $contextWamId ?: null,
                     'button_id' => $btnPayloadId ?: null,
                     'button_title' => $title ?: null,
+                    'message_type' => $message['type'] ?? null,
                 ]);
 
-                return;
+                return false;
             }
             $decision = $this->normalizeDecisionTitle($title);
             if ($decision === null) {
-                Log::info('Webhook WhatsApp: tidak ada payload APPROVE_CR_/REJECT_CR_ dan judul tombol tidak dipetakan.', [
+                Log::info('Webhook WhatsApp: judul tombol tidak dipetakan ke Setuju/Tolak.', [
                     'title' => $title,
                     'button_id' => $btnPayloadId ?: null,
                 ]);
 
-                return;
+                return false;
             }
         }
 
@@ -250,7 +315,7 @@ final class WhatsappCrAuthorizationWebhookProcessor
         if ($user === null || ! $user->can_authorize_extern_cr) {
             Log::notice('Webhook WhatsApp: pengguna tidak berhak otorisasi.', ['dispatch_id' => $dispatch->id]);
 
-            return;
+            return false;
         }
 
         $userWa = IndonesianWhatsappPhoneNormalizer::toWaDigits62(trim((string) ($user->phone ?? '')));
@@ -261,10 +326,55 @@ final class WhatsappCrAuthorizationWebhookProcessor
                 'from' => $fromDigits,
             ]);
 
-            return;
+            return false;
         }
 
-        app(WhatsappCrAuthorizationApplier::class)->applyDecision($dispatch, $user, $decision, $auditReference);
+        $outcome = app(WhatsappCrAuthorizationApplier::class)->applyDecision($dispatch, $user, $decision, $auditReference);
+
+        if ($outcome['result'] === WhatsappCrAuthorizationApplier::RESULT_APPLIED) {
+            Log::info('Webhook WhatsApp: otorisasi CR tercatat.', [
+                'extern_cr_id' => $dispatch->extern_cr_id,
+                'user_id' => $user->id,
+                'decision' => $decision,
+            ]);
+
+            return true;
+        }
+
+        Log::notice('Webhook WhatsApp: keputusan tidak diterapkan (mungkin sudah ada sebelumnya).', [
+            'extern_cr_id' => $dispatch->extern_cr_id,
+            'result' => $outcome['result'],
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Template quick reply → type `button` + button.payload.
+     * Interactive session → type `interactive` + interactive.button_reply.
+     *
+     * @param  array<string, mixed>  $message
+     * @return array{payload_id: string, title: string}|null
+     */
+    private function extractButtonReplyData(array $message): ?array
+    {
+        $type = strtolower(trim((string) ($message['type'] ?? '')));
+
+        if ($type === 'interactive' && data_get($message, 'interactive.type') === 'button_reply') {
+            return [
+                'payload_id' => trim((string) data_get($message, 'interactive.button_reply.id', '')),
+                'title' => trim((string) data_get($message, 'interactive.button_reply.title', '')),
+            ];
+        }
+
+        if ($type === 'button') {
+            return [
+                'payload_id' => trim((string) (data_get($message, 'button.payload') ?? data_get($message, 'button.id') ?? '')),
+                'title' => trim((string) (data_get($message, 'button.text') ?? data_get($message, 'button.title') ?? '')),
+            ];
+        }
+
+        return null;
     }
 
     private function resolveDispatch(string $recipientDigits, string $contextWamId): ?WhatsappCrAuthorizationDispatch
@@ -307,12 +417,6 @@ final class WhatsappCrAuthorizationWebhookProcessor
         return null;
     }
 
-    /**
-     * ID pesan outbound seperti respons standar WhatsApp Cloud API: `messages[0].id` atau `data.messages[0].id`.
-     *
-     * Banyak proxy Mahadata mengembalikan `{"id":"msg_…"}` tanpa blok `messages` — itu tidak membuktikan penyaluran ke WhatsApp
-     * dan tidak cocok sebagai `context.id` pada webhook pengguna.
-     */
     public static function extractCanonicalWhatsappOutboundMessageId(ClientResponse $response): ?string
     {
         if (! $response->successful()) {
@@ -334,21 +438,11 @@ final class WhatsappCrAuthorizationWebhookProcessor
         return null;
     }
 
-    /**
-     * {@see extractCanonicalWhatsappOutboundMessageId} bisa mengambil apa pun dari field `messages[0].id`.
-     * Pengenal sah untuk pesan sampai akhir ke WhatsApp & dipakai `context.id` di webhook biasanya **`wamid.…`**.
-     *
-     * String berawalan `msg_…` sering merupakan ID internal penyedia/perantara (bukan wamid resmi konsumen webhook).
-     */
     public static function isOfficialWhatsappCloudOutboundMessageId(string $messageId): bool
     {
         return trim($messageId) !== '' && str_starts_with(trim($messageId), 'wamid.');
     }
 
-    /**
-     * Menarik pengenal pesan outbound dari berbagai kemungkinan bentuk JSON (Cloud API langsung atau perantara Mahadata).
-     * Untuk memastikan pesan sampai ke WhatsApp gunakan juga {@see self::extractCanonicalWhatsappOutboundMessageId}.
-     */
     public static function extractOutboundWamIdFromHttpResponse(ClientResponse $response): ?string
     {
         if (! $response->successful()) {

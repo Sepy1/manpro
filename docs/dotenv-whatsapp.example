@@ -74,7 +74,7 @@ WHATSAPP_APP_SECRET=
 WHATSAPP_WEBHOOK_SKIP_SIGNATURE_VALIDATE=false
 
 # Fallback jika tombol tidak membawa payload APPROVE_CR_/REJECT_CR_: cocokkan judul tombol (pisah koma)
-WHATSAPP_CR_APPROVE_LABELS=Setuju
+WHATSAPP_CR_APPROVE_LABELS=Setuju,Setujui
 WHATSAPP_CR_REJECT_LABELS=Tidak,Tolak
 
 # =============================================================================
