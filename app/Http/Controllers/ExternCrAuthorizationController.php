@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExternCr;
+use App\Models\ExternCrAttachment;
 use App\Models\User;
 use App\Models\WhatsappCrAuthorizationDispatch;
-use App\Support\ExternCrPdfQr;
+use App\Support\ExternCrMergedPdfBuilder;
 use App\Support\WhatsappCrAuthorizationApplier;
 use App\Support\WhatsappCrAuthorizationButtonCodes;
 use App\Support\WhatsappCrAuthorizationExpiry;
@@ -13,8 +14,11 @@ use App\Support\WhatsappCrAuthorizationOtp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExternCrAuthorizationController extends Controller
 {
@@ -43,38 +47,62 @@ class ExternCrAuthorizationController extends Controller
         return view('pages.extern-cr-approval-landing', [
             'cr' => $cr,
             'dispatch' => $dispatch,
-            'pdfUrl' => ExternCrPdfQr::temporarySignedPdfBundleUrl($cr),
+            'pdfUrl' => route('extern-cr.view-by-nomor.pdf', [
+                'nomor' => WhatsappCrAuthorizationButtonCodes::viewCrUrlSuffix($cr),
+            ]),
             'approveUrl' => route('extern-cr.authorize.approval.approve', ['interactionToken' => $token]),
             'rejectUrl' => route('extern-cr.authorize.approval.reject', ['interactionToken' => $token]),
             'openRejectModal' => $request->boolean('tolak'),
         ]);
     }
 
-    public function viewCrByNomor(string $nomor): RedirectResponse
+    public function viewCrByNomor(string $nomor): View
     {
-        $cr = ExternCr::query()
-            ->whereRaw('LOWER(nomor) = ?', [strtolower(trim($nomor))])
-            ->first();
+        $cr = $this->findExternCrByNomorOrFail($nomor);
+        $cr->load(['attachments', 'creator', 'division']);
 
-        if ($cr === null) {
-            abort(404);
-        }
+        $attachments = $cr->attachments->sortBy(fn (ExternCrAttachment $a) => [$a->position, $a->id])->values();
+        $pdfAttachments = $attachments->filter(
+            static fn (ExternCrAttachment $a) => ExternCrMergedPdfBuilder::attachmentIsPdf($a)
+        )->values();
+        $otherAttachments = $attachments->reject(
+            static fn (ExternCrAttachment $a) => ExternCrMergedPdfBuilder::attachmentIsPdf($a)
+        )->values();
 
-        $dispatch = WhatsappCrAuthorizationDispatch::query()
-            ->where('extern_cr_id', $cr->id)
-            ->whereNotNull('interaction_token')
-            ->latest('id')
-            ->first();
-
-        if ($dispatch === null) {
-            abort(404);
-        }
-
-        return redirect()->route('extern-cr.authorize.approval', [
-            'interactionToken' => WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix(
-                (string) ($dispatch->interaction_token ?? '')
-            ),
+        return view('pages.extern-cr-view-pdf', [
+            'cr' => $cr,
+            'mergedPdfUrl' => route('extern-cr.view-by-nomor.pdf', ['nomor' => WhatsappCrAuthorizationButtonCodes::viewCrUrlSuffix($cr)]),
+            'pdfAttachments' => $pdfAttachments,
+            'otherAttachments' => $otherAttachments,
         ]);
+    }
+
+    public function viewCrMergedPdfByNomor(string $nomor): Response
+    {
+        $cr = $this->findExternCrByNomorOrFail($nomor);
+
+        return ExternCrMergedPdfBuilder::streamedInlineResponse($cr);
+    }
+
+    public function viewCrAttachmentByNomor(string $nomor, ExternCrAttachment $attachment): StreamedResponse|Response
+    {
+        $cr = $this->findExternCrByNomorOrFail($nomor);
+        abort_unless((int) $attachment->extern_cr_id === (int) $cr->id, 404);
+
+        $disk = Storage::disk($attachment->disk);
+        abort_unless($disk->exists($attachment->path), 404);
+
+        $fileName = (string) ($attachment->original_name ?: basename((string) $attachment->path));
+        $mime = (string) ($attachment->mime ?: 'application/octet-stream');
+
+        if (ExternCrMergedPdfBuilder::attachmentIsPdf($attachment)) {
+            return response($disk->get($attachment->path), 200, [
+                'Content-Type' => $mime !== '' ? $mime : 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+            ]);
+        }
+
+        return $disk->download($attachment->path, $fileName);
     }
 
     public function approvalApprove(Request $request, string $interactionToken): View|RedirectResponse
@@ -350,5 +378,18 @@ class ExternCrAuthorizationController extends Controller
         return WhatsappCrAuthorizationDispatch::query()
             ->where('interaction_token', $token)
             ->first();
+    }
+
+    private function findExternCrByNomorOrFail(string $nomor): ExternCr
+    {
+        $cr = ExternCr::query()
+            ->whereRaw('LOWER(nomor) = ?', [strtolower(trim($nomor))])
+            ->first();
+
+        if ($cr === null) {
+            abort(404);
+        }
+
+        return $cr;
     }
 }

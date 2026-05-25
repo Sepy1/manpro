@@ -26,7 +26,7 @@ https://manpro.bkkjateng.co.id/viewcr/{{1}}
 ```
 
 Laravel mengisi `{{1}}` tombol dengan **nomor CR**.  
-URL akhir: `https://manpro.bkkjateng.co.id/viewcr/{nomor}` → redirect ke halaman tindak lanjut otorisasi.
+URL akhir: `https://manpro.bkkjateng.co.id/viewcr/{nomor}` → halaman pratinjau PDF formulir CR + lampiran PDF.
 
 Halaman web menampilkan detail CR + tombol **Setujui** / **Tolak** + unduh PDF.
 

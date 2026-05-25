@@ -52,6 +52,17 @@ Route::get('/viewcr/{nomor}', [ExternCrAuthorizationController::class, 'viewCrBy
     ->where('nomor', '[A-Za-z0-9._\-]+')
     ->name('extern-cr.view-by-nomor');
 
+Route::get('/viewcr/{nomor}/pdf', [ExternCrAuthorizationController::class, 'viewCrMergedPdfByNomor'])
+    ->middleware(['throttle:30,1'])
+    ->where('nomor', '[A-Za-z0-9._\-]+')
+    ->name('extern-cr.view-by-nomor.pdf');
+
+Route::get('/viewcr/{nomor}/lampiran/{attachment}', [ExternCrAuthorizationController::class, 'viewCrAttachmentByNomor'])
+    ->middleware(['throttle:30,1'])
+    ->where('nomor', '[A-Za-z0-9._\-]+')
+    ->where('attachment', '[0-9]+')
+    ->name('extern-cr.view-by-nomor.attachment');
+
 Route::match(['get', 'post'], '/approval/{interactionToken}/setuju', [ExternCrAuthorizationController::class, 'approvalApprove'])
     ->middleware(['throttle:30,1'])
     ->where('interactionToken', '[a-z0-9]{32}')

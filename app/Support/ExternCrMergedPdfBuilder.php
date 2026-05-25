@@ -105,6 +105,11 @@ final class ExternCrMergedPdfBuilder
         }
     }
 
+    public static function attachmentIsPdf(ExternCrAttachment $attachment): bool
+    {
+        return self::attachmentIsPdfForMerge($attachment);
+    }
+
     private static function attachmentIsPdfForMerge(ExternCrAttachment $attachment): bool
     {
         $nameExt = strtolower((string) pathinfo((string) ($attachment->original_name ?: ''), PATHINFO_EXTENSION));

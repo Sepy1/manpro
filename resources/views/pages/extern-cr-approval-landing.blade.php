@@ -470,43 +470,104 @@
 
         .reject-btn-submit:disabled { opacity: 0.55; cursor: wait; }
 
-        /* ── PDF overlay ── */
+        /* ── PDF viewer overlay ── */
         .pdf-overlay {
             position: fixed;
             inset: 0;
             z-index: 50;
             display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.45);
+            flex-direction: column;
+            background: #0f172a;
         }
 
         .pdf-overlay.is-visible { display: flex; }
 
-        .pdf-toast {
-            width: min(100%, 20rem);
-            background: #fff;
-            border-radius: 0.75rem;
-            padding: 0.9rem 1rem;
+        .pdf-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            padding:
+                calc(0.55rem + env(safe-area-inset-top, 0px))
+                0.75rem
+                0.55rem;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.25);
         }
 
-        .pdf-toast-title {
-            margin: 0 0 0.25rem;
-            font-size: 0.95rem;
+        .pdf-toolbar-title {
+            margin: 0;
+            font-size: 0.88rem;
+            font-weight: 700;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .pdf-toolbar-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 0.4rem;
+        }
+
+        .pdf-toolbar-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 0.65rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .pdf-toolbar-btn:active { opacity: 0.85; }
+
+        .pdf-viewer-wrap {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            background: #334155;
+        }
+
+        .pdf-frame {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #fff;
+        }
+
+        .pdf-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.72);
+            color: #fff;
+        }
+
+        .pdf-loading.is-hidden { display: none; }
+
+        .pdf-loading-title {
+            margin: 0;
+            font-size: 0.92rem;
             font-weight: 700;
         }
 
-        .pdf-toast-text {
-            margin: 0 0 0.65rem;
-            font-size: 0.84rem;
-            color: var(--muted);
-            line-height: 1.35;
-        }
-
         .progress-track {
+            width: min(100%, 16rem);
             height: 0.35rem;
-            background: #e2e8f0;
+            background: rgba(255, 255, 255, 0.22);
             border-radius: 999px;
             overflow: hidden;
         }
@@ -514,16 +575,14 @@
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: var(--primary);
+            background: #fff;
             transition: width 0.2s ease;
         }
 
         .progress-label {
-            margin-top: 0.35rem;
             font-size: 0.72rem;
             font-weight: 600;
-            color: var(--muted);
-            text-align: right;
+            opacity: 0.9;
         }
 
         @media (min-width: 640px) {
@@ -731,23 +790,43 @@
     @endif
 
     <div class="pdf-overlay" id="pdf-overlay" aria-hidden="true">
-        <div class="pdf-toast" role="status" aria-live="polite">
-            <p class="pdf-toast-title">Memproses PDF</p>
-            <p class="pdf-toast-text" id="pdf-toast-text">Mohon tunggu…</p>
-            <div class="progress-track">
-                <div class="progress-bar" id="pdf-progress-bar"></div>
+        <div class="pdf-toolbar">
+            <p class="pdf-toolbar-title">Dokumen CR — {{ $cr->nomor }}</p>
+            <div class="pdf-toolbar-actions">
+                <a class="pdf-toolbar-btn" id="pdf-open-tab" href="{{ $pdfUrl }}" target="_blank" rel="noopener">Tab baru</a>
+                <button type="button" class="pdf-toolbar-btn" id="pdf-close">Tutup</button>
             </div>
-            <div class="progress-label" id="pdf-progress-label">0%</div>
+        </div>
+        <div class="pdf-viewer-wrap">
+            <div class="pdf-loading" id="pdf-loading">
+                <p class="pdf-loading-title">Memuat PDF…</p>
+                <div class="progress-track">
+                    <div class="progress-bar" id="pdf-progress-bar"></div>
+                </div>
+                <div class="progress-label" id="pdf-progress-label">0%</div>
+            </div>
+            <iframe
+                class="pdf-frame"
+                id="pdf-frame"
+                title="Dokumen PDF Change Request"
+                src="about:blank"
+            ></iframe>
         </div>
     </div>
 
     <script>
         (function () {
             var overlay = document.getElementById('pdf-overlay');
+            var frame = document.getElementById('pdf-frame');
+            var loading = document.getElementById('pdf-loading');
             var bar = document.getElementById('pdf-progress-bar');
             var label = document.getElementById('pdf-progress-label');
+            var closeBtn = document.getElementById('pdf-close');
+            var openTab = document.getElementById('pdf-open-tab');
             var busy = false;
             var timer = null;
+            var pdfLoadTimeout = null;
+            var activePdfUrl = '';
 
             function setProgress(value) {
                 var pct = Math.max(0, Math.min(100, Math.round(value)));
@@ -758,12 +837,26 @@
             function showOverlay() {
                 overlay.classList.add('is-visible');
                 overlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
             }
 
             function hideOverlay() {
                 overlay.classList.remove('is-visible');
                 overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                loading.classList.remove('is-hidden');
+                var title = loading.querySelector('.pdf-loading-title');
+                if (title) {
+                    title.textContent = 'Memuat PDF…';
+                }
                 setProgress(0);
+                frame.src = 'about:blank';
+                activePdfUrl = '';
+                clearInterval(timer);
+                if (pdfLoadTimeout) {
+                    clearTimeout(pdfLoadTimeout);
+                    pdfLoadTimeout = null;
+                }
             }
 
             function animateTo(target, ms) {
@@ -773,41 +866,83 @@
                 timer = setInterval(function () {
                     var ratio = Math.min(1, (performance.now() - begin) / ms);
                     setProgress(start + (target - start) * ratio);
-                    if (ratio >= 1) clearInterval(timer);
+                    if (ratio >= 1) {
+                        clearInterval(timer);
+                    }
                 }, 40);
+            }
+
+            function openPdfViewer(pdfUrl) {
+                if (busy || !pdfUrl) {
+                    return;
+                }
+
+                busy = true;
+                activePdfUrl = pdfUrl;
+                if (openTab) {
+                    openTab.href = pdfUrl;
+                }
+
+                document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = true; });
+                showOverlay();
+                setProgress(8);
+                animateTo(88, 900);
+
+                if (pdfLoadTimeout) {
+                    clearTimeout(pdfLoadTimeout);
+                }
+
+                frame.onload = function () {
+                    if (pdfLoadTimeout) {
+                        clearTimeout(pdfLoadTimeout);
+                        pdfLoadTimeout = null;
+                    }
+                    setProgress(100);
+                    loading.classList.add('is-hidden');
+                    document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = false; });
+                    busy = false;
+                };
+
+                frame.onerror = function () {
+                    if (pdfLoadTimeout) {
+                        clearTimeout(pdfLoadTimeout);
+                        pdfLoadTimeout = null;
+                    }
+                    hideOverlay();
+                    document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = false; });
+                    busy = false;
+                    window.open(pdfUrl, '_blank', 'noopener');
+                };
+
+                pdfLoadTimeout = setTimeout(function () {
+                    if (!overlay.classList.contains('is-visible') || loading.classList.contains('is-hidden')) {
+                        return;
+                    }
+                    setProgress(100);
+                    var title = loading.querySelector('.pdf-loading-title');
+                    if (title) {
+                        title.textContent = 'Pratinjau mungkin tidak tampil di perangkat ini';
+                    }
+                    label.textContent = 'Ketuk Tab baru untuk membuka PDF';
+                }, 12000);
+
+                frame.src = pdfUrl;
             }
 
             document.querySelectorAll('.js-download-pdf').forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    var pdfUrl = btn.getAttribute('data-pdf-url');
-                    if (busy || !pdfUrl) return;
-                    busy = true;
-                    document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = true; });
-                    showOverlay();
-                    setProgress(8);
-                    animateTo(72, 1000);
-
-                    fetch(pdfUrl, { credentials: 'same-origin' })
-                        .then(function (r) { if (!r.ok) throw new Error(); return r.blob(); })
-                        .then(function (blob) {
-                            animateTo(100, 300);
-                            var blobUrl = URL.createObjectURL(blob);
-                            window.location.href = blobUrl;
-                            setTimeout(function () {
-                                URL.revokeObjectURL(blobUrl);
-                                hideOverlay();
-                                document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = false; });
-                                busy = false;
-                            }, 800);
-                        })
-                        .catch(function () {
-                            clearInterval(timer);
-                            hideOverlay();
-                            document.querySelectorAll('.js-download-pdf').forEach(function (b) { b.disabled = false; });
-                            busy = false;
-                            window.location.href = pdfUrl;
-                        });
+                    openPdfViewer(btn.getAttribute('data-pdf-url'));
                 });
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', hideOverlay);
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
+                    hideOverlay();
+                }
             });
         })();
 

@@ -14,8 +14,8 @@ use Throwable;
 /**
  * Mengirim template WhatsApp Mahadata kepada pengguna dengan flag {@see User::$can_authorize_extern_cr}.
  *
- * Default: tombol **quick reply** dengan payload APPROVE_CR_/REJECT_CR_ + token; keputusan diproses webhook.
- * Opsional: tombol URL ({@see MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS}).
+ * Default: tombol URL template `konfirmasi_cr_manpro` (Tindak Lanjut + Lihat CR).
+ * Opsional: quick reply ({@see MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS}).
  */
 final class MahadataWhatsappExternCrAuthorizationNotifier
 {
@@ -24,6 +24,8 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
     private const BUTTON_QUICK_REPLY = 'quick_reply';
 
     private const BUTTON_URL = 'url';
+
+    private const TEMPLATE_KONFIRMASI_CR_MANPRO = 'konfirmasi_cr_manpro';
 
     public function notifyAuthorizersAboutNewCr(ExternCr $externCr): int
     {
@@ -148,7 +150,11 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
             ]);
 
             [$approveValue, $rejectValue] = $this->quickReplyButtonValues($interactionToken);
-            $urlButtonParameters = $this->urlButtonParameters($externCr, $interactionToken);
+            $urlButtonParameters = $this->urlButtonParameters($externCr, $interactionToken, $template);
+
+            if ($buttonMode === self::BUTTON_URL) {
+                $this->logUrlButtonParameterMismatch($template, $urlButtonParameters);
+            }
 
             $response = $this->postTemplateMessageRaw(
                 $endpoint,
@@ -231,15 +237,31 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
 
     private function resolvedButtonMode(): string
     {
-        if ((bool) config('services.mahadata_whatsapp.cr_authorization_include_quick_reply_buttons', true)) {
+        if ((bool) config('services.mahadata_whatsapp.cr_authorization_include_quick_reply_buttons', false)) {
             return self::BUTTON_QUICK_REPLY;
         }
 
-        if ((bool) config('services.mahadata_whatsapp.cr_authorization_include_url_buttons', false)) {
+        if ((bool) config('services.mahadata_whatsapp.cr_authorization_include_url_buttons', true)) {
             return self::BUTTON_URL;
         }
 
         return self::BUTTON_NONE;
+    }
+
+    private function crAuthorizationUsesSingleUrlButton(?string $templateName = null): bool
+    {
+        $template = strtolower(trim($templateName ?? (string) config('services.mahadata_whatsapp.cr_authorization_template_name')));
+
+        if ($template === self::TEMPLATE_KONFIRMASI_CR_MANPRO) {
+            return false;
+        }
+
+        return (bool) config('services.mahadata_whatsapp.cr_authorization_single_url_button', false);
+    }
+
+    private function crAuthorizationExpectedUrlButtonCount(?string $templateName = null): int
+    {
+        return $this->crAuthorizationUsesSingleUrlButton($templateName) ? 1 : 2;
     }
 
     /** @return array{0: string, 1: string} */
@@ -256,24 +278,44 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
      *
      * @return list<string>
      */
-    private function urlButtonParameters(ExternCr $externCr, string $interactionToken): array
+    private function urlButtonParameters(ExternCr $externCr, string $interactionToken, ?string $templateName = null): array
     {
-        if ((bool) config('services.mahadata_whatsapp.cr_authorization_single_url_button', false)) {
-            return [
-                WhatsappTemplateTextSanitizer::urlParameter(
-                    WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix($interactionToken)
-                ),
-            ];
+        $approvalSuffix = WhatsappTemplateTextSanitizer::urlParameter(
+            WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix($interactionToken)
+        );
+
+        if ($this->crAuthorizationUsesSingleUrlButton($templateName)) {
+            return [$approvalSuffix];
         }
 
         return [
-            WhatsappTemplateTextSanitizer::urlParameter(
-                WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix($interactionToken)
-            ),
+            $approvalSuffix,
             WhatsappTemplateTextSanitizer::urlParameter(
                 WhatsappCrAuthorizationButtonCodes::viewCrUrlSuffix($externCr)
             ),
         ];
+    }
+
+    /**
+     * @param  list<string>  $urlButtonParameters
+     */
+    private function logUrlButtonParameterMismatch(string $templateName, array $urlButtonParameters): void
+    {
+        $expected = $this->crAuthorizationExpectedUrlButtonCount($templateName);
+        $provided = count(array_values($urlButtonParameters));
+
+        if ($provided >= $expected) {
+            return;
+        }
+
+        Log::warning('Mahadata CR auth WA: jumlah parameter tombol URL kurang — Meta #131008.', [
+            'template' => $templateName,
+            'expected_url_buttons' => $expected,
+            'provided_url_buttons' => $provided,
+            'hint' => $templateName === self::TEMPLATE_KONFIRMASI_CR_MANPRO
+                ? 'Template konfirmasi_cr_manpro wajib 2 tombol URL (Tindak Lanjut + Lihat CR).'
+                : 'Set MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON=false jika template punya 2 tombol URL.',
+        ]);
     }
 
     /**
@@ -485,10 +527,21 @@ final class MahadataWhatsappExternCrAuthorizationNotifier
                 ],
             ];
         } elseif ($buttonMode === self::BUTTON_URL) {
-            foreach (array_values($urlButtonParameters) as $index => $urlParameter) {
+            $expectedCount = $this->crAuthorizationExpectedUrlButtonCount($templateName);
+            $params = array_values($urlButtonParameters);
+
+            for ($index = 0; $index < $expectedCount; $index++) {
+                $urlParameter = trim((string) ($params[$index] ?? ''));
                 if ($urlParameter === '') {
+                    Log::warning('Mahadata CR auth WA: parameter tombol URL index kosong, dilewati.', [
+                        'template' => $templateName,
+                        'button_index' => $index,
+                        'expected_url_buttons' => $expectedCount,
+                    ]);
+
                     continue;
                 }
+
                 $components[] = [
                     'type' => 'button',
                     'sub_type' => 'url',

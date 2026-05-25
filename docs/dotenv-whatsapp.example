@@ -48,6 +48,7 @@ MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS=true
 
 # true = satu tombol «Tindak Lanjut» → /approval/{token} (template legacy notif_cr_manpro)
 # false = dua tombol «Tindak Lanjut» + «Lihat CR» (template konfirmasi_cr_manpro)
+# Catatan: jika MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME=konfirmasi_cr_manpro, aplikasi selalu kirim 2 parameter tombol URL.
 MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON=false
 
 # true = anggap sah id `messages[0].id` apa pun bentuknya (mis. Mahadata pakai prefiks msg_) — default true agar penyedia seperti Mahadata tidak salah dianggap gagal kirim
