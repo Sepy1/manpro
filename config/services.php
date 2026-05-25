@@ -85,23 +85,23 @@ return [
         'otp_send_mode' => strtolower((string) env('MAHADATA_WHATSAPP_OTP_SEND_MODE', 'auto')),
         /*
          | Notifikasi otorisasi CR eksternal (Mahadata sama dengan OTP: endpoint & token bersama).
-         | Template nama `change_request_manpro` atau setara harus mencocokkan jumlah placeholder body + struktur tombol di Meta Business.
+         | Template default `konfirmasi_cr_manpro` — 4 placeholder body + 2 tombol URL (Tindak Lanjut / Lihat CR).
          */
         'cr_authorization_template_name' => env(
             'MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_NAME',
-            'notif_cr_manpro'
+            'konfirmasi_cr_manpro'
         ),
         'cr_authorization_template_language_code' => env('MAHADATA_WHATSAPP_CR_AUTH_TEMPLATE_LANGUAGE_CODE', 'id'),
         'cr_authorization_single_url_button' => filter_var(
-            env('MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON', true),
+            env('MAHADATA_WHATSAPP_CR_AUTH_SINGLE_URL_BUTTON', false),
             FILTER_VALIDATE_BOOLEAN
         ),
         'cr_authorization_include_quick_reply_buttons' => filter_var(
-            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', true),
+            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_QUICK_REPLY_COMPONENTS', false),
             FILTER_VALIDATE_BOOLEAN
         ),
         'cr_authorization_include_url_buttons' => filter_var(
-            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS', false),
+            env('MAHADATA_WHATSAPP_CR_AUTH_INCLUDE_URL_BUTTONS', true),
             FILTER_VALIDATE_BOOLEAN
         ),
         'cr_authorization_notify_on_create' => filter_var(

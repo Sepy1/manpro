@@ -1,0 +1,44 @@
+{
+  "messaging_product": "whatsapp",
+  "to": "6285725681860",
+  "type": "template",
+  "template": {
+    "name": "konfirmasi_cr_manpro",
+    "language": {
+      "code": "id"
+    },
+    "components": [
+      {
+        "type": "body",
+        "parameters": [
+          { "type": "text", "text": "cr11211" },
+          { "type": "text", "text": "Penambahan menu validasi" },
+          { "type": "text", "text": "erik" },
+          { "type": "text", "text": "penambahan menu report" }
+        ]
+      },
+      {
+        "type": "button",
+        "sub_type": "url",
+        "index": "0",
+        "parameters": [
+          {
+            "type": "text",
+            "text": "abc123def4567890abc123def4567890"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "sub_type": "url",
+        "index": "1",
+        "parameters": [
+          {
+            "type": "text",
+            "text": "cr11211"
+          }
+        ]
+      }
+    ]
+  }
+}

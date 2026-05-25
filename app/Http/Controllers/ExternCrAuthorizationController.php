@@ -50,6 +50,33 @@ class ExternCrAuthorizationController extends Controller
         ]);
     }
 
+    public function viewCrByNomor(string $nomor): RedirectResponse
+    {
+        $cr = ExternCr::query()
+            ->whereRaw('LOWER(nomor) = ?', [strtolower(trim($nomor))])
+            ->first();
+
+        if ($cr === null) {
+            abort(404);
+        }
+
+        $dispatch = WhatsappCrAuthorizationDispatch::query()
+            ->where('extern_cr_id', $cr->id)
+            ->whereNotNull('interaction_token')
+            ->latest('id')
+            ->first();
+
+        if ($dispatch === null) {
+            abort(404);
+        }
+
+        return redirect()->route('extern-cr.authorize.approval', [
+            'interactionToken' => WhatsappCrAuthorizationButtonCodes::approvalLandingUrlSuffix(
+                (string) ($dispatch->interaction_token ?? '')
+            ),
+        ]);
+    }
+
     public function approvalApprove(Request $request, string $interactionToken): View|RedirectResponse
     {
         $token = $this->normalizeToken($interactionToken);

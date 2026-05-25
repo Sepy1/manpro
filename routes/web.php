@@ -47,6 +47,11 @@ Route::get('/approval/{interactionToken}', [ExternCrAuthorizationController::cla
     ->where('interactionToken', '[a-z0-9]{32}')
     ->name('extern-cr.authorize.approval');
 
+Route::get('/viewcr/{nomor}', [ExternCrAuthorizationController::class, 'viewCrByNomor'])
+    ->middleware(['throttle:30,1'])
+    ->where('nomor', '[A-Za-z0-9._\-]+')
+    ->name('extern-cr.view-by-nomor');
+
 Route::match(['get', 'post'], '/approval/{interactionToken}/setuju', [ExternCrAuthorizationController::class, 'approvalApprove'])
     ->middleware(['throttle:30,1'])
     ->where('interactionToken', '[a-z0-9]{32}')

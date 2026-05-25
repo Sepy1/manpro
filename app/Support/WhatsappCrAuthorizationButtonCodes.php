@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\URL;
 /**
  * Payload quick reply (legacy) dan suffix URL tombol CTA template Meta.
  *
- * Template `notif_cr_manpro`:
- * - body {{1}} nomor CR, {{2}} nama CR, {{3}} pembuat, {{4}} deskripsi
+ * Template `konfirmasi_cr_manpro`:
+ * - body {{1}} nomor CR, {{2}} nama CR, {{3}} pembuat, {{4}} daftar perubahan
  * - tombol «Tindak Lanjut»: base Meta `https://manpro.bkkjateng.co.id/approval/{{1}}`
- *   → Laravel mengisi {{1}} dengan `interaction_token` (32 char)
+ *   → Laravel mengisi {{1}} tombol dengan `interaction_token` (32 char)
+ * - tombol «Lihat CR»: base Meta `https://manpro.bkkjateng.co.id/viewcr/{{1}}`
+ *   → Laravel mengisi {{1}} tombol dengan nomor CR
  */
 final class WhatsappCrAuthorizationButtonCodes
 {
@@ -52,6 +54,20 @@ final class WhatsappCrAuthorizationButtonCodes
     public static function approvalLandingUrlSuffix(string $interactionToken): string
     {
         return self::approveUrlButtonSuffix($interactionToken);
+    }
+
+    /** Suffix URL tombol «Lihat CR» (`…/viewcr/{{1}}` di Meta). */
+    public static function viewCrUrlSuffix(ExternCr $externCr): string
+    {
+        $nomor = trim((string) ($externCr->nomor ?? ''));
+        if ($nomor === '') {
+            $nomor = trim((string) ($externCr->nama ?? ''));
+        }
+        if ($nomor === '') {
+            $nomor = (string) $externCr->id;
+        }
+
+        return strtolower($nomor);
     }
 
     /** URL lengkap halaman tindak lanjut otorisasi. */
