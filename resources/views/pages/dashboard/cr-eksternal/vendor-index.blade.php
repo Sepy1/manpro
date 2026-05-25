@@ -1,33 +1,17 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-    @php
-        $statusBadgeClasses = collect(\App\Enums\ExternCrStatus::cases())
-            ->mapWithKeys(fn (\App\Enums\ExternCrStatus $case) => [$case->value => $case->listBadgeClasses()])
-            ->all();
-        $chipBaseClasses = 'cr-status-chip inline-flex max-w-[13rem] items-center rounded-lg border px-2.5 py-1 text-xs font-semibold';
-    @endphp
-
     <x-common.page-breadcrumb pageTitle="CR Eksternal Saya" />
 
     <div
         class="flex w-full max-w-none min-h-0 flex-1 flex-col gap-4"
         x-data="{
-            statusBadgeClasses: @js($statusBadgeClasses),
-            chipBaseClasses: @js($chipBaseClasses),
             updateRowChip (d) {
                 if (! d || typeof d.id === 'undefined') { return; }
 
                 var tr = document.querySelector('tr[data-cr-id=\'' + String(d.id) + '\']');
                 var chip = tr ? tr.querySelector('.cr-status-chip') : null;
-                if (! chip) { return; }
-
-                if (d.label) { chip.textContent = d.label; }
-                if (d.status) {
-                    chip.dataset.status = d.status;
-                    var tone = this.statusBadgeClasses[d.status] || 'border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100';
-                    chip.className = this.chipBaseClasses + ' ' + tone;
-                }
+                if (chip && d.label) { chip.textContent = d.label; }
             }
         }"
         @extern-cr-row-status.window="updateRowChip($event.detail)"
@@ -98,10 +82,7 @@
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->division?->name }}">{{ $row->division?->name ?? '—' }}</td>
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->application?->name }}">{{ $row->application?->name ?? '—' }}</td>
                                 <td class="px-2 py-2">
-                                    <span
-                                        class="{{ $chipBaseClasses }} {{ $row->status->listBadgeClasses() }}"
-                                        data-status="{{ $row->status->value }}"
-                                    >
+                                    <span class="{{ \App\Enums\ExternCrStatus::listBadgeShellClasses() }} {{ $row->status->listBadgeClasses() }}">
                                         {{ $row->status->label() }}
                                     </span>
                                 </td>

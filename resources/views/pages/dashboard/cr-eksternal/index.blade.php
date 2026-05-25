@@ -91,7 +91,7 @@
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->division?->name }}">{{ $row->division?->name ?? '-' }}</td>
                                 <td class="max-w-[200px] truncate px-2 py-2 text-sm text-gray-700 dark:text-gray-300" title="{{ $row->application?->name }}">{{ $row->application?->name ?? '-' }}</td>
                                 <td class="px-2 py-2">
-                                    <span class="cr-status-chip inline-flex max-w-[13rem] items-center rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100" title="Klik baris untuk detail &amp; ubah status">
+                                    <span class="{{ \App\Enums\ExternCrStatus::listBadgeShellClasses() }} {{ $row->status->listBadgeClasses() }}" title="Klik baris untuk detail &amp; ubah status">
                                         {{ $row->status->label() }}
                                     </span>
                                 </td>

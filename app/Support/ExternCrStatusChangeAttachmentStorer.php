@@ -7,7 +7,6 @@ use App\Models\ExternCrAttachment;
 use App\Models\ExternCrHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Validator;
 
 final class ExternCrStatusChangeAttachmentStorer
 {
@@ -97,23 +96,5 @@ final class ExternCrStatusChangeAttachmentStorer
         }
 
         return $message.' ('.$storedCount.' lampiran disimpan)';
-    }
-
-    public static function rejectAttachmentsWithoutStatusChange(Validator $validator, Request $request): void
-    {
-        if (! self::hasUploads($request)) {
-            return;
-        }
-
-        $validator->after(function (Validator $validator) use ($request): void {
-            if (! self::hasUploads($request)) {
-                return;
-            }
-
-            $validator->errors()->add(
-                'status_attachments',
-                'Lampiran hanya dapat diunggah saat status CR berubah.'
-            );
-        });
     }
 }

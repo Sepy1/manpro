@@ -186,7 +186,10 @@ final class ExternCrHistoryRecorder
      */
     public static function statusChanged(ExternCr $cr, ExternCrStatus $from, ExternCrStatus $to, ?string $note): ExternCrHistory
     {
-        $summary = 'Status '.$from->label().' → '.$to->label().'.';
+        $summary = $from === $to
+            ? 'Lampiran / catatan status ('.$from->label().').'
+            : 'Status '.$from->label().' → '.$to->label().'.';
+
         if ($note !== null && $note !== '') {
             $snip = preg_replace('/\s+/', ' ', trim($note)) ?? '';
             $summary .= ' Catatan: '.\Illuminate\Support\Str::limit($snip, 200, '…');

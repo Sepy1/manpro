@@ -333,8 +333,6 @@ class ExternCrController extends Controller
             'note' => ['nullable', 'string', 'max:5000'],
         ], ExternCrStatusChangeAttachmentStorer::validationRules()));
 
-        ExternCrStatusChangeAttachmentStorer::rejectAttachmentsWithoutStatusChange($validator, $request);
-
         if ($validator->fails()) {
             return response()->json([
                 'ok' => false,
@@ -360,13 +358,15 @@ class ExternCrController extends Controller
             $externCr->update(['status' => $newStatus]);
             $attachmentCount = ExternCrStatusChangeAttachmentStorer::storeForHistory($externCr, $history, $request);
             $externCr->refresh();
+            $baseMessage = 'Status diperbarui.';
+        } elseif (ExternCrStatusChangeAttachmentStorer::hasUploads($request)) {
+            $history = ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $oldStatus, $note);
+            $attachmentCount = ExternCrStatusChangeAttachmentStorer::storeForHistory($externCr, $history, $request);
+            $baseMessage = 'Lampiran disimpan.';
         } else {
             $attachmentCount = 0;
+            $baseMessage = 'Status tidak berubah.';
         }
-
-        $baseMessage = $oldStatus === $newStatus
-            ? 'Status tidak berubah.'
-            : 'Status diperbarui.';
 
         return response()->json([
             'ok' => true,
