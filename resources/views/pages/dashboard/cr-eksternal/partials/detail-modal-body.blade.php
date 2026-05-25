@@ -43,6 +43,10 @@
         <p class="{{ $lbl }} mb-3">Informasi klasifikasi</p>
         <dl class="grid gap-4 sm:grid-cols-2">
             <div class="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/40">
+                <dt class="{{ $lbl }}">PIC vendor</dt>
+                <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $cr->vendorPic?->name ?? '—' }}</dd>
+            </div>
+            <div class="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/40">
                 <dt class="{{ $lbl }}">Sistem / aplikasi</dt>
                 <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $cr->application?->name ?? '—' }}</dd>
             </div>
@@ -85,10 +89,15 @@
             <p class="text-sm italic text-slate-500 dark:text-slate-400">Tidak ada lampiran.</p>
         @else
             <ul class="divide-y divide-slate-100 dark:divide-slate-700" role="list">
+                @php
+                    $attachmentDownloadRoute = ($attachmentContext ?? 'admin') === 'vendor'
+                        ? 'admin.cr-eksternal-vendor.attachments.download'
+                        : 'admin.cr-eksternal.attachments.download';
+                @endphp
                 @foreach ($cr->attachments as $att)
                     <li class="py-2 first:pt-0 last:pb-0">
                         <a
-                            href="{{ route('admin.cr-eksternal.attachments.download', [$cr, $att]) }}"
+                            href="{{ route($attachmentDownloadRoute, [$cr, $att]) }}"
                             data-no-transition
                             target="_blank"
                             rel="noopener noreferrer"
@@ -117,7 +126,7 @@
                     class="h-11 w-full max-w-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                     autocomplete="off"
                 >
-                    @foreach (\App\Enums\ExternCrStatus::cases() as $case)
+                    @foreach (($allowedStatuses ?? \App\Enums\ExternCrStatus::cases()) as $case)
                         <option value="{{ $case->value }}" @selected($cr->status->value === $case->value)>{{ $case->label() }}</option>
                     @endforeach
                 </select>

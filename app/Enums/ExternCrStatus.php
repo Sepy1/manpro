@@ -14,6 +14,27 @@ enum ExternCrStatus: string
 
     case Closed = 'closed';
 
+    /** Status yang boleh diubah oleh PIC vendor. */
+    public static function vendorPipelineCases(): array
+    {
+        return [
+            self::VendorDevelopment,
+            self::Uat,
+            self::GoLive,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function vendorPipelineValues(): array
+    {
+        return array_map(
+            static fn (self $case) => $case->value,
+            self::vendorPipelineCases()
+        );
+    }
+
     public function label(): string
     {
         return match ($this) {

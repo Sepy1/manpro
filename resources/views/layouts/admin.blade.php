@@ -44,6 +44,7 @@
                         || request()->routeIs('admin.manajemen-divisi.*')
                         || request()->routeIs('admin.manajemen-kantor.*')
                         || request()->routeIs('admin.cr-eksternal.*')
+                        || request()->routeIs('admin.cr-eksternal-vendor.*')
                         || request()->routeIs('admin.parameter.cr-*')
                         || request()->routeIs('admin.profil*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
@@ -55,6 +56,7 @@
                         && !request()->routeIs('admin.manajemen-divisi.*')
                         && !request()->routeIs('admin.manajemen-kantor.*')
                         && !request()->routeIs('admin.cr-eksternal.*')
+                        && !request()->routeIs('admin.cr-eksternal-vendor.*')
                         && !request()->routeIs('admin.parameter.cr-*')
                         && !request()->routeIs('admin.profil*'),
                 ])
@@ -65,6 +67,9 @@
             @if (request()->routeIs('admin.cr-eksternal.index'))
                 <x-extern-cr.detail-modal-layer />
                 <x-extern-cr.send-authorization-modal-layer />
+            @endif
+            @if (request()->routeIs('admin.cr-eksternal-vendor.index'))
+                <x-extern-cr.detail-modal-layer />
             @endif
             @if (request()->routeIs('admin.cr-eksternal.index') || request()->routeIs('admin.cr-eksternal.create') || request()->routeIs('admin.cr-eksternal.edit'))
                 <x-extern-cr.history-modal-layer />

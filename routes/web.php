@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\ExternCrController;
+use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\Admin\KantorController;
 use App\Http\Controllers\Admin\KasKantorController;
 use App\Http\Controllers\Admin\MonitoringController;
@@ -184,6 +185,12 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::delete('/cr-eksternal/{externCr}', [ExternCrController::class, 'destroy'])->name('cr-eksternal.delete');
     Route::get('/cr-eksternal/{externCr}/lampiran/{attachment}/unduh', [ExternCrController::class, 'downloadAttachment'])->name('cr-eksternal.attachments.download');
     Route::delete('/cr-eksternal/{externCr}/lampiran/{attachment}', [ExternCrController::class, 'destroyAttachment'])->name('cr-eksternal.attachments.delete');
+
+    Route::get('/cr-eksternal-vendor', [VendorExternCrController::class, 'index'])->name('cr-eksternal-vendor.index');
+    Route::get('/cr-eksternal-vendor/{externCr}/detail/modal', [VendorExternCrController::class, 'detailModalFragment'])->name('cr-eksternal-vendor.detail-modal');
+    Route::patch('/cr-eksternal-vendor/{externCr}/status', [VendorExternCrController::class, 'updateStatus'])->name('cr-eksternal-vendor.status');
+    Route::get('/cr-eksternal-vendor/{externCr}/cetak', [VendorExternCrController::class, 'printPdf'])->name('cr-eksternal-vendor.print');
+    Route::get('/cr-eksternal-vendor/{externCr}/lampiran/{attachment}/unduh', [VendorExternCrController::class, 'downloadAttachment'])->name('cr-eksternal-vendor.attachments.download');
 
     Route::get('/manajemen-kantor', [KantorController::class, 'index'])->name('manajemen-kantor.index');
     Route::post('/manajemen-kantor', [KantorController::class, 'store'])->name('manajemen-kantor.store');

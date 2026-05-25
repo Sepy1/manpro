@@ -18,6 +18,7 @@ class ExternCr extends Model
         'daily_sequence',
         'division_id',
         'created_by_user_id',
+        'vendor_pic_user_id',
         'bidang',
         'nama',
         'extern_cr_application_id',
@@ -66,6 +67,11 @@ class ExternCr extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function vendorPic(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'vendor_pic_user_id');
     }
 
     public function application(): BelongsTo

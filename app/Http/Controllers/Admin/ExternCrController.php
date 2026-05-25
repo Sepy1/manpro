@@ -80,6 +80,7 @@ class ExternCrController extends Controller
             'applications' => $this->activeApplications(),
             'changeReasons' => $this->activeReasons(),
             'divisionHints' => Division::query()->orderBy('name')->pluck('name'),
+            'vendorPicUsers' => $this->activeVendorPicUsers(),
         ]);
     }
 
@@ -113,6 +114,7 @@ class ExternCrController extends Controller
             'prioritas' => $validated['prioritas'],
             'status' => $validated['status'],
             'deskripsi_permintaan' => $validated['deskripsi_permintaan'] ?? null,
+            'vendor_pic_user_id' => $validated['vendor_pic_user_id'] ?? null,
             'divisions_terlibat_text' => $this->normalizedDivisionsTerlibatText($validated['divisions_terlibat_text'] ?? null),
         ]);
 
@@ -138,7 +140,7 @@ class ExternCrController extends Controller
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $externCr->load(['attachments', 'divisionsInvolved']);
+        $externCr->load(['attachments', 'divisionsInvolved', 'vendorPic']);
 
         return view('pages.dashboard.cr-eksternal.form', [
             'externCr' => $externCr,
@@ -146,6 +148,7 @@ class ExternCrController extends Controller
             'applications' => $this->activeApplications(),
             'changeReasons' => $this->activeReasons(),
             'divisionHints' => Division::query()->orderBy('name')->pluck('name'),
+            'vendorPicUsers' => $this->activeVendorPicUsers(),
         ]);
     }
 
@@ -176,6 +179,7 @@ class ExternCrController extends Controller
             'prioritas' => $validated['prioritas'],
             'status' => $validated['status'],
             'deskripsi_permintaan' => $validated['deskripsi_permintaan'] ?? null,
+            'vendor_pic_user_id' => $validated['vendor_pic_user_id'] ?? null,
             'divisions_terlibat_text' => $this->normalizedDivisionsTerlibatText($validated['divisions_terlibat_text'] ?? null),
         ]);
 
@@ -574,6 +578,14 @@ class ExternCrController extends Controller
         return ExternCrChangeReason::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
     }
 
+    private function activeVendorPicUsers()
+    {
+        return User::query()
+            ->where('role', 'vendor')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+    }
+
     private function validateExternCrPayload(Request $request, ?ExternCr $existing): array
     {
         $strictActiveFk = $existing === null;
@@ -608,6 +620,7 @@ class ExternCrController extends Controller
             'status' => ['required', Rule::enum(ExternCrStatus::class)],
             'deskripsi_permintaan' => ['nullable', 'string'],
             'divisions_terlibat_text' => ['nullable', 'string', 'max:20000'],
+            'vendor_pic_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'vendor')],
         ];
 
         $existingCount = $existing?->attachments()->count() ?? 0;

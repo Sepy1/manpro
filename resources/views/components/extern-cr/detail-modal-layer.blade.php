@@ -14,11 +14,13 @@
                     bannerErr: '',
                     statusBusy: false,
                     subtitle: '',
+                    showEditLink: true,
                     async openFrom (detail) {
                         this.fragmentUrl = detail?.fragmentUrl || '';
                         this.updateUrl = detail?.updateUrl || '';
                         this.crId = typeof detail?.crId !== 'undefined' ? detail.crId : null;
                         this.subtitle = detail?.subtitle || '';
+                        this.showEditLink = detail?.showEditLink !== false;
                         if (! this.fragmentUrl) {
                             return;
                         }
@@ -127,6 +129,7 @@
                         this.bannerOk = '';
                         this.bannerErr = '';
                         this.subtitle = '';
+                        this.showEditLink = true;
                     },
                 }));
             });
@@ -187,7 +190,7 @@
 
             <div x-show="!loading && detailHtml !== '' && !error" x-cloak class="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-3.5 dark:border-slate-700 dark:bg-slate-900/90">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <a data-no-transition :href="crId !== null ? '{{ url('/admin/cr-eksternal') }}/' + crId + '/edit' : '#'" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white" x-show="crId !== null">Buka formulir lengkap</a>
+                    <a data-no-transition :href="crId !== null ? '{{ url('/admin/cr-eksternal') }}/' + crId + '/edit' : '#'" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white" x-show="crId !== null && showEditLink">Buka formulir lengkap</a>
                     <button
                         type="button"
                         class="inline-flex items-center rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:opacity-50 dark:bg-sky-500 dark:hover:bg-sky-400"

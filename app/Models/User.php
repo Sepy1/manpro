@@ -77,4 +77,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ExternCr::class, 'created_by_user_id');
     }
+
+    public function vendorPicExternCrs(): HasMany
+    {
+        return $this->hasMany(ExternCr::class, 'vendor_pic_user_id');
+    }
 }

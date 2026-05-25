@@ -35,6 +35,7 @@ final class ExternCrHistoryRecorder
         'status',
         'deskripsi_permintaan',
         'divisions_terlibat_text',
+        'vendor_pic_user_id',
     ];
 
     public static function created(ExternCr $cr): void
@@ -299,6 +300,7 @@ final class ExternCrHistoryRecorder
             'division_id' => self::divisionNameTyped((int) $raw),
             'extern_cr_application_id' => self::applicationNameTyped((int) $raw),
             'extern_cr_change_reason_id' => self::reasonNameTyped((int) $raw),
+            'vendor_pic_user_id' => self::userNameTyped($raw),
             'jenis_perubahan' => self::formatJenisPerubahan((string) $raw),
             'prioritas' => self::formatPrioritas((string) $raw),
             'status' => ExternCrStatus::from((string) $raw)->label(),
@@ -322,6 +324,7 @@ final class ExternCrHistoryRecorder
             'division_id' => self::divisionNameTyped((int) $value),
             'extern_cr_application_id' => self::applicationNameTyped((int) $value),
             'extern_cr_change_reason_id' => self::reasonNameTyped((int) $value),
+            'vendor_pic_user_id' => self::userNameTyped($value),
             'jenis_perubahan' => self::formatJenisPerubahan((string) ($value ?? '')),
             'prioritas' => self::formatPrioritas((string) ($value ?? '')),
             default => self::flattenText($value === null ? '' : (string) $value),
@@ -386,6 +389,7 @@ final class ExternCrHistoryRecorder
             'status' => 'Status',
             'deskripsi_permintaan' => 'Deskripsi permintaan',
             'divisions_terlibat_text' => 'Teks divisi terlibat',
+            'vendor_pic_user_id' => 'PIC vendor',
             default => $attr,
         };
     }
@@ -403,6 +407,15 @@ final class ExternCrHistoryRecorder
     private static function reasonNameTyped(int $id): string
     {
         return ExternCrChangeReason::query()->whereKey($id)->value('name') ?? ('#'.$id);
+    }
+
+    private static function userNameTyped(mixed $id): string
+    {
+        if ($id === null || $id === '' || (int) $id < 1) {
+            return '—';
+        }
+
+        return User::query()->whereKey((int) $id)->value('name') ?? ('#'.$id);
     }
 
     /**

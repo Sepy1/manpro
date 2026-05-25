@@ -190,6 +190,19 @@
                         </div>
 
                         <div class="lg:col-span-1">
+                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">PIC vendor</label>
+                            <select name="vendor_pic_user_id" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
+                                <option value="">— belum ditetapkan —</option>
+                                @foreach ($vendorPicUsers ?? [] as $vendorUser)
+                                    <option value="{{ $vendorUser->id }}" @selected(old('vendor_pic_user_id', $edit ? $externCr->vendor_pic_user_id : null) == $vendorUser->id)>
+                                        {{ $vendorUser->name }}@if ($vendorUser->email) ({{ $vendorUser->email }})@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Pengguna vendor yang ditugaskan akan melihat CR ini di menu CR Eksternal.</p>
+                        </div>
+
+                        <div class="lg:col-span-1">
                             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
                             <select name="status" required class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                                 @foreach (\App\Enums\ExternCrStatus::cases() as $case)

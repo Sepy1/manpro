@@ -36,6 +36,19 @@ class MenuHelper
             ],
         ];
 
+        if ($role === 'vendor') {
+            $items[] = [
+                'icon' => 'forms',
+                'name' => 'CR Eksternal',
+                'subItems' => [
+                    [
+                        'name' => 'Daftar CR Saya',
+                        'path' => '/admin/cr-eksternal-vendor',
+                    ],
+                ],
+            ];
+        }
+
         if ($role === 'admin') {
             $items[] = [
                 'icon' => 'building',
