@@ -191,6 +191,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::patch('/cr-eksternal-vendor/{externCr}/status', [VendorExternCrController::class, 'updateStatus'])->name('cr-eksternal-vendor.status');
     Route::get('/cr-eksternal-vendor/{externCr}/cetak', [VendorExternCrController::class, 'printPdf'])->name('cr-eksternal-vendor.print');
     Route::get('/cr-eksternal-vendor/{externCr}/lampiran/{attachment}/unduh', [VendorExternCrController::class, 'downloadAttachment'])->name('cr-eksternal-vendor.attachments.download');
+    Route::get('/cr-eksternal-vendor/{externCr}/histori/modal', [VendorExternCrController::class, 'historyModalFragment'])->name('cr-eksternal-vendor.history-modal');
 
     Route::get('/manajemen-kantor', [KantorController::class, 'index'])->name('manajemen-kantor.index');
     Route::post('/manajemen-kantor', [KantorController::class, 'store'])->name('manajemen-kantor.store');

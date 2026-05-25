@@ -10,6 +10,7 @@ use App\Models\ExternCrAttachment;
 use App\Models\ExternCrHistory;
 use App\Support\ExternCrHistoryRecorder;
 use App\Support\ExternCrMergedPdfBuilder;
+use App\Support\ExternCrStatusChangeAttachmentStorer;
 use App\Support\ExternCrVendorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,11 +42,19 @@ class VendorExternCrController extends Controller
                         ->orWhereHas('division', fn ($d) => $d->where('name', 'like', $like));
                 });
             })
+            ->when($request->filled('status'), function ($q) use ($request) {
+                $status = ExternCrStatus::tryFrom((string) $request->get('status'));
+                if ($status !== null) {
+                    $q->where('status', $status->value);
+                }
+            })
             ->orderByDesc('tanggal')
             ->orderByDesc('daily_sequence');
 
         return view('pages.dashboard.cr-eksternal.vendor-index', [
             'items' => $query->paginate(15)->withQueryString(),
+            'statusFilter' => ExternCrStatus::tryFrom((string) $request->get('status', '')),
+            'statusFilterOptions' => ExternCrStatus::cases(),
         ]);
     }
 
@@ -67,10 +76,12 @@ class VendorExternCrController extends Controller
     {
         ExternCrVendorAccess::authorizeAssignedCr($externCr);
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), array_merge([
             'status' => ['required', Rule::in(ExternCrStatus::vendorPipelineValues())],
             'note' => ['nullable', 'string', 'max:5000'],
-        ]);
+        ], ExternCrStatusChangeAttachmentStorer::validationRules()));
+
+        ExternCrStatusChangeAttachmentStorer::rejectAttachmentsWithoutStatusChange($validator, $request);
 
         if ($validator->fails()) {
             return response()->json([
@@ -88,16 +99,21 @@ class VendorExternCrController extends Controller
         $note = $noteRaw !== '' ? $noteRaw : null;
 
         if ($oldStatus !== $newStatus) {
-            ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $newStatus, $note);
+            $history = ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $newStatus, $note);
             $externCr->update(['status' => $newStatus]);
+            $attachmentCount = ExternCrStatusChangeAttachmentStorer::storeForHistory($externCr, $history, $request);
             $externCr->refresh();
+        } else {
+            $attachmentCount = 0;
         }
+
+        $baseMessage = $oldStatus === $newStatus
+            ? 'Status tidak berubah.'
+            : 'Status diperbarui.';
 
         return response()->json([
             'ok' => true,
-            'message' => $oldStatus === $newStatus
-                ? 'Status tidak berubah.'
-                : 'Status diperbarui.',
+            'message' => ExternCrStatusChangeAttachmentStorer::appendAttachmentSummaryToMessage($baseMessage, $attachmentCount),
             'status_label' => $externCr->status->label(),
         ]);
     }
@@ -118,6 +134,28 @@ class VendorExternCrController extends Controller
         abort_unless($disk->exists($attachment->path), 404);
 
         return $disk->download($attachment->path, $attachment->original_name ?? basename($attachment->path));
+    }
+
+    public function historyModalFragment(ExternCr $externCr): View
+    {
+        ExternCrVendorAccess::authorizeAssignedCr($externCr);
+
+        $limit = 60;
+        $baseQuery = $externCr->histories()
+            ->where('event', ExternCrHistoryEvent::StatusChanged->value)
+            ->with(['user', 'attachments'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        $totalCount = (clone $baseQuery)->count();
+        $histories = (clone $baseQuery)->limit($limit)->get();
+
+        return view('pages.dashboard.cr-eksternal.partials.history-card-body', [
+            'externCr' => $externCr,
+            'histories' => $histories,
+            'truncateHint' => $totalCount > $limit,
+            'emptyText' => 'Belum ada riwayat perubahan status.',
+        ]);
     }
 
     private function latestStatusChangeNoteForCurrentStatus(ExternCr $externCr): ?string

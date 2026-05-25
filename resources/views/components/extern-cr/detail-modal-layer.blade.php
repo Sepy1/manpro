@@ -64,6 +64,7 @@
 
                         var sel = document.getElementById('extern-cr-detail-status-select');
                         var ta = document.getElementById('extern-cr-detail-status-note');
+                        var filesInput = document.getElementById('extern-cr-detail-status-attachments');
                         if (! sel) {
                             return;
                         }
@@ -73,21 +74,31 @@
                         this.bannerErr = '';
 
                         var noteVal = ta ? ta.value : '';
+                        var formData = new FormData();
+                        formData.append('_method', 'PATCH');
+                        formData.append('status', sel.value);
+                        if (noteVal.trim() !== '') {
+                            formData.append('note', noteVal.trim());
+                        }
+                        if (filesInput && filesInput.files) {
+                            Array.prototype.forEach.call(filesInput.files, function (file, index) {
+                                if (index >= 3) {
+                                    return;
+                                }
+                                formData.append('status_attachments[]', file);
+                            });
+                        }
 
                         try {
                             var res = await fetch(this.updateUrl, {
-                                method: 'PATCH',
+                                method: 'POST',
                                 headers: {
                                     Accept: 'application/json',
-                                    'Content-Type': 'application/json',
                                     'X-Requested-With': 'XMLHttpRequest',
                                     'X-CSRF-TOKEN': this.csrfToken(),
                                 },
                                 credentials: 'same-origin',
-                                body: JSON.stringify({
-                                    status: sel.value,
-                                    note: noteVal.trim() !== '' ? noteVal : null,
-                                }),
+                                body: formData,
                             });
                             var data = {};
                             try {
@@ -97,15 +108,25 @@
                             }
 
                             if (! res.ok || ! data.ok) {
-                                this.bannerErr = data.message || (data.errors?.status?.[0]) || 'Gagal memperbarui status.';
+                                this.bannerErr = data.message
+                                    || (data.errors?.status_attachments?.[0])
+                                    || (data.errors?.status?.[0])
+                                    || 'Gagal memperbarui status.';
 
                                 return;
                             }
 
                             this.bannerOk = data.message || 'Status diperbarui.';
+                            if (filesInput) {
+                                filesInput.value = '';
+                            }
                             if (typeof this.crId !== 'undefined' && this.crId !== null && data.status_label) {
                                 window.dispatchEvent(new CustomEvent('extern-cr-row-status', {
-                                    detail: { id: this.crId, label: data.status_label },
+                                    detail: {
+                                        id: this.crId,
+                                        label: data.status_label,
+                                        status: sel.value,
+                                    },
                                 }));
                             }
                             await this.fetchDetailHtml();

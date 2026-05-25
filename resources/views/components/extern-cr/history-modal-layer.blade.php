@@ -10,6 +10,7 @@
                     html: '',
                     subtitle: '',
                     namaLabel: '',
+                    title: 'Riwayat CR Eksternal',
                     async openFrom (detail) {
                         const fragmentUrl = detail?.fragmentUrl;
                         if (! fragmentUrl) {
@@ -21,6 +22,7 @@
                         this.html = '';
                         this.subtitle = detail.subtitle || '';
                         this.namaLabel = detail.namaLabel || '';
+                        this.title = detail.title || 'Riwayat CR Eksternal';
                         document.documentElement.style.overflow = 'hidden';
                         try {
                             const res = await fetch(fragmentUrl, {
@@ -50,6 +52,7 @@
                         this.html = '';
                         this.subtitle = '';
                         this.namaLabel = '';
+                        this.title = 'Riwayat CR Eksternal';
                     },
                 }));
             });
@@ -79,7 +82,7 @@
         >
             <div class="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
                 <div class="min-w-0 flex-1">
-                    <h2 id="extern-cr-history-title" class="text-base font-semibold text-slate-900 dark:text-white/95">Riwayat CR Eksternal</h2>
+                    <h2 id="extern-cr-history-title" class="text-base font-semibold text-slate-900 dark:text-white/95" x-text="title"></h2>
                     <p x-show="subtitle" x-cloak x-text="subtitle" class="mt-1 font-mono text-sm font-medium text-brand-700 dark:text-brand-300"></p>
                     <p x-show="namaLabel" x-cloak x-text="namaLabel" class="mt-0.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400"></p>
                 </div>

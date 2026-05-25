@@ -64,6 +64,28 @@
                 )
                     <div class="mt-2 whitespace-pre-wrap rounded-md border border-violet-200/80 bg-white/70 px-3 py-2 text-xs leading-relaxed text-gray-900 dark:border-violet-800/70 dark:bg-slate-900/80 dark:text-gray-100">{{ $properties['note'] }}</div>
                 @endif
+                @if ($row->event === \App\Enums\ExternCrHistoryEvent::StatusChanged && $row->attachments->isNotEmpty())
+                    @php
+                        $historyAttachmentRoute = auth()->user()?->role === 'vendor'
+                            ? 'admin.cr-eksternal-vendor.attachments.download'
+                            : 'admin.cr-eksternal.attachments.download';
+                    @endphp
+                    <ul class="mt-2 space-y-1 text-xs">
+                        @foreach ($row->attachments as $historyAttachment)
+                            <li>
+                                <a
+                                    href="{{ route($historyAttachmentRoute, ['externCr' => $row->extern_cr_id, 'attachment' => $historyAttachment]) }}"
+                                    data-no-transition
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 font-medium text-brand-600 underline decoration-brand-500/70 underline-offset-2 dark:text-brand-400"
+                                >
+                                    {{ $historyAttachment->original_name ?? basename((string) $historyAttachment->path) }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
                 @if (isset($changes) && $changes !== [])
                     <details class="mt-2 text-xs text-gray-800 dark:text-gray-100 [&_summary]:cursor-pointer [&_summary]:font-medium [&_summary]:text-gray-700 dark:[&_summary]:text-gray-200">
                         <summary>Rincian perubahan</summary>

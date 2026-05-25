@@ -70,6 +70,7 @@
             @endif
             @if (request()->routeIs('admin.cr-eksternal-vendor.index'))
                 <x-extern-cr.detail-modal-layer />
+                <x-extern-cr.history-modal-layer />
             @endif
             @if (request()->routeIs('admin.cr-eksternal.index') || request()->routeIs('admin.cr-eksternal.create') || request()->routeIs('admin.cr-eksternal.edit'))
                 <x-extern-cr.history-modal-layer />

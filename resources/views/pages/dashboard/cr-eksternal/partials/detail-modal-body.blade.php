@@ -107,6 +107,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25V16.5M16.5 12L12 16.5 7.5 12m4.5 4.5V3"/>
                             </svg>
                             <span>{{ $att->original_name ?? basename((string) $att->path) }}</span>
+                            @if ($att->extern_cr_history_id)
+                                <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">(status)</span>
+                            @endif
                         </a>
                     </li>
                 @endforeach
@@ -117,7 +120,7 @@
     {{-- Ubah status (form – tombol utama di footer modal) --}}
     <section class="rounded-xl border border-dashed border-sky-300/70 bg-sky-50/40 p-4 dark:border-sky-800/60 dark:bg-sky-950/25">
         <p class="text-sm font-semibold text-slate-900 dark:text-white">Perbarui status CR</p>
-        <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">Pilih status lalu tulis catatan bila perlu; simpan pakai tombol di bawah jendela.</p>
+        <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">Pilih status, catatan, dan lampiran opsional (maks. 3 file); simpan pakai tombol di bawah jendela.</p>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 sm:items-end">
             <div class="sm:col-span-1">
                 <label class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400" for="extern-cr-detail-status-select">Status</label>
@@ -139,6 +142,18 @@
                     placeholder="Mis. alasan penyimpangan SLA, PIC, atau kelengkapan dokumen…"
                     class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
                 ></textarea>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400" for="extern-cr-detail-status-attachments">Lampiran perubahan status (opsional, maks. 3)</label>
+                <input
+                    type="file"
+                    id="extern-cr-detail-status-attachments"
+                    name="status_attachments[]"
+                    multiple
+                    accept=".pdf,.doc,.docx,.rar,.zip,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
+                    class="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-600 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-sky-700 dark:text-slate-200"
+                />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PDF, Word, Excel, gambar, RAR/ZIP — maks. 10 MB per file.</p>
             </div>
         </div>
     </section>

@@ -184,12 +184,8 @@ final class ExternCrHistoryRecorder
     /**
      * Mencatat perubahan status dari modal atau alur khusus (bukan penyimpanan form penuh).
      */
-    public static function statusChanged(ExternCr $cr, ExternCrStatus $from, ExternCrStatus $to, ?string $note): void
+    public static function statusChanged(ExternCr $cr, ExternCrStatus $from, ExternCrStatus $to, ?string $note): ExternCrHistory
     {
-        if ($from === $to) {
-            return;
-        }
-
         $summary = 'Status '.$from->label().' → '.$to->label().'.';
         if ($note !== null && $note !== '') {
             $snip = preg_replace('/\s+/', ' ', trim($note)) ?? '';
@@ -207,7 +203,7 @@ final class ExternCrHistoryRecorder
             $properties['note'] = $note;
         }
 
-        ExternCrHistory::query()->create([
+        return ExternCrHistory::query()->create([
             'extern_cr_id' => $cr->id,
             'user_id' => auth()->id(),
             'event' => ExternCrHistoryEvent::StatusChanged,

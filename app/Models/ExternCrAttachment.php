@@ -11,6 +11,7 @@ class ExternCrAttachment extends Model
 
     protected $fillable = [
         'extern_cr_id',
+        'extern_cr_history_id',
         'disk',
         'path',
         'original_name',
@@ -22,5 +23,10 @@ class ExternCrAttachment extends Model
     public function externCr(): BelongsTo
     {
         return $this->belongsTo(ExternCr::class, 'extern_cr_id');
+    }
+
+    public function history(): BelongsTo
+    {
+        return $this->belongsTo(ExternCrHistory::class, 'extern_cr_history_id');
     }
 }

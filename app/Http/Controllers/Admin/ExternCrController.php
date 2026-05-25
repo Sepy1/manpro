@@ -16,6 +16,7 @@ use App\Support\DivisionMentionParser;
 use App\Support\ExternCrHistoryRecorder;
 use App\Support\ExternCrMergedPdfBuilder;
 use App\Support\ExternCrNomorGenerator;
+use App\Support\ExternCrStatusChangeAttachmentStorer;
 use App\Support\IndonesianWhatsappPhoneNormalizer;
 use App\Support\MahadataWhatsappExternCrAuthorizationNotifier;
 use Illuminate\Http\JsonResponse;
@@ -327,10 +328,12 @@ class ExternCrController extends Controller
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), array_merge([
             'status' => ['required', Rule::enum(ExternCrStatus::class)],
             'note' => ['nullable', 'string', 'max:5000'],
-        ]);
+        ], ExternCrStatusChangeAttachmentStorer::validationRules()));
+
+        ExternCrStatusChangeAttachmentStorer::rejectAttachmentsWithoutStatusChange($validator, $request);
 
         if ($validator->fails()) {
             return response()->json([
@@ -353,16 +356,21 @@ class ExternCrController extends Controller
         $note = $noteRaw !== '' ? $noteRaw : null;
 
         if ($oldStatus !== $newStatus) {
-            ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $newStatus, $note);
+            $history = ExternCrHistoryRecorder::statusChanged($externCr, $oldStatus, $newStatus, $note);
             $externCr->update(['status' => $newStatus]);
+            $attachmentCount = ExternCrStatusChangeAttachmentStorer::storeForHistory($externCr, $history, $request);
             $externCr->refresh();
+        } else {
+            $attachmentCount = 0;
         }
+
+        $baseMessage = $oldStatus === $newStatus
+            ? 'Status tidak berubah.'
+            : 'Status diperbarui.';
 
         return response()->json([
             'ok' => true,
-            'message' => $oldStatus === $newStatus
-                ? 'Status tidak berubah.'
-                : 'Status diperbarui.',
+            'message' => ExternCrStatusChangeAttachmentStorer::appendAttachmentSummaryToMessage($baseMessage, $attachmentCount),
             'status_label' => $externCr->status->label(),
         ]);
     }
@@ -375,7 +383,7 @@ class ExternCrController extends Controller
 
         $limit = 60;
         $baseQuery = $externCr->histories()
-            ->with(['user'])
+            ->with(['user', 'attachments'])
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 

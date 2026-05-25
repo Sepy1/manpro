@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ExternCrHistoryEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExternCrHistory extends Model
 {
@@ -34,6 +35,11 @@ class ExternCrHistory extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ExternCrAttachment::class, 'extern_cr_history_id');
     }
 
     public function getDisplaySummaryAttribute(): string
