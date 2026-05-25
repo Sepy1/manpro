@@ -26,7 +26,7 @@
             <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar CR — PIC Vendor</h3>
-                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">CR yang ditugaskan kepada Anda sebagai PIC vendor. Perbarui status Vendor Development, UAT, atau Go-Live.</p>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">CR yang ditugaskan kepada Anda dan sudah disetujui otorisator. Perbarui status Vendor Development, UAT, atau Go-Live.</p>
                 </div>
                 <form method="GET" action="{{ route('admin.cr-eksternal-vendor.index') }}" class="flex flex-wrap gap-2">
                     <input type="text" name="keyword" value="{{ request('keyword') }}" placeholder="Cari nomor, nama CR, bidang, divisi..."
@@ -87,7 +87,7 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="px-2 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    Belum ada CR yang ditugaskan kepada Anda sebagai PIC vendor.
+                                    Belum ada CR yang ditugaskan dan sudah disetujui otorisator.
                                 </td>
                             </tr>
                         @endforelse
