@@ -9,9 +9,11 @@ use App\Http\Controllers\Admin\ExternCrController;
 use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\Admin\KantorController;
 use App\Http\Controllers\Admin\KasKantorController;
+use App\Http\Controllers\Admin\LivestreamPlayerController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
+use App\Http\Controllers\Admin\ParameterLivestreamController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
@@ -102,6 +104,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
+    Route::get('/livestream', [LivestreamPlayerController::class, 'index'])->name('livestream.player');
 
     Route::post('/assistant/chat', [AssistantChatController::class, 'chat'])
         ->middleware(['throttle:30,1'])
@@ -147,6 +150,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::get('/aset-ti/monitoring/data', [MonitoringController::class, 'data'])->name('aset-ti.monitoring.data');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
+    Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');
@@ -167,8 +171,11 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::post('/parameter/cr-alasan-perubahan', [ParameterExternCrChangeReasonController::class, 'store'])->name('parameter.cr-alasan-perubahan.store');
     Route::put('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'update'])->name('parameter.cr-alasan-perubahan.update');
     Route::delete('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'destroy'])->name('parameter.cr-alasan-perubahan.delete');
+    Route::get('/parameter/livestream', [ParameterLivestreamController::class, 'index'])->name('parameter.livestream.index');
+    Route::put('/parameter/livestream', [ParameterLivestreamController::class, 'update'])->name('parameter.livestream.update');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
+    Route::get('/cr-eksternal/dashboard', [ExternCrController::class, 'dashboard'])->name('cr-eksternal.dashboard');
     Route::get('/cr-eksternal/create', [ExternCrController::class, 'create'])->name('cr-eksternal.create');
     Route::post('/cr-eksternal', [ExternCrController::class, 'store'])->name('cr-eksternal.store');
     Route::get('/cr-eksternal/{externCr}/edit', [ExternCrController::class, 'edit'])->name('cr-eksternal.edit');

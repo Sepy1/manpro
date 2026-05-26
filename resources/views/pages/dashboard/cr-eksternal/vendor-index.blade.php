@@ -4,14 +4,19 @@
     <x-common.page-breadcrumb pageTitle="CR Eksternal Saya" />
 
     <div
-        class="flex w-full max-w-none min-h-0 flex-1 flex-col gap-4"
+        class="flex h-full w-full max-w-none min-h-0 flex-1 flex-col gap-4"
         x-data="{
+            badgeBaseClass: @js(\App\Enums\ExternCrStatus::listBadgeShellClasses()),
+            badgeClassMap: @js(\App\Enums\ExternCrStatus::listBadgeClassMap()),
             updateRowChip (d) {
                 if (! d || typeof d.id === 'undefined') { return; }
 
                 var tr = document.querySelector('tr[data-cr-id=\'' + String(d.id) + '\']');
                 var chip = tr ? tr.querySelector('.cr-status-chip') : null;
                 if (chip && d.label) { chip.textContent = d.label; }
+                if (chip && d.status && this.badgeClassMap[d.status]) {
+                    chip.className = this.badgeBaseClass + ' ' + this.badgeClassMap[d.status];
+                }
             }
         }"
         @extern-cr-row-status.window="updateRowChip($event.detail)"
@@ -22,7 +27,7 @@
             </div>
         @endif
 
-        <x-dashboard.accent-card accent-index="3" shell-overflow="visible" class="flex w-full min-h-0 flex-col" padding="p-5 lg:p-6">
+        <x-dashboard.accent-card accent-index="3" shell-overflow="visible" class="flex h-full w-full min-h-0 flex-1 flex-col" padding="p-5 lg:p-6">
             <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar CR — PIC Vendor</h3>
@@ -50,7 +55,7 @@
                 </form>
             </div>
 
-            <div class="min-h-0 w-full overflow-x-auto">
+            <div class="min-h-0 flex-1 w-full overflow-auto">
                 <table class="min-w-[860px] w-full border-separate border-spacing-0">
                     <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-white dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
                         <tr>

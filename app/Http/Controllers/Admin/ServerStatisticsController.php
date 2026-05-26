@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Throwable;
 
 class ServerStatisticsController extends Controller
@@ -35,6 +36,7 @@ class ServerStatisticsController extends Controller
                 ];
             })->values(),
             'sensorUrlTemplate' => route('admin.aset-ti.server-statistics.sensor', ['device' => '__DEVICE__', 'metric' => '__METRIC__']),
+            'pdfUrl' => route('admin.aset-ti.server-statistics.pdf'),
         ]);
     }
 
@@ -95,11 +97,79 @@ class ServerStatisticsController extends Controller
         }
     }
 
+    public function pdf(Request $request)
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        [$startDate, $endDate, $validationError] = $this->resolvePeriodFromRequest($request);
+        if ($validationError !== null) {
+            return redirect()
+                ->route('admin.aset-ti.server-statistics.index')
+                ->with('flash_error', $validationError);
+        }
+
+        $servers = [];
+        $devices = $this->getDevicesForStatistics();
+
+        foreach ($devices as $device) {
+            $sensorRows = [];
+
+            foreach (['cpu', 'ram', 'traffic', 'disk'] as $metric) {
+                $objid = $this->resolveObjidByMetric($device, $metric);
+                if ($objid === '') {
+                    continue;
+                }
+
+                try {
+                    $payload = $this->getMetricPayload($metric, $objid, $startDate, $endDate);
+                } catch (Throwable $exception) {
+                    Log::warning('Failed to build server statistics PDF metric payload.', [
+                        'device_id' => $device->id,
+                        'metric' => $metric,
+                        'objid' => $objid,
+                        'message' => $exception->getMessage(),
+                    ]);
+                    continue;
+                }
+
+                $trend = $payload['trend'] ?? ['labels' => [], 'min' => [], 'max' => [], 'avg' => []];
+                if (empty($trend['labels'])) {
+                    continue;
+                }
+
+                $sensorRows[] = [
+                    'key' => $metric,
+                    'label' => $this->metricLabelForPdf($metric),
+                    'unit' => $this->metricUnitForPdf($metric),
+                    'stats' => $payload['stats'] ?? ['min' => null, 'max' => null, 'avg' => null],
+                    'trend' => $trend,
+                ];
+            }
+
+            if (! empty($sensorRows)) {
+                $servers[] = [
+                    'server' => $device->server_name ?: '-',
+                    'sensors' => $sensorRows,
+                ];
+            }
+        }
+
+        $pdf = Pdf::loadView('pages.dashboard.aset-ti.server-statistics-pdf', [
+            'servers' => $servers,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('laporan-statistik-server-'.$startDate->format('Ymd').'-'.$endDate->format('Ymd').'.pdf');
+    }
+
     private function getMetricPayload(string $metric, string $objid, Carbon $startDate, Carbon $endDate): array
     {
         $histData = $this->fetchHistoricDataByObjid($objid, $startDate, $endDate);
         $rawValues = $this->extractSeriesForMetric($histData, $metric);
         $coverageValues = $this->extractCoverageValues($histData);
+        $trend = $this->buildDailyTrendForMetric($histData, $metric, $startDate, $endDate);
 
         if ($metric === 'ping') {
             // PRTG historicdata for ping exposes coverage per interval.
@@ -113,6 +183,7 @@ class ServerStatisticsController extends Controller
                 'metric' => 'ping',
                 'available' => true,
                 'uptime_percent' => $uptimePercent,
+                'trend' => $trend,
             ];
         }
 
@@ -133,6 +204,7 @@ class ServerStatisticsController extends Controller
             'available' => true,
             'stats' => $stats,
             'bars' => $bars,
+            'trend' => $trend,
         ];
 
         if ($metric === 'disk') {
@@ -186,6 +258,118 @@ class ServerStatisticsController extends Controller
             'min' => round(min($values), 2),
             'max' => round(max($values), 2),
             'avg' => round(array_sum($values) / count($values), 2),
+        ];
+    }
+
+    private function buildDailyTrendForMetric(array $histData, string $metric, ?Carbon $startDate = null, ?Carbon $endDate = null): array
+    {
+        $grouped = [];
+        $sequentialValues = [];
+
+        foreach ($histData as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $value = match ($metric) {
+                'disk' => $this->pickDiskFreePercentFromHistoricRow($row),
+                'cpu' => $this->pickCpuPercentFromHistoricRow($row),
+                'ram' => $this->pickRamPercentFromHistoricRow($row),
+                'traffic' => $this->pickTrafficBytesPerSecondFromHistoricRow($row),
+                default => null,
+            };
+
+            if ($value === null && $metric !== 'disk') {
+                $value = $this->pickLegacySingleValueRaw($row);
+            }
+
+            if ($value === null) {
+                continue;
+            }
+
+            if ($metric === 'ram') {
+                // API PRTG RAM bernilai persen free; chart menampilkan RAM load.
+                $value = max(0, min(100, 100 - $value));
+            }
+
+            $sequentialValues[] = (float) $value;
+
+            $timestamp = $this->parseHistoricRowDateTime($row);
+            if ($timestamp === null) {
+                continue;
+            }
+
+            $hourKey = $timestamp->copy()->minute(0)->second(0)->format('Y-m-d H:00:00');
+            if (! isset($grouped[$hourKey])) {
+                $grouped[$hourKey] = [];
+            }
+            $grouped[$hourKey][] = (float) $value;
+        }
+
+        if (! empty($grouped)) {
+            ksort($grouped);
+            $labels = [];
+            $lineMin = [];
+            $lineMax = [];
+            $lineAvg = [];
+
+            foreach ($grouped as $hour => $values) {
+                if (empty($values)) {
+                    continue;
+                }
+
+                $labels[] = Carbon::parse($hour)->format('d/m H:i');
+                $lineMin[] = round(min($values), 2);
+                $lineMax[] = round(max($values), 2);
+                $lineAvg[] = round(array_sum($values) / count($values), 2);
+            }
+
+            return [
+                'labels' => $labels,
+                'min' => $lineMin,
+                'max' => $lineMax,
+                'avg' => $lineAvg,
+            ];
+        }
+
+        if (empty($sequentialValues)) {
+            return ['labels' => [], 'min' => [], 'max' => [], 'avg' => []];
+        }
+
+        // Fallback jika datetime dari PRTG tidak terbaca: gunakan bucket berurutan.
+        $bucketCount = min(12, count($sequentialValues));
+        $chunkSize = (int) ceil(count($sequentialValues) / $bucketCount);
+        $labels = [];
+        $lineMin = [];
+        $lineMax = [];
+        $lineAvg = [];
+
+        $rangeMinutes = ($startDate !== null && $endDate !== null && $startDate->lte($endDate))
+            ? max(1, (int) $startDate->copy()->diffInMinutes($endDate->copy()))
+            : null;
+
+        for ($i = 0; $i < $bucketCount; $i++) {
+            $values = array_slice($sequentialValues, $i * $chunkSize, $chunkSize);
+            if (empty($values)) {
+                continue;
+            }
+
+            if ($startDate !== null && $rangeMinutes !== null) {
+                $offsetMinutes = (int) floor(($i / max($bucketCount - 1, 1)) * $rangeMinutes);
+                $labels[] = $startDate->copy()->addMinutes($offsetMinutes)->format('d/m H:i');
+            } else {
+                $labels[] = 'P' . ($i + 1);
+            }
+            $lineMin[] = round(min($values), 2);
+            $lineMax[] = round(max($values), 2);
+            $lineAvg[] = round(array_sum($values) / count($values), 2);
+        }
+
+        return [
+            'labels' => $labels,
+            'min' => $lineMin,
+            'max' => $lineMax,
+            'avg' => $lineAvg,
         ];
     }
 
@@ -813,6 +997,26 @@ class ServerStatisticsController extends Controller
             ]);
     }
 
+    private function metricLabelForPdf(string $metric): string
+    {
+        return match ($metric) {
+            'cpu' => 'CPU Load',
+            'ram' => 'RAM Load',
+            'traffic' => 'Traffic',
+            'disk' => 'Disk Free',
+            default => strtoupper($metric),
+        };
+    }
+
+    private function metricUnitForPdf(string $metric): string
+    {
+        return match ($metric) {
+            'cpu', 'ram', 'disk' => '%',
+            'traffic' => 'B/s',
+            default => '',
+        };
+    }
+
     private function resolveObjidByMetric(DcDrcDevice $device, string $metric): string
     {
         return match ($metric) {
@@ -828,14 +1032,80 @@ class ServerStatisticsController extends Controller
     private function fetchHistoricDataByObjid(string $objid, Carbon $startDate, Carbon $endDate): array
     {
         [$baseUrl, $username, $passhash, $verifySsl] = $this->getPrtgConfig();
+        $cursor = $startDate->copy();
+        $allRows = [];
 
+        // PRTG historicdata dapat memotong hasil pada range panjang.
+        // Ambil per-chunk 7 hari agar seluruh periode tetap terambil.
+        while ($cursor->lte($endDate)) {
+            $chunkEnd = $cursor->copy()->addDays(6)->endOfDay();
+            if ($chunkEnd->gt($endDate)) {
+                $chunkEnd = $endDate->copy();
+            }
+
+            $chunkRows = $this->requestHistoricDataChunk(
+                $baseUrl,
+                $username,
+                $passhash,
+                $verifySsl,
+                $objid,
+                $cursor,
+                $chunkEnd
+            );
+
+            if (! empty($chunkRows)) {
+                $allRows = array_merge($allRows, $chunkRows);
+            }
+
+            $nextCursor = $chunkEnd->copy()->addSecond();
+            if ($nextCursor->lte($cursor)) {
+                break;
+            }
+            $cursor = $nextCursor;
+        }
+
+        if (empty($allRows)) {
+            return [];
+        }
+
+        // Dedup berdasarkan datetime untuk menghindari overlap antar chunk.
+        $seen = [];
+        $deduplicated = [];
+        foreach ($allRows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $key = trim((string) ($row['datetime'] ?? ''));
+            if ($key !== '') {
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+            }
+
+            $deduplicated[] = $row;
+        }
+
+        return $deduplicated;
+    }
+
+    private function requestHistoricDataChunk(
+        string $baseUrl,
+        string $username,
+        string $passhash,
+        bool $verifySsl,
+        string $objid,
+        Carbon $chunkStart,
+        Carbon $chunkEnd
+    ): array {
         $response = Http::timeout(25)
             ->acceptJson()
             ->withOptions(['verify' => $verifySsl])
             ->get(rtrim($baseUrl, '/') . '/api/historicdata.json', [
                 'id' => $objid,
-                'sdate' => $startDate->format('Y-m-d-H-i-s'),
-                'edate' => $endDate->format('Y-m-d-H-i-s'),
+                'sdate' => $chunkStart->format('Y-m-d-H-i-s'),
+                'edate' => $chunkEnd->format('Y-m-d-H-i-s'),
                 'avg' => 3600,
                 'usecaption' => 1,
                 'username' => $username,
@@ -847,6 +1117,7 @@ class ServerStatisticsController extends Controller
         }
 
         $json = $response->json();
+
         return is_array($json['histdata'] ?? null) ? $json['histdata'] : [];
     }
 

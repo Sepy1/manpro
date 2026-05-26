@@ -78,6 +78,10 @@
     }"
     @mouseenter="if (!$store.sidebar.isExpanded) $store.sidebar.setHovered(true)"
     @mouseleave="$store.sidebar.setHovered(false)">
+    @php
+        $livestreamEnabled = request()->routeIs('admin.livestream.player');
+        $livestreamToggleUrl = route('admin.livestream.player');
+    @endphp
     {{-- Efek metalik (hanya tema terang) --}}
     <div
         class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.12] via-transparent to-sky-950/45 dark:hidden"
@@ -343,32 +347,61 @@
     </div>
 
     <div class="relative z-10 mt-auto shrink-0 border-t border-white/15 pt-3 dark:border-gray-800">
-        <button
-            type="button"
-            class="flex w-full items-center gap-2 rounded-xl py-2 text-left transition-all duration-200 hover:bg-white/12 active:scale-[0.98] dark:hover:bg-white/[0.06]"
-            :class="[
-                (!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
-                'xl:justify-center' : 'justify-start xl:px-1'
-            ]"
-            @click="$store.theme.toggle()"
-            :aria-label="$store.theme.dark ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
+        <div
+            class="flex items-center gap-2"
+            :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ? 'xl:flex-col' : ''"
         >
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center text-blue-100 dark:text-gray-400">
-                {{-- Tema gelap aktif: tampilkan ikon matahari (beralih ke terang) --}}
-                <svg x-show="$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-                </svg>
-                {{-- Tema terang aktif: tampilkan ikon bulan (beralih ke gelap) --}}
-                <svg x-show="!$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
-                </svg>
-            </span>
-            <span
-                x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                class="truncate text-sm font-semibold text-white dark:text-gray-200"
-                x-text="$store.theme.dark ? 'Tema terang' : 'Tema gelap'"
-            ></span>
-        </button>
+            <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-2 rounded-xl py-2 text-left transition-all duration-200 hover:bg-white/12 active:scale-[0.98] dark:hover:bg-white/[0.06]"
+                :class="[
+                    (!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
+                    'xl:w-full xl:justify-center' : 'justify-start xl:px-1'
+                ]"
+                @click="$store.theme.toggle()"
+                :aria-label="$store.theme.dark ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
+            >
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center text-blue-100 dark:text-gray-400">
+                    {{-- Tema gelap aktif: tampilkan ikon matahari (beralih ke terang) --}}
+                    <svg x-show="$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+                    </svg>
+                    {{-- Tema terang aktif: tampilkan ikon bulan (beralih ke gelap) --}}
+                    <svg x-show="!$store.theme.dark" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+                    </svg>
+                </span>
+                <span
+                    x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                    class="truncate text-sm font-semibold text-white dark:text-gray-200"
+                    x-text="$store.theme.dark ? 'Tema terang' : 'Tema gelap'"
+                ></span>
+            </button>
+            <a
+                href="{{ $livestreamToggleUrl }}"
+                @class([
+                    'flex min-w-0 flex-1 items-center gap-2 rounded-xl py-2 text-left transition-all duration-200 hover:bg-white/12 active:scale-[0.98] dark:hover:bg-white/[0.06]',
+                    'bg-white/10 dark:bg-white/[0.08]' => $livestreamEnabled,
+                ])
+                :class="[
+                    (!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
+                    'xl:w-full xl:justify-center' : 'justify-start xl:px-1'
+                ]"
+                aria-label="{{ $livestreamEnabled ? 'Nonaktifkan livestream' : 'Aktifkan livestream' }}"
+            >
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center text-blue-100 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
+                        <path d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Zm3 0a1.5 1.5 0 0 0-1.5 1.5v6a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 18 15v-6A1.5 1.5 0 0 0 16.5 7.5h-9Zm2.25 2.25a.75.75 0 0 1 1.06 0L12 11.94l1.19-1.19a.75.75 0 0 1 1.06 1.06L13.06 13l1.19 1.19a.75.75 0 1 1-1.06 1.06L12 14.06l-1.19 1.19a.75.75 0 1 1-1.06-1.06L10.94 13l-1.19-1.19a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                </span>
+                <span
+                    x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+                    class="truncate text-sm font-semibold text-white dark:text-gray-200"
+                >
+                    {{ $livestreamEnabled ? 'Livestream aktif' : 'Livestream' }}
+                </span>
+            </a>
+        </div>
     </div>
     </div>
 </aside>

@@ -91,6 +91,10 @@ class MenuHelper
                 'name' => 'CR Eksternal',
                 'subItems' => [
                     [
+                        'name' => 'Dashboard CR',
+                        'path' => '/admin/cr-eksternal/dashboard',
+                    ],
+                    [
                         'name' => 'Daftar CR Eksternal',
                         'path' => '/admin/cr-eksternal',
                     ],
@@ -119,6 +123,10 @@ class MenuHelper
                     [
                         'name' => 'Alasan perubahan CR',
                         'path' => '/admin/parameter/cr-alasan-perubahan',
+                    ],
+                    [
+                        'name' => 'Livestream Monitoring',
+                        'path' => '/admin/parameter/livestream',
                     ],
                     [
                         'name' => 'Manajemen User',

@@ -49,13 +49,27 @@ enum ExternCrStatus: string
     /** Kelas Tailwind dasar badge status di daftar CR. */
     public static function listBadgeShellClasses(): string
     {
-        return 'cr-status-chip inline-flex max-w-[13rem] items-center rounded-lg border px-2.5 py-1 text-xs font-medium';
+        return 'cr-status-chip inline-flex max-w-[13rem] items-center rounded-lg border px-2.5 py-1 text-xs font-medium text-slate-950 dark:text-white';
     }
 
     /** Kelas Tailwind untuk badge status di daftar CR (sama admin & vendor). */
     public function listBadgeClasses(): string
     {
-        return 'border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100';
+        return 'border-teal-500 bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-950/40 dark:text-teal-200';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function listBadgeClassMap(): array
+    {
+        $map = [];
+
+        foreach (self::cases() as $case) {
+            $map[$case->value] = $case->listBadgeClasses();
+        }
+
+        return $map;
     }
 
     /**

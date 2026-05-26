@@ -46,7 +46,7 @@ class ExternCrController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless(auth()->user()?->role === 'admin', 403);
+        abort_unless($this->canAccessExternCrPages($request), 403);
 
         $query = ExternCr::query()
             ->with(['division', 'application', 'changeReason'])
@@ -68,6 +68,29 @@ class ExternCrController extends Controller
 
         return view('pages.dashboard.cr-eksternal.index', [
             'items' => $query->paginate(15)->withQueryString(),
+        ]);
+    }
+
+    public function dashboard(Request $request): View
+    {
+        abort_unless($this->canAccessExternCrPages($request), 403);
+
+        $items = ExternCr::query()
+            ->with(['division', 'application', 'changeReason'])
+            ->orderByDesc('tanggal')
+            ->orderByDesc('daily_sequence')
+            ->limit(300)
+            ->get();
+
+        return view('pages.dashboard.cr-eksternal.dashboard', [
+            'items' => $items,
+            'columns' => [
+                ['title' => 'Backlog', 'status' => ExternCrStatus::Open],
+                ['title' => 'On Progress', 'status' => ExternCrStatus::VendorDevelopment],
+                ['title' => 'Testing UAT', 'status' => ExternCrStatus::Uat],
+                ['title' => 'Go Live', 'status' => ExternCrStatus::GoLive],
+                ['title' => 'Done', 'status' => ExternCrStatus::Closed],
+            ],
         ]);
     }
 
@@ -592,6 +615,14 @@ class ExternCrController extends Controller
             ->where('role', 'vendor')
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
+    }
+
+    private function canAccessExternCrPages(Request $request): bool
+    {
+        $role = auth()->user()?->role;
+
+        return $role === 'admin'
+            || ($role === 'livestream' && $request->boolean('livestream_embed'));
     }
 
     private function validateExternCrPayload(Request $request, ?ExternCr $existing): array

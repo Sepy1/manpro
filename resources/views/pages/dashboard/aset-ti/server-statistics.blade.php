@@ -10,10 +10,14 @@
         selectedEndDate: '',
         hasSubmitted: false,
         queueLoading: false,
+        pdfLoading: false,
+        pdfProgress: 0,
+        pdfProgressTimer: null,
         errorMessage: null,
         startDateLabel: '-',
         endDateLabel: '-',
         sensorUrlTemplate: @js($sensorUrlTemplate),
+        pdfUrl: @js($pdfUrl),
         createMetricState(available) {
             return {
                 available,
@@ -85,6 +89,117 @@
             this.hasSubmitted = true;
             this.resetMetricStates();
             await this.loadAllSensorsSequentially();
+        },
+        canExportPdf() {
+            return !!this.selectedStartDate && !!this.selectedEndDate && this.selectedStartDate <= this.selectedEndDate;
+        },
+        buildPdfUrl() {
+            if (!this.canExportPdf()) return '#';
+            const query = new URLSearchParams({
+                start_date: this.selectedStartDate,
+                end_date: this.selectedEndDate,
+            });
+            return `${this.pdfUrl}?${query.toString()}`;
+        },
+        startPdfProgress() {
+            this.pdfProgress = 0;
+            if (this.pdfProgressTimer) {
+                clearInterval(this.pdfProgressTimer);
+            }
+            this.pdfProgressTimer = setInterval(() => {
+                if (this.pdfProgress < 70) {
+                    this.pdfProgress += 8;
+                } else if (this.pdfProgress < 90) {
+                    this.pdfProgress += 2;
+                }
+            }, 200);
+        },
+        completePdfProgress() {
+            if (this.pdfProgressTimer) {
+                clearInterval(this.pdfProgressTimer);
+                this.pdfProgressTimer = null;
+            }
+            this.pdfProgress = 100;
+            window.setTimeout(() => {
+                this.pdfLoading = false;
+                this.pdfProgress = 0;
+            }, 450);
+        },
+        resetPdfProgress() {
+            if (this.pdfProgressTimer) {
+                clearInterval(this.pdfProgressTimer);
+                this.pdfProgressTimer = null;
+            }
+            this.pdfLoading = false;
+            this.pdfProgress = 0;
+        },
+        parseDownloadFilename(disposition) {
+            const value = String(disposition || '');
+            const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+            if (utf8Match && utf8Match[1]) {
+                try {
+                    return decodeURIComponent(utf8Match[1].trim());
+                } catch (e) {
+                    /* ignore */
+                }
+            }
+
+            const simpleMatch = value.match(/filename=([^;]+)/i);
+            if (simpleMatch && simpleMatch[1]) {
+                const dq = String.fromCharCode(34);
+                const sq = String.fromCharCode(39);
+                let cleaned = String(simpleMatch[1]).trim();
+
+                if (cleaned.startsWith(sq) && cleaned.endsWith(sq) && cleaned.length >= 2) {
+                    cleaned = cleaned.slice(1, -1).trim();
+                }
+
+                if (cleaned.startsWith(dq) && cleaned.endsWith(dq) && cleaned.length >= 2) {
+                    cleaned = cleaned.slice(1, -1).trim();
+                }
+
+                return cleaned;
+            }
+
+            return null;
+        },
+        async downloadPdf() {
+            if (!this.canExportPdf() || this.pdfLoading) return;
+
+            this.errorMessage = null;
+            this.pdfLoading = true;
+            this.startPdfProgress();
+
+            try {
+                const response = await fetch(this.buildPdfUrl(), {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/pdf' },
+                    credentials: 'same-origin',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal generate PDF.');
+                }
+
+                this.pdfProgress = Math.max(this.pdfProgress, 95);
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const filename = this.parseDownloadFilename(disposition) || `laporan-statistik-server-${this.selectedStartDate}-${this.selectedEndDate}.pdf`;
+
+                const objectUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(objectUrl);
+
+                this.completePdfProgress();
+            } catch (error) {
+                this.resetPdfProgress();
+                this.errorMessage = 'Generate PDF gagal. Silakan coba lagi.';
+            }
         },
         async loadAllSensorsSequentially() {
             this.queueLoading = true;
@@ -275,13 +390,31 @@
                 <input type="date" x-model="selectedEndDate"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
             </div>
-            <div class="md:col-span-2 flex items-end">
+            <div class="md:col-span-2 flex items-end gap-2">
                 <button type="submit"
                     class="inline-flex h-10 items-center rounded-lg border border-brand-500 px-4 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
                     Tampilkan Statistik
                 </button>
+                <button type="button" @click="downloadPdf()"
+                    class="inline-flex h-10 items-center rounded-lg border px-4 text-sm font-medium transition"
+                    :class="canExportPdf() && !pdfLoading
+                        ? 'border-emerald-500 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
+                        : 'pointer-events-none border-gray-300 text-gray-400 dark:border-gray-700 dark:text-gray-600'">
+                    <span x-show="!pdfLoading">Generate PDF</span>
+                    <span x-show="pdfLoading" x-cloak>Memuat PDF...</span>
+                </button>
             </div>
         </form>
+
+        <div x-show="pdfLoading" x-cloak class="mb-4">
+            <div class="mb-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                <span>Memuat PDF...</span>
+                <span x-text="`${Math.round(pdfProgress)}%`"></span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                <div class="h-full bg-emerald-500 transition-all duration-200" :style="`width: ${Math.max(0, Math.min(100, pdfProgress))}%`"></div>
+            </div>
+        </div>
 
         <div x-show="queueLoading" x-cloak class="mb-3 text-xs text-gray-500 dark:text-gray-400">
             Memuat data per sensor...
