@@ -11,24 +11,34 @@ class LivestreamSetting extends Model
 {
     public const DEFAULT_INTERVAL_SECONDS = 120;
 
+    public const DEFAULT_LIVE_REFRESH_SECONDS = 30;
+
     public const MIN_INTERVAL_SECONDS = 5;
 
     public const MAX_INTERVAL_SECONDS = 3600;
+
+    public const MIN_LIVE_REFRESH_SECONDS = 5;
+
+    public const MAX_LIVE_REFRESH_SECONDS = 300;
 
     protected $table = 'livestream_settings';
 
     protected $fillable = [
         'swipe_interval_seconds',
+        'live_refresh_seconds',
         'selected_pages',
         'custom_pages',
+        'image_slides',
     ];
 
     protected function casts(): array
     {
         return [
             'swipe_interval_seconds' => 'integer',
+            'live_refresh_seconds' => 'integer',
             'selected_pages' => 'array',
             'custom_pages' => 'array',
+            'image_slides' => 'array',
         ];
     }
 
@@ -83,8 +93,10 @@ class LivestreamSetting extends Model
     {
         $defaults = [
             'swipe_interval_seconds' => self::DEFAULT_INTERVAL_SECONDS,
+            'live_refresh_seconds' => self::DEFAULT_LIVE_REFRESH_SECONDS,
             'selected_pages' => self::defaultSelectedPages(),
             'custom_pages' => [],
+            'image_slides' => [],
         ];
 
         try {
@@ -95,15 +107,39 @@ class LivestreamSetting extends Model
 
             $seconds = (int) ($setting->swipe_interval_seconds ?? self::DEFAULT_INTERVAL_SECONDS);
             $seconds = max(min($seconds, self::MAX_INTERVAL_SECONDS), self::MIN_INTERVAL_SECONDS);
+            $liveRefreshSeconds = (int) ($setting->live_refresh_seconds ?? self::DEFAULT_LIVE_REFRESH_SECONDS);
+            $liveRefreshSeconds = max(min($liveRefreshSeconds, self::MAX_LIVE_REFRESH_SECONDS), self::MIN_LIVE_REFRESH_SECONDS);
 
             return [
                 'swipe_interval_seconds' => $seconds,
+                'live_refresh_seconds' => $liveRefreshSeconds,
                 'selected_pages' => self::normalizeSelectedPages((array) ($setting->selected_pages ?? [])),
                 'custom_pages' => self::normalizeCustomPages((array) ($setting->custom_pages ?? [])),
+                'image_slides' => self::normalizeImageSlides((array) ($setting->image_slides ?? [])),
             ];
         } catch (Throwable) {
             return $defaults;
         }
+    }
+
+    public static function normalizeImageSlides(array $slides): array
+    {
+        $normalized = [];
+
+        foreach ($slides as $slide) {
+            $value = str_replace('\\', '/', trim((string) $slide));
+            $value = ltrim($value, '/');
+            if ($value === '') {
+                continue;
+            }
+            if (! Str::startsWith($value, 'livestream/slides/')) {
+                continue;
+            }
+
+            $normalized[] = $value;
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     public static function selectedBasePaths(): array

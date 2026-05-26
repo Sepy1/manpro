@@ -7,10 +7,19 @@
         class="space-y-4"
         x-data="{
             customPages: @js(old('custom_pages', $customPages)),
+            imageSlides: @js($imageSlides),
+            removedImageSlides: @js(old('remove_image_slides', [])),
             get activeCustomPages() {
                 return this.customPages
                     .map((item) => String(item || '').trim())
                     .filter((item) => item.length > 0);
+            },
+            get activeImageSlides() {
+                const removed = this.removedImageSlides.map((item) => String(item || '').trim());
+                return this.imageSlides.filter((item) => !removed.includes(String(item || '').trim()));
+            },
+            isImageRemoved(path) {
+                return this.removedImageSlides.includes(path);
             },
             addCustomPage() {
                 this.customPages.push('');
@@ -38,7 +47,7 @@
                 Atur durasi perpindahan halaman otomatis dan pilih halaman yang ikut dalam mode livestream.
             </p>
 
-            <form method="POST" action="{{ route('admin.parameter.livestream.update') }}" class="mt-5 space-y-5">
+            <form method="POST" action="{{ route('admin.parameter.livestream.update') }}" enctype="multipart/form-data" class="mt-5 space-y-5">
                 @csrf
                 @method('PUT')
 
@@ -59,6 +68,24 @@
                         />
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             Rentang: {{ \App\Models\LivestreamSetting::MIN_INTERVAL_SECONDS }} - {{ \App\Models\LivestreamSetting::MAX_INTERVAL_SECONDS }} detik.
+                        </p>
+                    </div>
+                    <div>
+                        <label for="live_refresh_seconds" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Durasi live refresh data (detik)
+                        </label>
+                        <input
+                            id="live_refresh_seconds"
+                            type="number"
+                            name="live_refresh_seconds"
+                            min="{{ \App\Models\LivestreamSetting::MIN_LIVE_REFRESH_SECONDS }}"
+                            max="{{ \App\Models\LivestreamSetting::MAX_LIVE_REFRESH_SECONDS }}"
+                            value="{{ old('live_refresh_seconds', $liveRefreshSeconds) }}"
+                            required
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                        />
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Rentang: {{ \App\Models\LivestreamSetting::MIN_LIVE_REFRESH_SECONDS }} - {{ \App\Models\LivestreamSetting::MAX_LIVE_REFRESH_SECONDS }} detik.
                         </p>
                     </div>
                 </div>
@@ -92,9 +119,23 @@
                                 </span>
                             </label>
                         </template>
+                        <template x-for="(slidePath, index) in activeImageSlides" :key="`active-image-${index}`">
+                            <label class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-200">
+                                <input
+                                    type="checkbox"
+                                    checked
+                                    disabled
+                                    class="rounded border-indigo-300 text-indigo-600 opacity-80 dark:border-indigo-500"
+                                />
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-flex rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">Gambar</span>
+                                    <span x-text="slidePath.split('/').pop() || slidePath"></span>
+                                </span>
+                            </label>
+                        </template>
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Halaman custom yang Anda tambahkan otomatis aktif untuk livestream.
+                        Halaman custom dan gambar yang Anda tambahkan otomatis aktif untuk livestream.
                     </p>
                 </div>
 
@@ -135,6 +176,41 @@
                             <div class="rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                 Belum ada halaman custom.
                             </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Slide gambar (upload)</p>
+                    </div>
+                    <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        Upload gambar untuk ditampilkan sebagai slide berikutnya (JPG/PNG/GIF/WEBP, maks 5MB per file).
+                    </p>
+                    <input
+                        type="file"
+                        name="slide_images[]"
+                        multiple
+                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        class="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-xs file:font-semibold dark:text-slate-200 dark:file:bg-slate-700"
+                    />
+
+                    <div class="mt-3 space-y-2" x-show="imageSlides.length > 0">
+                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Slide gambar saat ini</p>
+                        <template x-for="(slidePath, index) in imageSlides" :key="`image-slide-${index}`">
+                            <label class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    name="remove_image_slides[]"
+                                    :value="slidePath"
+                                    x-model="removedImageSlides"
+                                    class="rounded border-gray-300 dark:border-gray-600"
+                                />
+                                <img :src="'{{ asset('storage') }}/' + slidePath" alt="Slide livestream"
+                                    class="h-10 w-16 rounded border border-gray-200 object-cover dark:border-gray-700">
+                                <span class="min-w-0 flex-1 truncate" :class="isImageRemoved(slidePath) ? 'line-through opacity-60' : ''" x-text="slidePath.split('/').pop() || slidePath"></span>
+                                <span class="text-[11px] font-medium text-red-600 dark:text-red-300" x-show="isImageRemoved(slidePath)">Akan dihapus</span>
+                            </label>
                         </template>
                     </div>
                 </div>

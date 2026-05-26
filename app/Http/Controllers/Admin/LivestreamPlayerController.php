@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LivestreamSetting;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class LivestreamPlayerController extends Controller
@@ -25,6 +26,7 @@ class LivestreamPlayerController extends Controller
             }
 
             $pages[] = [
+                'type' => 'page',
                 'label' => (string) ($meta['label'] ?? $pageKey),
                 'url' => $this->appendQuery(route($routeName), [
                     'livestream' => '1',
@@ -39,6 +41,7 @@ class LivestreamPlayerController extends Controller
             }
 
             $pages[] = [
+                'type' => 'page',
                 'label' => $customPath,
                 'url' => $this->appendQuery(url($customPath), [
                     'livestream' => '1',
@@ -47,8 +50,24 @@ class LivestreamPlayerController extends Controller
             ];
         }
 
+        foreach ($resolved['image_slides'] as $index => $imagePath) {
+            if (! is_string($imagePath) || $imagePath === '') {
+                continue;
+            }
+            if (! Storage::disk('public')->exists($imagePath)) {
+                continue;
+            }
+
+            $pages[] = [
+                'type' => 'image',
+                'label' => 'Slide Gambar '.($index + 1),
+                'url' => '/storage/'.ltrim($imagePath, '/'),
+            ];
+        }
+
         if ($pages === []) {
             $pages[] = [
+                'type' => 'page',
                 'label' => 'Dashboard',
                 'url' => $this->appendQuery(route('admin.dashboard'), [
                     'livestream' => '1',
@@ -60,6 +79,7 @@ class LivestreamPlayerController extends Controller
         return view('pages.dashboard.livestream-player', [
             'pages' => $pages,
             'swipeIntervalMs' => (int) ($resolved['swipe_interval_seconds'] * 1000),
+            'liveRefreshMs' => (int) ($resolved['live_refresh_seconds'] * 1000),
             'exitUrl' => route('admin.dashboard'),
         ]);
     }

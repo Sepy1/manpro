@@ -6,6 +6,7 @@
         class="relative h-screen w-screen overflow-hidden bg-slate-950"
         data-pages='@json($pages)'
         data-swipe-interval-ms="{{ $swipeIntervalMs }}"
+        data-live-refresh-ms="{{ $liveRefreshMs }}"
         data-exit-url="{{ $exitUrl }}"
     >
         <div
@@ -14,13 +15,27 @@
             style="transform: translateX(0);"
         >
             @foreach ($pages as $page)
-                <iframe
-                    src="{{ $page['url'] }}"
-                    title="Livestream - {{ $page['label'] }}"
-                    class="h-full w-full shrink-0 border-0"
-                    loading="eager"
-                    referrerpolicy="same-origin"
-                ></iframe>
+                @if (($page['type'] ?? 'page') === 'image')
+                    <div class="relative h-full w-full shrink-0 bg-black">
+                        <img
+                            src="{{ $page['url'] }}"
+                            alt="Livestream - {{ $page['label'] }}"
+                            class="h-full w-full object-contain"
+                            loading="eager"
+                        />
+                    </div>
+                @else
+                    <iframe
+                        src="{{ $page['url'] }}"
+                        data-base-src="{{ $page['url'] }}"
+                        data-slide-index="{{ $loop->index }}"
+                        data-refreshable-frame="1"
+                        title="Livestream - {{ $page['label'] }}"
+                        class="h-full w-full shrink-0 border-0"
+                        loading="eager"
+                        referrerpolicy="same-origin"
+                    ></iframe>
+                @endif
             @endforeach
         </div>
 
@@ -46,11 +61,61 @@
             }
 
             const intervalMs = Math.max(parseInt(root.dataset.swipeIntervalMs || '120000', 10) || 120000, 5000);
+            const liveRefreshMs = Math.max(parseInt(root.dataset.liveRefreshMs || '30000', 10) || 30000, 5000);
             const exitUrl = root.dataset.exitUrl || '/admin/dashboard';
             let current = 0;
             let touchStartX = null;
             let touchStartY = null;
             let timer = null;
+            let refreshTimer = null;
+            let refreshCursor = 0;
+            const refreshFrames = Array.from(track.querySelectorAll('[data-refreshable-frame]'));
+
+            const refreshUrl = (url) => {
+                try {
+                    const next = new URL(url, window.location.origin);
+                    next.searchParams.set('_lsv', String(Date.now()));
+                    return next.toString();
+                } catch (_) {
+                    const hasQuery = String(url).includes('?');
+                    return String(url) + (hasQuery ? '&' : '?') + '_lsv=' + Date.now();
+                }
+            };
+
+            const reloadFrame = (index) => {
+                const frame = refreshFrames[index];
+                if (!frame) {
+                    return;
+                }
+                const baseSrc = frame.dataset.baseSrc || frame.getAttribute('src') || '';
+                if (!baseSrc) {
+                    return;
+                }
+                frame.dataset.baseSrc = baseSrc;
+                frame.dataset.lastRefreshAt = String(Date.now());
+                frame.setAttribute('src', refreshUrl(baseSrc));
+            };
+
+            const refreshHiddenFrame = () => {
+                if (!refreshFrames.length) {
+                    return;
+                }
+                if (refreshFrames.length === 1) {
+                    reloadFrame(0);
+                    return;
+                }
+
+                for (let step = 0; step < refreshFrames.length; step++) {
+                    const index = (refreshCursor + step) % refreshFrames.length;
+                    const slideIndex = parseInt(refreshFrames[index]?.dataset.slideIndex || '-1', 10);
+                    if (slideIndex === current) {
+                        continue;
+                    }
+                    refreshCursor = (index + 1) % refreshFrames.length;
+                    reloadFrame(index);
+                    return;
+                }
+            };
 
             const render = () => {
                 track.style.transform = `translateX(-${current * 100}vw)`;
@@ -75,6 +140,13 @@
                 timer = window.setInterval(next, intervalMs);
             };
 
+            const resetRefreshTimer = () => {
+                if (refreshTimer) {
+                    window.clearInterval(refreshTimer);
+                }
+                refreshTimer = window.setInterval(refreshHiddenFrame, liveRefreshMs);
+            };
+
             const tryEnterFullscreen = () => {
                 if (document.fullscreenElement || typeof document.documentElement.requestFullscreen !== 'function') {
                     return;
@@ -87,6 +159,9 @@
             const exitLivestream = () => {
                 if (timer) {
                     window.clearInterval(timer);
+                }
+                if (refreshTimer) {
+                    window.clearInterval(refreshTimer);
                 }
                 if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
                     document.exitFullscreen().catch(() => {
@@ -152,6 +227,7 @@
 
             render();
             resetTimer();
+            resetRefreshTimer();
             tryEnterFullscreen();
         });
     </script>
