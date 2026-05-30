@@ -21,11 +21,13 @@ class ParameterLivestreamController extends Controller
 
         return view('pages.dashboard.parameter.livestream', [
             'pageOptions' => LivestreamSetting::pageOptions(),
+            'tvResolutionOptions' => LivestreamSetting::tvResolutionOptions(),
             'selectedPages' => $resolved['selected_pages'],
             'customPages' => $resolved['custom_pages'],
             'imageSlides' => $resolved['image_slides'],
             'swipeIntervalSeconds' => $resolved['swipe_interval_seconds'],
             'liveRefreshSeconds' => $resolved['live_refresh_seconds'],
+            'tvResolution' => $resolved['tv_resolution'],
         ]);
     }
 
@@ -34,6 +36,7 @@ class ParameterLivestreamController extends Controller
         abort_unless(auth()->user()?->role === 'admin', 403);
 
         $allowedPageKeys = array_keys(LivestreamSetting::pageOptions());
+        $allowedTvResolutions = array_keys(LivestreamSetting::tvResolutionOptions());
 
         $validated = $request->validate([
             'swipe_interval_seconds' => [
@@ -48,6 +51,7 @@ class ParameterLivestreamController extends Controller
                 'min:'.LivestreamSetting::MIN_LIVE_REFRESH_SECONDS,
                 'max:'.LivestreamSetting::MAX_LIVE_REFRESH_SECONDS,
             ],
+            'tv_resolution' => ['required', 'string', 'in:'.implode(',', $allowedTvResolutions)],
             'selected_pages' => ['nullable', 'array'],
             'selected_pages.*' => ['required', 'string', 'in:'.implode(',', $allowedPageKeys)],
             'custom_pages' => ['nullable', 'array'],
@@ -101,6 +105,7 @@ class ParameterLivestreamController extends Controller
 
         $setting->swipe_interval_seconds = (int) $validated['swipe_interval_seconds'];
         $setting->live_refresh_seconds = (int) $validated['live_refresh_seconds'];
+        $setting->tv_resolution = LivestreamSetting::normalizeTvResolution((string) $validated['tv_resolution']);
         $setting->selected_pages = $selectedPages;
         $setting->custom_pages = $customPages;
         $setting->image_slides = $imageSlides;

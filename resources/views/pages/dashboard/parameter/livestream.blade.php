@@ -51,7 +51,7 @@
                 @csrf
                 @method('PUT')
 
-                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div>
                         <label for="swipe_interval_seconds" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Durasi swipe otomatis (detik)
@@ -86,6 +86,26 @@
                         />
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             Rentang: {{ \App\Models\LivestreamSetting::MIN_LIVE_REFRESH_SECONDS }} - {{ \App\Models\LivestreamSetting::MAX_LIVE_REFRESH_SECONDS }} detik.
+                        </p>
+                    </div>
+                    <div>
+                        <label for="tv_resolution" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Resolusi layar TV
+                        </label>
+                        <select
+                            id="tv_resolution"
+                            name="tv_resolution"
+                            required
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
+                        >
+                            @foreach ($tvResolutionOptions as $resolutionKey => $resolution)
+                                <option value="{{ $resolutionKey }}" @selected(old('tv_resolution', $tvResolution) === $resolutionKey)>
+                                    {{ $resolution['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Konten livestream akan diskalakan mengikuti resolusi ini agar tampil penuh 1 layar TV.
                         </p>
                     </div>
                 </div>

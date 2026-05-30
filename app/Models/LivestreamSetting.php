@@ -13,6 +13,8 @@ class LivestreamSetting extends Model
 
     public const DEFAULT_LIVE_REFRESH_SECONDS = 30;
 
+    public const DEFAULT_TV_RESOLUTION = 'fhd_1920x1080';
+
     public const MIN_INTERVAL_SECONDS = 5;
 
     public const MAX_INTERVAL_SECONDS = 3600;
@@ -26,6 +28,7 @@ class LivestreamSetting extends Model
     protected $fillable = [
         'swipe_interval_seconds',
         'live_refresh_seconds',
+        'tv_resolution',
         'selected_pages',
         'custom_pages',
         'image_slides',
@@ -36,10 +39,32 @@ class LivestreamSetting extends Model
         return [
             'swipe_interval_seconds' => 'integer',
             'live_refresh_seconds' => 'integer',
+            'tv_resolution' => 'string',
             'selected_pages' => 'array',
             'custom_pages' => 'array',
             'image_slides' => 'array',
         ];
+    }
+
+    public static function tvResolutionOptions(): array
+    {
+        return [
+            'nHD_640x360' => ['label' => 'nHD - 640 x 360', 'width' => 640, 'height' => 360],
+            'sd_854x480' => ['label' => 'SD - 854 x 480', 'width' => 854, 'height' => 480],
+            'xga_1024x576' => ['label' => 'XGA - 1024 x 576', 'width' => 1024, 'height' => 576],
+            'hd_1366x768' => ['label' => 'HD - 1366 x 768', 'width' => 1366, 'height' => 768],
+            'fhd_1920x1080' => ['label' => 'Full HD - 1920 x 1080', 'width' => 1920, 'height' => 1080],
+            'qhd_2560x1440' => ['label' => 'QHD - 2560 x 1440', 'width' => 2560, 'height' => 1440],
+            'uhd_3840x2160' => ['label' => '4K UHD - 3840 x 2160', 'width' => 3840, 'height' => 2160],
+        ];
+    }
+
+    public static function normalizeTvResolution(?string $value): string
+    {
+        $value = trim((string) $value);
+        $allowed = array_keys(self::tvResolutionOptions());
+
+        return in_array($value, $allowed, true) ? $value : self::DEFAULT_TV_RESOLUTION;
     }
 
     public static function pageOptions(): array
@@ -94,6 +119,7 @@ class LivestreamSetting extends Model
         $defaults = [
             'swipe_interval_seconds' => self::DEFAULT_INTERVAL_SECONDS,
             'live_refresh_seconds' => self::DEFAULT_LIVE_REFRESH_SECONDS,
+            'tv_resolution' => self::DEFAULT_TV_RESOLUTION,
             'selected_pages' => self::defaultSelectedPages(),
             'custom_pages' => [],
             'image_slides' => [],
@@ -113,6 +139,7 @@ class LivestreamSetting extends Model
             return [
                 'swipe_interval_seconds' => $seconds,
                 'live_refresh_seconds' => $liveRefreshSeconds,
+                'tv_resolution' => self::normalizeTvResolution($setting->tv_resolution),
                 'selected_pages' => self::normalizeSelectedPages((array) ($setting->selected_pages ?? [])),
                 'custom_pages' => self::normalizeCustomPages((array) ($setting->custom_pages ?? [])),
                 'image_slides' => self::normalizeImageSlides((array) ($setting->image_slides ?? [])),

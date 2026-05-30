@@ -15,6 +15,8 @@ class LivestreamPlayerController extends Controller
         abort_unless(auth()->user()?->role === 'admin', 403);
 
         $resolved = LivestreamSetting::resolved();
+        $tvResolution = LivestreamSetting::normalizeTvResolution((string) ($resolved['tv_resolution'] ?? ''));
+        $tvResolutionMeta = LivestreamSetting::tvResolutionOptions()[$tvResolution] ?? LivestreamSetting::tvResolutionOptions()[LivestreamSetting::DEFAULT_TV_RESOLUTION];
         $options = LivestreamSetting::pageOptions();
         $pages = [];
 
@@ -80,6 +82,9 @@ class LivestreamPlayerController extends Controller
             'pages' => $pages,
             'swipeIntervalMs' => (int) ($resolved['swipe_interval_seconds'] * 1000),
             'liveRefreshMs' => (int) ($resolved['live_refresh_seconds'] * 1000),
+            'tvResolutionLabel' => (string) ($tvResolutionMeta['label'] ?? ''),
+            'tvWidth' => (int) ($tvResolutionMeta['width'] ?? 1920),
+            'tvHeight' => (int) ($tvResolutionMeta['height'] ?? 1080),
             'exitUrl' => route('admin.dashboard'),
         ]);
     }
