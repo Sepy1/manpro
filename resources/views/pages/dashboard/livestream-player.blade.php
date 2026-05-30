@@ -15,7 +15,7 @@
             <div
                 id="livestream-player-viewport"
                 class="absolute left-1/2 top-1/2 overflow-hidden bg-black"
-                style="transform: translate(-50%, -50%) scale(1); transform-origin: top left;"
+                style="transform: translate(-50%, -50%) scale(1); transform-origin: center center;"
             >
                 <div
                     id="livestream-player-track"
