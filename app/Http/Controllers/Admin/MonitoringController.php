@@ -107,9 +107,9 @@ class MonitoringController extends Controller
                 'server' => $device->server_name,
                 'status' => $ping['status'] ?? '-',
                 'cpu_load' => $cpu['lastvalue'] ?? '-',
-                'free_ram' => $ram['lastvalue'] ?? '-',
+                'ram_load' => $this->invertPercentValue($ram['lastvalue'] ?? null),
                 'traffic' => $traffic['lastvalue'] ?? '-',
-                'disk_free' => $diskFree['lastvalue'] ?? '-',
+                'disk_usage' => $this->invertPercentValue($diskFree['lastvalue'] ?? null),
             ];
         });
     }
@@ -128,6 +128,28 @@ class MonitoringController extends Controller
     {
         $normalized = trim((string) $value);
         return $normalized === '' ? '-' : $normalized;
+    }
+
+    private function invertPercentValue(mixed $value): string
+    {
+        $text = $this->sanitizeValue($value);
+        if ($text === '-' || !str_contains($text, '%')) {
+            return $text;
+        }
+
+        if (!preg_match('/-?\d+(?:[.,]\d+)?/', $text, $matches)) {
+            return $text;
+        }
+
+        $free = (float) str_replace(',', '.', $matches[0]);
+        $free = max(0.0, min(100.0, $free));
+        $usage = max(0.0, min(100.0, 100.0 - $free));
+
+        $formatted = fmod($usage, 1.0) === 0.0
+            ? number_format($usage, 0, '.', '')
+            : number_format($usage, 1, '.', '');
+
+        return preg_replace('/-?\d+(?:[.,]\d+)?\s*%/', $formatted.' %', $text, 1) ?? ($formatted.' %');
     }
 
     private function getMonitoringPayload(): array

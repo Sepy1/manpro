@@ -66,9 +66,9 @@
             if (percent >= 70) return 'bg-amber-500';
             return 'bg-emerald-500';
         },
-        freeBarClass(percent) {
-            if (percent < 30) return 'bg-red-500';
-            if (percent < 50) return 'bg-amber-500';
+        usageBarClass(percent) {
+            if (percent >= 85) return 'bg-red-500';
+            if (percent >= 70) return 'bg-amber-500';
             return 'bg-emerald-500';
         },
     }">
@@ -98,9 +98,9 @@
                         <th class="w-[24%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Server</th>
                         <th class="w-[14%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                         <th class="w-[14%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cpu Load</th>
-                        <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Free RAM</th>
+                        <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Load RAM</th>
                         <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Traffic</th>
-                        <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Disk Free</th>
+                        <th class="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Disk Usage</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,19 +125,19 @@
                                 </template>
                             </td>
                             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300">
-                                <div class="mb-1 truncate" x-text="row.free_ram"></div>
-                                <template x-if="extractPercent(row.free_ram) !== null">
+                                <div class="mb-1 truncate" x-text="row.ram_load"></div>
+                                <template x-if="extractPercent(row.ram_load) !== null">
                                     <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                                        <div class="h-full" :class="freeBarClass(extractPercent(row.free_ram))" :style="`width: ${extractPercent(row.free_ram)}%`"></div>
+                                        <div class="h-full" :class="usageBarClass(extractPercent(row.ram_load))" :style="`width: ${extractPercent(row.ram_load)}%`"></div>
                                     </div>
                                 </template>
                             </td>
                             <td class="truncate px-2 py-2 text-xs text-gray-700 dark:text-gray-300" x-text="row.traffic"></td>
                             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300">
-                                <div class="mb-1 truncate" x-text="row.disk_free"></div>
-                                <template x-if="extractPercent(row.disk_free) !== null">
+                                <div class="mb-1 truncate" x-text="row.disk_usage"></div>
+                                <template x-if="extractPercent(row.disk_usage) !== null">
                                     <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                                        <div class="h-full" :class="freeBarClass(extractPercent(row.disk_free))" :style="`width: ${extractPercent(row.disk_free)}%`"></div>
+                                        <div class="h-full" :class="usageBarClass(extractPercent(row.disk_usage))" :style="`width: ${extractPercent(row.disk_usage)}%`"></div>
                                     </div>
                                 </template>
                             </td>
