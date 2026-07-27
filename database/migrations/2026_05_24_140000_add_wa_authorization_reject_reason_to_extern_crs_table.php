@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             $table->text('wa_authorization_reject_reason')->nullable()->after('wa_authorization_by_user_id');
         });

@@ -3,11 +3,16 @@
 use App\Enums\ExternCrHistoryEvent;
 use App\Models\ExternCrHistory;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_cr_histories')) {
+            return;
+        }
+
         ExternCrHistory::query()
             ->where('event', ExternCrHistoryEvent::WaAuthorizationInviteDispatched->value)
             ->orderBy('id')

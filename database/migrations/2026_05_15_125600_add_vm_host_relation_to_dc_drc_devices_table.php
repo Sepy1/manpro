@@ -18,6 +18,10 @@ return new class extends Migration
         });
 
         // Backfill relation based on existing host_server text.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement("
             UPDATE dc_drc_devices vm
             JOIN dc_drc_devices host ON LOWER(vm.host_server) = LOWER(host.server_name)

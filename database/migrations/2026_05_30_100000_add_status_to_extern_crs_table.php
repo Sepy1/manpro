@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             if (! Schema::hasColumn('extern_crs', 'status')) {
                 $table->string('status', 48)->default('open')->after('prioritas')->index();

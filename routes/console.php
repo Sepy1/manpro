@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ExternCr;
+use App\Models\ExternCrApiKey;
 use App\Support\MahadataWhatsappExternCrAuthorizationNotifier;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -9,6 +10,40 @@ use Illuminate\Support\Str;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command(
+    'extern-cr:api-key:create {name : Nama unik untuk API key}',
+    function (string $name): int {
+        $name = trim($name);
+        if ($name === '') {
+            $this->error('Nama API key tidak boleh kosong.');
+
+            return self::FAILURE;
+        }
+
+        if (ExternCrApiKey::query()->where('name', $name)->exists()) {
+            $this->error("API key dengan nama \"{$name}\" sudah ada.");
+
+            return self::FAILURE;
+        }
+
+        $plain = Str::random(32);
+        $record = ExternCrApiKey::query()->create([
+            'name' => $name,
+            'key_hash' => hash('sha256', $plain),
+            'key_prefix' => substr($plain, 0, 8),
+            'is_active' => true,
+        ]);
+
+        $this->info('API key berhasil dibuat.');
+        $this->line('ID: '.$record->id);
+        $this->line('Name: '.$record->name);
+        $this->line('Key: '.$plain);
+        $this->warn('Simpan key ini sekarang. Nilai plaintext tidak akan ditampilkan lagi.');
+
+        return self::SUCCESS;
+    }
+)->purpose('Membuat API key CR eksternal yang disimpan sebagai hash di database.');
 
 Artisan::command(
     'mahadata:test-cr-auth-template {extern_cr_id : ID baris extern_crs} {--to= : Nomor WA (mis. 62812…)}',

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             $table->foreignId('vendor_pic_user_id')
                 ->nullable()

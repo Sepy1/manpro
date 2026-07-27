@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             $table->string('wa_authorization_decision', 20)->nullable();
             $table->timestamp('wa_authorization_at')->nullable();

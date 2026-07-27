@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_cr_attachments')) {
+            return;
+        }
+
         Schema::table('extern_cr_attachments', function (Blueprint $table) {
             $table->foreignId('extern_cr_history_id')
                 ->nullable()

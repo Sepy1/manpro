@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             if (! Schema::hasColumn('extern_crs', 'divisions_terlibat_text')) {
                 $table->text('divisions_terlibat_text')->nullable()->after('prioritas');

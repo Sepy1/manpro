@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('extern_crs')) {
+            return;
+        }
+
         Schema::table('extern_crs', function (Blueprint $table) {
             if (! Schema::hasColumn('extern_crs', 'created_by_user_id')) {
                 $table->foreignId('created_by_user_id')
