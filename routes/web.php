@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AssistantChatController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
+use App\Http\Controllers\Admin\ExternCrApiKeyController;
 use App\Http\Controllers\Admin\ExternCrController;
 use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\Admin\KantorController;
@@ -166,6 +167,10 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::post('/parameter/cr-aplikasi', [ParameterExternCrApplicationController::class, 'store'])->name('parameter.cr-aplikasi.store');
     Route::put('/parameter/cr-aplikasi/{application}', [ParameterExternCrApplicationController::class, 'update'])->name('parameter.cr-aplikasi.update');
     Route::delete('/parameter/cr-aplikasi/{application}', [ParameterExternCrApplicationController::class, 'destroy'])->name('parameter.cr-aplikasi.delete');
+    Route::get('/parameter/api-key', [ExternCrApiKeyController::class, 'index'])->name('parameter.api-key.index');
+    Route::post('/parameter/api-key', [ExternCrApiKeyController::class, 'store'])->name('parameter.api-key.store');
+    Route::put('/parameter/api-key/{externCrApiKey}', [ExternCrApiKeyController::class, 'update'])->name('parameter.api-key.update');
+    Route::delete('/parameter/api-key/{externCrApiKey}', [ExternCrApiKeyController::class, 'destroy'])->name('parameter.api-key.delete');
 
     Route::get('/parameter/cr-alasan-perubahan', [ParameterExternCrChangeReasonController::class, 'index'])->name('parameter.cr-alasan-perubahan.index');
     Route::post('/parameter/cr-alasan-perubahan', [ParameterExternCrChangeReasonController::class, 'store'])->name('parameter.cr-alasan-perubahan.store');

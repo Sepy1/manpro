@@ -125,6 +125,10 @@ class MenuHelper
                         'path' => '/admin/parameter/cr-alasan-perubahan',
                     ],
                     [
+                        'name' => 'Manajemen API Key',
+                        'path' => '/admin/parameter/api-key',
+                    ],
+                    [
                         'name' => 'Livestream Monitoring',
                         'path' => '/admin/parameter/livestream',
                     ],
