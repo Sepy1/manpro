@@ -108,3 +108,18 @@ it('rejects requests without a valid api key', function () {
 
     $response->assertUnauthorized();
 });
+
+it('allows cors preflight requests for external cr api', function () {
+    $response = $this
+        ->withHeaders([
+            'Origin' => 'https://example-frontend.test',
+            'Access-Control-Request-Method' => 'PATCH',
+            'Access-Control-Request-Headers' => 'x-extern-cr-api-key, content-type',
+        ])
+        ->options('/api/cr-eksternal/1/status');
+
+    $response
+        ->assertNoContent()
+        ->assertHeader('Access-Control-Allow-Origin', '*')
+        ->assertHeader('Access-Control-Allow-Methods');
+});
