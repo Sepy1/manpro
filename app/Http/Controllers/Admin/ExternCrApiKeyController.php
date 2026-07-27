@@ -43,7 +43,11 @@ class ExternCrApiKeyController extends Controller
         ]);
 
         return redirect()->route('admin.parameter.api-key.index')
-            ->with('status', 'API key berhasil dibuat. Simpan nilai key di bawah ini: '.$plain);
+            ->with('status', 'API key berhasil dibuat.')
+            ->with('new_api_key', [
+                'name' => $validated['name'],
+                'key' => $plain,
+            ]);
     }
 
     public function update(Request $request, ExternCrApiKey $externCrApiKey): RedirectResponse

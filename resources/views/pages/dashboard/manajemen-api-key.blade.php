@@ -10,6 +10,21 @@
             </div>
         @endif
 
+        @if (session('new_api_key'))
+            @php($newApiKey = session('new_api_key'))
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/20">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">API key baru dibuat untuk {{ $newApiKey['name'] }}</p>
+                        <p class="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200">Key plaintext hanya ditampilkan sekali di halaman ini. Simpan sekarang sebelum berpindah halaman.</p>
+                    </div>
+                    <div class="rounded-xl border border-amber-200 bg-white px-3 py-2 font-mono text-sm text-gray-900 dark:border-amber-900/40 dark:bg-gray-900 dark:text-white/90">
+                        {{ $newApiKey['key'] }}
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="content-card p-5">
             <div class="mb-4 flex items-center justify-between">
                 <div>
