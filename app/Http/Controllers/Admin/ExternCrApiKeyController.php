@@ -42,7 +42,7 @@ class ExternCrApiKeyController extends Controller
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
 
-        return redirect()->route('admin.manajemen-api-key.index')
+        return redirect()->route('admin.parameter.api-key.index')
             ->with('status', 'API key berhasil dibuat. Simpan nilai key di bawah ini: '.$plain);
     }
 
@@ -62,7 +62,7 @@ class ExternCrApiKeyController extends Controller
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
 
-        return redirect()->route('admin.manajemen-api-key.index')
+        return redirect()->route('admin.parameter.api-key.index')
             ->with('status', 'API key berhasil diperbarui.');
     }
 
@@ -72,7 +72,7 @@ class ExternCrApiKeyController extends Controller
 
         $externCrApiKey->delete();
 
-        return redirect()->route('admin.manajemen-api-key.index')
+        return redirect()->route('admin.parameter.api-key.index')
             ->with('status', 'API key berhasil dihapus.');
     }
 }
