@@ -250,7 +250,7 @@
 
 <div class="title">
     <h1>Laporan Statistik Server PRTG</h1>
-    <p>Periode: {{ $startDate->format('d M Y') }} - {{ $endDate->format('d M Y') }}</p>
+    <p>Periode: {{ $startDate->format('d M Y H:i') }} - {{ $endDate->format('d M Y H:i') }}</p>
     <p>Dibuat: {{ $generatedAt->format('d M Y H:i:s') }}</p>
 </div>
 

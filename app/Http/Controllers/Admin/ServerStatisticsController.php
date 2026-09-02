@@ -161,7 +161,7 @@ class ServerStatisticsController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download('laporan-statistik-server-'.$startDate->format('Ymd').'-'.$endDate->format('Ymd').'.pdf');
+        return $pdf->download('laporan-statistik-server-'.$startDate->format('Ymd-Hi').'-'.$endDate->format('Ymd-Hi').'.pdf');
     }
 
     private function getMetricPayload(string $metric, string $objid, Carbon $startDate, Carbon $endDate): array
@@ -225,20 +225,27 @@ class ServerStatisticsController extends Controller
     {
         $startRaw = trim((string) $request->query('start_date'));
         $endRaw = trim((string) $request->query('end_date'));
+        $startTimeRaw = trim((string) $request->query('start_time', '00:00'));
+        $endTimeRaw = trim((string) $request->query('end_time', '23:59'));
 
         if ($startRaw === '' || $endRaw === '') {
             return [null, null, 'Periode belum dipilih.'];
         }
 
         try {
-            $startDate = Carbon::parse($startRaw)->startOfDay();
-            $endDate = Carbon::parse($endRaw)->endOfDay();
+            $startDate = Carbon::createFromFormat('!Y-m-d H:i', $startRaw.' '.$startTimeRaw);
+            $endDate = Carbon::createFromFormat('!Y-m-d H:i', $endRaw.' '.$endTimeRaw)->endOfMinute();
         } catch (Throwable) {
             return [null, null, 'Format periode tidak valid.'];
         }
 
+        if ($startDate->format('Y-m-d H:i') !== $startRaw.' '.$startTimeRaw
+            || $endDate->format('Y-m-d H:i') !== $endRaw.' '.$endTimeRaw) {
+            return [null, null, 'Format periode tidak valid.'];
+        }
+
         if ($startDate->gt($endDate)) {
-            return [null, null, 'Tanggal mulai tidak boleh lebih besar dari tanggal akhir.'];
+            return [null, null, 'Waktu mulai tidak boleh lebih besar dari waktu akhir.'];
         }
 
         return [$startDate, $endDate, null];
@@ -1099,6 +1106,11 @@ class ServerStatisticsController extends Controller
         Carbon $chunkStart,
         Carbon $chunkEnd
     ): array {
+        // Bucket satu jam dapat kosong ketika range yang dipilih hanya satu jam
+        // karena PRTG belum memiliki satu bucket 3600 detik yang utuh.
+        // Gunakan resolusi satu menit untuk range harian atau lebih pendek.
+        $averageInterval = $chunkStart->diffInSeconds($chunkEnd) <= 86400 ? 60 : 3600;
+
         $response = Http::timeout(25)
             ->acceptJson()
             ->withOptions(['verify' => $verifySsl])
@@ -1106,7 +1118,7 @@ class ServerStatisticsController extends Controller
                 'id' => $objid,
                 'sdate' => $chunkStart->format('Y-m-d-H-i-s'),
                 'edate' => $chunkEnd->format('Y-m-d-H-i-s'),
-                'avg' => 3600,
+                'avg' => $averageInterval,
                 'usecaption' => 1,
                 'username' => $username,
                 'passhash' => $passhash,

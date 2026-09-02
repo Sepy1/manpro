@@ -8,6 +8,8 @@
         rows: [],
         selectedStartDate: '',
         selectedEndDate: '',
+        selectedStartTime: '00:00',
+        selectedEndTime: '23:59',
         hasSubmitted: false,
         queueLoading: false,
         pdfLoading: false,
@@ -52,6 +54,8 @@
             const query = new URLSearchParams({
                 start_date: this.selectedStartDate,
                 end_date: this.selectedEndDate,
+                start_time: this.selectedStartTime,
+                end_time: this.selectedEndTime,
             });
 
             return `${base}?${query.toString()}`;
@@ -74,30 +78,39 @@
         async submitPeriod() {
             this.errorMessage = null;
 
-            if (!this.selectedStartDate || !this.selectedEndDate) {
+            if (!this.selectedStartDate || !this.selectedEndDate || !this.selectedStartTime || !this.selectedEndTime) {
                 this.errorMessage = 'Silakan pilih periode terlebih dahulu.';
                 return;
             }
 
-            if (this.selectedStartDate > this.selectedEndDate) {
-                this.errorMessage = 'Tanggal mulai tidak boleh lebih besar dari tanggal akhir.';
+            if (this.startDateTimeValue() > this.endDateTimeValue()) {
+                this.errorMessage = 'Waktu mulai tidak boleh lebih besar dari waktu akhir.';
                 return;
             }
 
-            this.startDateLabel = this.selectedStartDate;
-            this.endDateLabel = this.selectedEndDate;
+            this.startDateLabel = `${this.selectedStartDate} ${this.selectedStartTime}`;
+            this.endDateLabel = `${this.selectedEndDate} ${this.selectedEndTime}`;
             this.hasSubmitted = true;
             this.resetMetricStates();
             await this.loadAllSensorsSequentially();
         },
         canExportPdf() {
-            return !!this.selectedStartDate && !!this.selectedEndDate && this.selectedStartDate <= this.selectedEndDate;
+            return !!this.selectedStartDate && !!this.selectedEndDate && !!this.selectedStartTime && !!this.selectedEndTime
+                && this.startDateTimeValue() <= this.endDateTimeValue();
+        },
+        startDateTimeValue() {
+            return `${this.selectedStartDate}T${this.selectedStartTime}`;
+        },
+        endDateTimeValue() {
+            return `${this.selectedEndDate}T${this.selectedEndTime}`;
         },
         buildPdfUrl() {
             if (!this.canExportPdf()) return '#';
             const query = new URLSearchParams({
                 start_date: this.selectedStartDate,
                 end_date: this.selectedEndDate,
+                start_time: this.selectedStartTime,
+                end_time: this.selectedEndTime,
             });
             return `${this.pdfUrl}?${query.toString()}`;
         },
@@ -184,7 +197,7 @@
                 this.pdfProgress = Math.max(this.pdfProgress, 95);
                 const blob = await response.blob();
                 const disposition = response.headers.get('Content-Disposition') || '';
-                const filename = this.parseDownloadFilename(disposition) || `laporan-statistik-server-${this.selectedStartDate}-${this.selectedEndDate}.pdf`;
+                const filename = this.parseDownloadFilename(disposition) || `laporan-statistik-server-${this.selectedStartDate}-${this.selectedStartTime.replace(':', '')}-${this.selectedEndDate}-${this.selectedEndTime.replace(':', '')}.pdf`;
 
                 const objectUrl = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -379,15 +392,25 @@
             </p>
         </div>
 
-        <form class="mb-4 grid gap-3 md:grid-cols-4" @submit.prevent="submitPeriod()">
+        <form class="mb-4 grid gap-3 md:grid-cols-6" @submit.prevent="submitPeriod()">
             <div>
                 <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Tanggal Mulai</label>
                 <input type="date" x-model="selectedStartDate"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
             </div>
             <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Jam Mulai</label>
+                <input type="time" x-model="selectedStartTime" required
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+            </div>
+            <div>
                 <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Tanggal Akhir</label>
                 <input type="date" x-model="selectedEndDate"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Jam Akhir</label>
+                <input type="time" x-model="selectedEndTime" required
                     class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
             </div>
             <div class="md:col-span-2 flex items-end gap-2">
