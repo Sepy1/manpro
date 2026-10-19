@@ -19,6 +19,17 @@
             </div>
         @endif
 
+        @if ($errors->any() && ! $errors->has('import_file'))
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+                <p class="font-medium">Data belum dapat disimpan:</p>
+                <ul class="mt-1 list-disc pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <x-dashboard.accent-card
             accent-index="2"
             shell-overflow="visible"
@@ -62,12 +73,18 @@
             </div>
 
             <form x-show="showAddForm" x-cloak method="POST" action="{{ route('admin.manajemen-kantor.store') }}"
-                class="mb-4 grid w-full grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 lg:grid-cols-5 dark:border-gray-700">
+                class="mb-4 grid w-full grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 lg:grid-cols-7 dark:border-gray-700">
                 @csrf
                 <input type="text" name="kode_kantor" value="{{ old('kode_kantor') }}" required placeholder="Kode cabang"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                 <input type="text" name="nama_kantor" value="{{ old('nama_kantor') }}" required placeholder="Nama kantor / cabang"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90 lg:col-span-2" />
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                <input type="number" step="any" name="latitude" value="{{ old('latitude') }}" placeholder="Latitude, mis. -7.0051"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                <input type="number" step="any" name="longitude" value="{{ old('longitude') }}" placeholder="Longitude, mis. 110.4381"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                <input type="text" name="wireless_ip" value="{{ old('wireless_ip') }}" placeholder="IP wireless, mis. 10.10.1.1"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                 <div class="flex flex-wrap items-center gap-4">
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 dark:border-gray-600" />
@@ -121,6 +138,20 @@
                                     <input type="text" name="nama_kantor" form="{{ $updateFormId }}" value="{{ $kantorRow->nama_kantor }}" required
                                         class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
                                         x-show="editingCabangId === {{ $kantorRow->id }}" x-cloak />
+                                    <p x-show="editingCabangId !== {{ $kantorRow->id }}" class="mt-1 text-[10px] text-gray-400">
+                                        {{ $kantorRow->latitude !== null && $kantorRow->longitude !== null ? $kantorRow->latitude.', '.$kantorRow->longitude : 'Koordinat belum diisi' }}
+                                    </p>
+                                    <p x-show="editingCabangId !== {{ $kantorRow->id }}" class="mt-0.5 text-[10px] text-gray-400">
+                                        IP: {{ $kantorRow->wireless_ip ?: 'belum diisi' }} · Ping: {{ $kantorRow->ping_status ? strtoupper($kantorRow->ping_status) : 'belum dites' }}
+                                    </p>
+                                    <div x-show="editingCabangId === {{ $kantorRow->id }}" x-cloak class="mt-2 grid grid-cols-3 gap-2">
+                                        <input type="number" step="any" name="latitude" form="{{ $updateFormId }}" value="{{ $kantorRow->latitude }}" placeholder="Latitude" aria-label="Latitude cabang"
+                                            class="h-8 w-full rounded-lg border border-gray-300 bg-transparent px-2 text-xs dark:border-gray-700 dark:text-white/90" />
+                                        <input type="number" step="any" name="longitude" form="{{ $updateFormId }}" value="{{ $kantorRow->longitude }}" placeholder="Longitude" aria-label="Longitude cabang"
+                                            class="h-8 w-full rounded-lg border border-gray-300 bg-transparent px-2 text-xs dark:border-gray-700 dark:text-white/90" />
+                                        <input type="text" name="wireless_ip" form="{{ $updateFormId }}" value="{{ $kantorRow->wireless_ip }}" placeholder="IP wireless" aria-label="IP wireless cabang"
+                                            class="h-8 w-full rounded-lg border border-gray-300 bg-transparent px-2 text-xs dark:border-gray-700 dark:text-white/90" />
+                                    </div>
                                 </td>
                                 <td class="whitespace-nowrap px-2 py-3 text-sm">
                                     <span x-show="editingCabangId !== {{ $kantorRow->id }}" class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $kantorRow->is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }}">
@@ -177,6 +208,8 @@
                                                                 Status:
                                                                 <span class="font-medium {{ $kas->is_active ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400' }}">{{ $kas->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                                                             </p>
+                                                            <p class="mt-0.5 text-[10px] text-gray-400">{{ $kas->latitude !== null && $kas->longitude !== null ? $kas->latitude.', '.$kas->longitude : 'Koordinat belum diisi' }}</p>
+                                                            <p class="mt-0.5 text-[10px] text-gray-400">IP: {{ $kas->wireless_ip ?: 'belum diisi' }} · Ping: {{ $kas->ping_status ? strtoupper($kas->ping_status) : 'belum dites' }}</p>
                                                         </div>
                                                         <div class="flex shrink-0 flex-wrap items-center gap-2">
                                                             <form method="POST" action="{{ route('admin.manajemen-kantor.kas-kantor.update', [$kantorRow, $kas]) }}" class="flex flex-wrap items-center gap-2">
@@ -186,6 +219,12 @@
                                                                     class="h-8 w-24 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700 dark:text-white/90" />
                                                                 <input type="text" name="nama_kas" value="{{ $kas->nama_kas }}" placeholder="Nama" title="Nama KK"
                                                                     class="h-8 min-w-[140px] max-w-[220px] flex-1 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700 dark:text-white/90" />
+                                                                <input type="number" step="any" name="latitude" value="{{ $kas->latitude }}" placeholder="Latitude" title="Latitude"
+                                                                    class="h-8 w-28 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700 dark:text-white/90" />
+                                                                <input type="number" step="any" name="longitude" value="{{ $kas->longitude }}" placeholder="Longitude" title="Longitude"
+                                                                    class="h-8 w-28 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700 dark:text-white/90" />
+                                                                <input type="text" name="wireless_ip" value="{{ $kas->wireless_ip }}" placeholder="IP wireless" title="IP wireless"
+                                                                    class="h-8 w-32 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700 dark:text-white/90" />
                                                                 <label class="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] text-gray-600 dark:text-gray-300">
                                                                     <input type="checkbox" name="is_active" value="1" @checked($kas->is_active) class="rounded border-gray-300 dark:border-gray-600" />
                                                                     Aktif
@@ -211,17 +250,32 @@
                                     <form method="POST" action="{{ route('admin.manajemen-kantor.kas-kantor.store', $kantorRow) }}" class="flex flex-col gap-2 rounded-lg border border-dashed border-brand-400/70 bg-white/80 p-3 sm:flex-row sm:flex-wrap sm:items-end dark:border-brand-600/60 dark:bg-gray-900/40">
                                         @csrf
                                         <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-3">
-                                            <div class="sm:col-span-3">
+                                            <div class="sm:col-span-2">
                                                 <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Kode kas</label>
                                                 <input type="text" name="kode_kas" value="{{ old('kode_kas') }}" required placeholder="Mis. KK-01"
                                                     class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                                             </div>
-                                            <div class="sm:col-span-7">
+                                                <div class="sm:col-span-3">
                                                 <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Nama kantor kas</label>
                                                 <input type="text" name="nama_kas" value="{{ old('nama_kas') }}" placeholder="Opsional"
                                                     class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                                             </div>
-                                            <div class="flex items-center gap-2 sm:col-span-2">
+                                            <div class="sm:col-span-2">
+                                                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Latitude</label>
+                                                <input type="number" step="any" name="latitude" value="{{ old('latitude') }}" placeholder="-7.0051"
+                                                    class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Longitude</label>
+                                                <input type="number" step="any" name="longitude" value="{{ old('longitude') }}" placeholder="110.4381"
+                                                    class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                                            </div>
+                                            <div class="sm:col-span-3">
+                                                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">IP wireless</label>
+                                                <input type="text" name="wireless_ip" value="{{ old('wireless_ip') }}" placeholder="10.10.1.1"
+                                                    class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                                            </div>
+                                            <div class="flex items-center gap-2 sm:col-span-1">
                                                 <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                                                     <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 dark:border-gray-600" />
                                                     Aktif

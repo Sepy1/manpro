@@ -5,11 +5,16 @@ use App\Models\ExternCrApiKey;
 use App\Support\MahadataWhatsappExternCrAuthorizationNotifier;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Str;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Schedule::command('network:ping-offices')
+    ->everyMinute()
+    ->withoutOverlapping();
 
 Artisan::command(
     'extern-cr:api-key:create {name : Nama unik untuk API key}',

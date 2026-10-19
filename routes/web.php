@@ -12,9 +12,11 @@ use App\Http\Controllers\Admin\KantorController;
 use App\Http\Controllers\Admin\KasKantorController;
 use App\Http\Controllers\Admin\LivestreamPlayerController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\NetworkMapController;
 use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ParameterLivestreamController;
+use App\Http\Controllers\Admin\ParameterNetworkMonitorController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
@@ -105,6 +107,8 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
+    Route::get('/map', [NetworkMapController::class, 'index'])->name('map.index');
+    Route::get('/map/status', [NetworkMapController::class, 'status'])->name('map.status');
     Route::get('/livestream', [LivestreamPlayerController::class, 'index'])->name('livestream.player');
 
     Route::post('/assistant/chat', [AssistantChatController::class, 'chat'])
@@ -178,6 +182,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::delete('/parameter/cr-alasan-perubahan/{changeReason}', [ParameterExternCrChangeReasonController::class, 'destroy'])->name('parameter.cr-alasan-perubahan.delete');
     Route::get('/parameter/livestream', [ParameterLivestreamController::class, 'index'])->name('parameter.livestream.index');
     Route::put('/parameter/livestream', [ParameterLivestreamController::class, 'update'])->name('parameter.livestream.update');
+    Route::get('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'index'])->name('parameter.network-monitor.index');
+    Route::put('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'update'])->name('parameter.network-monitor.update');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
     Route::get('/cr-eksternal/dashboard', [ExternCrController::class, 'dashboard'])->name('cr-eksternal.dashboard');

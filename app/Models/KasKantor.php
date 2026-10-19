@@ -18,6 +18,12 @@ class KasKantor extends Model
         'kantor_id',
         'kode_kas',
         'nama_kas',
+        'latitude',
+        'longitude',
+        'wireless_ip',
+        'ping_status',
+        'ping_latency_ms',
+        'ping_checked_at',
         'is_active',
     ];
 
@@ -25,6 +31,10 @@ class KasKantor extends Model
     {
         return [
             'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
+            'ping_latency_ms' => 'integer',
+            'ping_checked_at' => 'datetime',
         ];
     }
 

@@ -35,12 +35,18 @@ class KantorController extends Controller
         $validated = $request->validate([
             'kode_kantor' => ['required', 'string', 'max:50', 'unique:kantors,kode_kantor'],
             'nama_kantor' => ['required', 'string', 'max:255'],
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            'wireless_ip' => ['nullable', 'ip', 'max:45'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         Kantor::create([
             'kode_kantor' => trim($validated['kode_kantor']),
             'nama_kantor' => trim($validated['nama_kantor']),
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'wireless_ip' => $validated['wireless_ip'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? true),
         ]);
 
@@ -55,14 +61,26 @@ class KantorController extends Controller
         $validated = $request->validate([
             'kode_kantor' => ['required', 'string', 'max:50', 'unique:kantors,kode_kantor,'.$kantor->id],
             'nama_kantor' => ['required', 'string', 'max:255'],
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            'wireless_ip' => ['nullable', 'ip', 'max:45'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $kantor->update([
+        $payload = [
             'kode_kantor' => trim($validated['kode_kantor']),
             'nama_kantor' => trim($validated['nama_kantor']),
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'wireless_ip' => $validated['wireless_ip'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
-        ]);
+        ];
+
+        if ($kantor->wireless_ip !== $payload['wireless_ip']) {
+            $payload += ['ping_status' => null, 'ping_latency_ms' => null, 'ping_checked_at' => null];
+        }
+
+        $kantor->update($payload);
 
         return redirect()->route('admin.manajemen-kantor.index')
             ->with('status', 'Kantor berhasil diperbarui.');

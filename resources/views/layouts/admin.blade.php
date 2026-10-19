@@ -50,6 +50,7 @@
                     'flex min-h-0 flex-1 flex-col overflow-hidden p-4 text-slate-800 max-xl:pt-16 max-xl:pl-14 md:p-6 dark:text-gray-100',
                     'p-0 max-xl:pt-0 max-xl:pl-0 md:p-0' => $isLivestreamMode,
                     'w-full max-w-none' => request()->routeIs('admin.dashboard')
+                        || request()->routeIs('admin.map.*')
                         || request()->routeIs('admin.insert-project.*')
                         || request()->routeIs('admin.daftar-project.*')
                         || request()->routeIs('admin.aset-ti.*')
@@ -62,6 +63,7 @@
                         || request()->routeIs('admin.parameter.*')
                         || request()->routeIs('admin.profil*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
+                        && !request()->routeIs('admin.map.*')
                         && !request()->routeIs('admin.insert-project.*')
                         && !request()->routeIs('admin.daftar-project.*')
                         && !request()->routeIs('admin.aset-ti.*')
