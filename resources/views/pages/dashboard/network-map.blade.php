@@ -142,8 +142,16 @@
                 highPingThreshold,
                 map: null,
                 layer: null,
+                markers: new Map(),
                 provinceBounds: null,
                 resizeObserver: null,
+                resizeTimer: null,
+                statusTimer: null,
+                statusRequest: null,
+                pendingStatusData: null,
+                mapInteracting: false,
+                popupOpen: false,
+                interactionTimer: null,
                 search: '',
                 showCabang: true,
                 showKas: true,
@@ -184,13 +192,16 @@
                     this.map = L.map('network-map', {
                         zoomControl: true,
                         minZoom: 8,
-                        zoomSnap: 0.25,
-                        zoomDelta: 0.25,
+                        zoomSnap: 0.5,
+                        zoomDelta: 0.5,
                         maxBounds: provinceBounds.pad(0.35),
                         maxBoundsViscosity: 1
                     });
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
+                        updateWhenZooming: false,
+                        updateWhenIdle: true,
+                        keepBuffer: 1,
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(this.map);
 
@@ -211,6 +222,22 @@
                     }).addTo(this.map);
 
                     this.layer = L.featureGroup().addTo(this.map);
+                    this.map.on('zoomstart movestart', () => {
+                        window.clearTimeout(this.interactionTimer);
+                        this.mapInteracting = true;
+                    });
+                    this.map.on('zoomend moveend', () => {
+                        window.clearTimeout(this.interactionTimer);
+                        this.interactionTimer = window.setTimeout(() => {
+                            this.mapInteracting = false;
+                            this.flushPendingStatuses();
+                        }, 100);
+                    });
+                    this.map.on('popupopen', () => { this.popupOpen = true; });
+                    this.map.on('popupclose', () => {
+                        this.popupOpen = false;
+                        this.flushPendingStatuses();
+                    });
                     this.refreshMarkers();
                     this.focusProvince();
                     setTimeout(() => {
@@ -221,11 +248,18 @@
                         window.clearTimeout(this.resizeTimer);
                         this.resizeTimer = window.setTimeout(() => {
                             this.map.invalidateSize({ animate: false });
-                            this.focusProvince(false);
-                        }, 120);
+                        }, 180);
                     });
                     this.resizeObserver.observe(document.getElementById('network-map'));
                     this.statusTimer = window.setInterval(() => this.reloadStatuses(), 30000);
+                },
+                destroy() {
+                    window.clearInterval(this.statusTimer);
+                    window.clearTimeout(this.resizeTimer);
+                    window.clearTimeout(this.interactionTimer);
+                    this.resizeObserver?.disconnect();
+                    this.statusRequest?.abort();
+                    this.map?.remove();
                 },
                 focusProvince(animate = false) {
                     if (!this.map || !this.provinceBounds) return;
@@ -256,58 +290,92 @@
                     el.textContent = value ?? '';
                     return el.innerHTML;
                 },
+                buildPopupContent(item, displayStatus, isHighPing, problemKas, highPingKas) {
+                    const typeLabel = item.type === 'cabang' ? 'Kantor Cabang' : 'Kantor Kas';
+                    const parent = item.parent ? `<p style="margin:4px 0 0;color:#64748b">Cabang: ${this.escape(item.parent)}</p>` : '';
+                    const pingLabel = isHighPing ? `High Ping · ${item.ping_latency_ms} ms` : (displayStatus === 'reply' ? 'Reply' : (displayStatus === 'rto' ? 'RTO' : (displayStatus === 'warning' ? `${problemKas.length + highPingKas.length} kantor kas bermasalah` : 'Belum diuji')));
+                    const pingColor = displayStatus === 'reply' ? '#2563eb' : (displayStatus === 'rto' ? '#dc2626' : (displayStatus === 'warning' ? '#d97706' : '#64748b'));
+                    const checkedAt = item.ping_checked_at ? new Date(item.ping_checked_at).toLocaleString('id-ID') : '-';
+                    const problemList = problemKas.length
+                        ? `<section><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#dc2626">Kantor kas RTO (${problemKas.length})</strong></div>${problemKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;font-size:11px;color:#991b1b"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
+                        : '';
+                    const highPingKasList = highPingKas.length
+                        ? `<section style="margin-top:${problemKas.length ? '9px' : '0'}"><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#b45309">Kantor kas high ping (${highPingKas.length})</strong></div>${highPingKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border-radius:7px;background:#fffbeb;font-size:11px;color:#78350f"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Latency: <strong>${kas.ping_latency_ms} ms</strong> · Ambang: ${this.highPingThreshold} ms<br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
+                        : '';
+                    const highPingDetail = isHighPing
+                        ? `<div style="margin-bottom:${problemKas.length || highPingKas.length ? '9px' : '0'};padding:8px 10px;border-radius:7px;background:#fffbeb;color:#92400e;font-size:11px"><strong>High Ping · ${typeLabel}</strong><div style="margin-top:4px;font-size:12px;color:#78350f"><strong>${this.escape(item.code)} · ${this.escape(item.name)}</strong></div>${item.parent ? `<div style="margin-top:2px">Cabang induk: ${this.escape(item.parent)}</div>` : ''}<div style="margin-top:6px">Latency: <strong>${item.ping_latency_ms} ms</strong><br>Ambang: ${this.highPingThreshold} ms<br>Diperiksa: ${checkedAt}</div></div>`
+                        : '';
+
+                    return displayStatus === 'warning'
+                        ? `<div class="network-warning-popup"><div class="network-warning-popup__summary">${highPingDetail}</div><div class="network-warning-popup__list">${problemList}${highPingKasList}</div></div>`
+                        : `<div style="min-width:220px;max-width:290px"><strong>${this.escape(item.name)}</strong><p style="margin:4px 0 0;color:#64748b">${typeLabel} · ${this.escape(item.code)}</p>${parent}<p style="margin:8px 0 0"><strong style="color:${pingColor}">${pingLabel}</strong>${item.ping_latency_ms ? ` · ${item.ping_latency_ms} ms` : ''}</p><p style="margin:3px 0 0;font-size:11px;color:#94a3b8">Diperiksa: ${checkedAt}</p></div>`;
+                },
                 refreshMarkers() {
                     if (!this.layer) return;
-                    this.layer.clearLayers();
                     const visible = this.filtered();
+                    const visibleIds = new Set(visible.map(item => item.id));
+                    this.markers.forEach((marker, id) => {
+                        if (!visibleIds.has(id)) {
+                            this.layer.removeLayer(marker);
+                            this.markers.delete(id);
+                        }
+                    });
                     visible.forEach(item => {
-                        const typeLabel = item.type === 'cabang' ? 'Kantor Cabang' : 'Kantor Kas';
-                        const parent = item.parent ? `<p style="margin:4px 0 0;color:#64748b">Cabang: ${this.escape(item.parent)}</p>` : '';
                         const problemKas = Array.isArray(item.problem_kas) ? item.problem_kas : [];
                         const highPingKas = Array.isArray(item.high_ping_kas) ? item.high_ping_kas : [];
                         const isHighPing = item.ping_status === 'reply' && Number(item.ping_latency_ms) > Number(this.highPingThreshold);
                         const hasKasProblem = item.type === 'cabang' && item.ping_status !== 'rto' && (problemKas.length > 0 || highPingKas.length > 0);
                         const displayStatus = item.ping_status === 'rto' ? 'rto' : ((isHighPing || hasKasProblem) ? 'warning' : item.ping_status);
-                        const pingLabel = isHighPing ? `High Ping · ${item.ping_latency_ms} ms` : (displayStatus === 'reply' ? 'Reply' : (displayStatus === 'rto' ? 'RTO' : (displayStatus === 'warning' ? `${problemKas.length + highPingKas.length} kantor kas bermasalah` : 'Belum diuji')));
-                        const pingColor = displayStatus === 'reply' ? '#2563eb' : (displayStatus === 'rto' ? '#dc2626' : (displayStatus === 'warning' ? '#d97706' : '#64748b'));
-                        const checkedAt = item.ping_checked_at ? new Date(item.ping_checked_at).toLocaleString('id-ID') : '-';
-                        const problemList = problemKas.length
-                            ? `<section><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#dc2626">Kantor kas RTO (${problemKas.length})</strong></div>${problemKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;font-size:11px;color:#991b1b"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
-                            : '';
-                        const highPingKasList = highPingKas.length
-                            ? `<section style="margin-top:${problemKas.length ? '9px' : '0'}"><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#b45309">Kantor kas high ping (${highPingKas.length})</strong></div>${highPingKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border-radius:7px;background:#fffbeb;font-size:11px;color:#78350f"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Latency: <strong>${kas.ping_latency_ms} ms</strong> · Ambang: ${this.highPingThreshold} ms<br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
-                            : '';
-                        const highPingDetail = isHighPing
-                            ? `<div style="margin-bottom:${problemKas.length || highPingKas.length ? '9px' : '0'};padding:8px 10px;border-radius:7px;background:#fffbeb;color:#92400e;font-size:11px"><strong>High Ping · ${typeLabel}</strong><div style="margin-top:4px;font-size:12px;color:#78350f"><strong>${this.escape(item.code)} · ${this.escape(item.name)}</strong></div>${item.parent ? `<div style="margin-top:2px">Cabang induk: ${this.escape(item.parent)}</div>` : ''}<div style="margin-top:6px">Latency: <strong>${item.ping_latency_ms} ms</strong><br>Ambang: ${this.highPingThreshold} ms<br>Diperiksa: ${checkedAt}</div></div>`
-                            : '';
-                        const popupContent = displayStatus === 'warning'
-                            ? `<div class="network-warning-popup"><div class="network-warning-popup__summary">${highPingDetail}</div><div class="network-warning-popup__list">${problemList}${highPingKasList}</div></div>`
-                            : `<div style="min-width:220px;max-width:290px"><strong>${this.escape(item.name)}</strong><p style="margin:4px 0 0;color:#64748b">${typeLabel} · ${this.escape(item.code)}</p>${parent}<p style="margin:8px 0 0"><strong style="color:${pingColor}">${pingLabel}</strong>${item.ping_latency_ms ? ` · ${item.ping_latency_ms} ms` : ''}</p><p style="margin:3px 0 0;font-size:11px;color:#94a3b8">Diperiksa: ${checkedAt}</p></div>`;
-                        L.marker([item.latitude, item.longitude], { icon: this.icon(item.type, displayStatus), title: item.name })
-                            .bindPopup(popupContent, {
+                        const signature = JSON.stringify([item.latitude, item.longitude, item.name, item.code, item.parent, item.ping_status, item.ping_latency_ms, item.ping_checked_at, problemKas, highPingKas, this.highPingThreshold]);
+                        let marker = this.markers.get(item.id);
+                        if (marker?.__networkSignature === signature) return;
+                        if (!marker) {
+                            marker = L.marker([item.latitude, item.longitude], { title: item.name }).addTo(this.layer);
+                            this.markers.set(item.id, marker);
+                        }
+                        marker.__networkSignature = signature;
+                        marker.setLatLng([item.latitude, item.longitude]);
+                        marker.setIcon(this.icon(item.type, displayStatus));
+                        marker.unbindPopup().bindPopup(() => this.buildPopupContent(item, displayStatus, isHighPing, problemKas, highPingKas), {
                                 autoPan: true,
-                                keepInView: true,
+                                keepInView: false,
                                 autoPanPaddingTopLeft: [24, 110],
                                 autoPanPaddingBottomRight: [24, 36],
                                 maxHeight: 310
-                            })
-                            .addTo(this.layer);
+                            });
                     });
                 },
                 async reloadStatuses() {
+                    if (document.hidden || this.statusRequest) return;
+                    this.statusRequest = new AbortController();
                     try {
-                        const response = await fetch(this.statusEndpoint, { headers: { Accept: 'application/json' } });
+                        const response = await fetch(this.statusEndpoint, {
+                            headers: { Accept: 'application/json' },
+                            signal: this.statusRequest.signal
+                        });
                         if (!response.ok) return;
                         const data = await response.json();
                         if (Array.isArray(data.locations)) {
-                            this.locations = data.locations;
-                            if (Number(data.high_ping_threshold_ms) > 0) this.highPingThreshold = Number(data.high_ping_threshold_ms);
-                            if (data.summary) this.updateSidebarSummary(data.summary);
-                            this.refreshMarkers();
+                            if (this.mapInteracting || this.popupOpen) this.pendingStatusData = data;
+                            else this.applyStatusData(data);
                         }
                     } catch (_) {
                         /* Pertahankan status terakhir jika jaringan browser sedang bermasalah. */
+                    } finally {
+                        this.statusRequest = null;
                     }
+                },
+                applyStatusData(data) {
+                    this.locations = data.locations;
+                    if (Number(data.high_ping_threshold_ms) > 0) this.highPingThreshold = Number(data.high_ping_threshold_ms);
+                    if (data.summary) this.updateSidebarSummary(data.summary);
+                    this.refreshMarkers();
+                },
+                flushPendingStatuses() {
+                    if (!this.pendingStatusData || this.mapInteracting || this.popupOpen) return;
+                    const data = this.pendingStatusData;
+                    this.pendingStatusData = null;
+                    this.applyStatusData(data);
                 },
                 updateSidebarSummary(summary) {
                     window.dispatchEvent(new CustomEvent('network-summary-updated', { detail: summary }));
