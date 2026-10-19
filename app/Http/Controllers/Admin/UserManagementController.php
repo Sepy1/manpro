@@ -16,7 +16,7 @@ use Illuminate\View\View;
 
 class UserManagementController extends Controller
 {
-    private const MANAGED_ROLES = ['admin', 'manager', 'officer', 'vendor', 'cabang'];
+    private const MANAGED_ROLES = ['admin', 'manager', 'officer', 'vendor', 'cabang', 'vendor_network'];
 
     public function index(): View
     {
@@ -75,7 +75,7 @@ class UserManagementController extends Controller
         ]);
 
         $twoFa = $this->resolvedTwoFactorEnabled($request);
-        $canAuthorizeExternCr = $request->boolean('can_authorize_extern_cr');
+        $canAuthorizeExternCr = $validated['role'] !== 'vendor_network' && $request->boolean('can_authorize_extern_cr');
 
         $phoneWa = $this->normalizeWaPhonePayload(
             $twoFa,
@@ -130,7 +130,7 @@ class UserManagementController extends Controller
         ]);
 
         $twoFa = $this->resolvedTwoFactorEnabled($request);
-        $canAuthorizeExternCr = $request->boolean('can_authorize_extern_cr');
+        $canAuthorizeExternCr = $validated['role'] !== 'vendor_network' && $request->boolean('can_authorize_extern_cr');
 
         $phoneWa = $this->normalizeWaPhonePayload(
             $twoFa,

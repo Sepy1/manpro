@@ -98,6 +98,10 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    if (auth()->user()?->role === 'vendor_network') {
+        return redirect()->route('admin.map.index');
+    }
+
     if (in_array(auth()->user()?->role, ['admin', 'manager', 'officer', 'vendor', 'cabang'], true)) {
         return redirect()->route('admin.dashboard');
     }
@@ -105,7 +109,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified', 'menu.activity'])->name('dashboard');
 
-Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu.activity'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
     Route::get('/map', [NetworkMapController::class, 'index'])->name('map.index');
     Route::get('/map/status', [NetworkMapController::class, 'status'])->name('map.status');
@@ -231,11 +235,11 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'menu.activity'])->prefix('a
     Route::get('/manajemen-log-user', [UserActivityLogController::class, 'index'])->name('manajemen-log-user.index');
 });
 
-Route::middleware(['auth', 'menu.activity'])->group(function () {
+Route::middleware(['auth', 'vendor.network.only', 'menu.activity'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'vendor.network.only'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

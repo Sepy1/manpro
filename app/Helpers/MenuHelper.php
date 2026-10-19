@@ -9,6 +9,23 @@ class MenuHelper
         $role = auth()->user()?->role;
         $division = auth()->user()?->division;
 
+        if ($role === 'vendor_network') {
+            return [
+                [
+                    'icon' => 'map',
+                    'name' => 'MAP',
+                    'path' => '/admin/map',
+                ],
+                [
+                    'icon' => 'user-profile',
+                    'name' => 'Akun',
+                    'subItems' => [
+                        ['name' => 'Keluar', 'logout' => true],
+                    ],
+                ],
+            ];
+        }
+
         $projectSubItems = [
             [
                 'name' => 'Dashboard',

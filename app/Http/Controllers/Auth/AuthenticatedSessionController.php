@@ -85,6 +85,10 @@ class AuthenticatedSessionController extends Controller
             $this->logUserLogin($user, $request);
         }
 
+        if ($user?->role === 'vendor_network') {
+            return redirect()->route('admin.map.index');
+        }
+
         if (in_array($user?->role, ['admin', 'manager', 'officer', 'vendor', 'cabang'], true)) {
             return redirect()->route('admin.dashboard');
         }
@@ -173,7 +177,7 @@ class AuthenticatedSessionController extends Controller
         RateLimiter::clear($throttleKey);
         $this->logUserLogin($pendingUser, $request);
 
-        return redirect()->route('admin.dashboard');
+        return redirect()->route($pendingUser->role === 'vendor_network' ? 'admin.map.index' : 'admin.dashboard');
     }
 
     public function resendAdminTwoFactor(Request $request): RedirectResponse

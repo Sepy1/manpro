@@ -1,34 +1,22 @@
-{{-- Default tema gelap sebelum paint; hanya terang jika localStorage theme === 'light' (Tailwind darkMode: class) --}}
+{{-- Aplikasi hanya menggunakan tema gelap. Terapkan sebelum paint agar tidak berkedip terang. --}}
 <script>
     (function () {
         var root = document.documentElement;
+        root.classList.add('dark');
         try {
-            var stored = localStorage.getItem('theme');
-            if (stored === 'light') {
-                root.classList.remove('dark');
-            } else {
-                root.classList.add('dark');
-                if (stored !== 'dark') {
-                    try {
-                        localStorage.setItem('theme', 'dark');
-                    } catch (_) {
-                        /* private mode / disabled storage */
-                    }
-                }
-            }
-        } catch (e) {
-            root.classList.add('dark');
+            localStorage.removeItem('theme');
+        } catch (_) {
+            /* private mode / disabled storage */
         }
 
         try {
-            var scheme = root.classList.contains('dark') ? 'dark' : 'light';
             var meta = document.querySelector('meta[name="color-scheme"]');
             if (!meta) {
                 meta = document.createElement('meta');
                 meta.setAttribute('name', 'color-scheme');
                 document.head.appendChild(meta);
             }
-            meta.setAttribute('content', scheme);
+            meta.setAttribute('content', 'dark');
         } catch (e) {
             /* ignore */
         }

@@ -175,7 +175,7 @@
                     const world = [[-90,-180],[-90,180],[90,180],[90,-180]];
                     L.polygon([world, jawaTengah], {
                         stroke: false,
-                        fillColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#f1f5f9',
+                        fillColor: '#0f172a',
                         fillOpacity: 0.97,
                         fillRule: 'evenodd',
                         interactive: false

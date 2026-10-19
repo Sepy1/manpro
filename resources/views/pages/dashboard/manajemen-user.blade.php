@@ -176,7 +176,7 @@
                             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400" for="edit-user-role">Role</label>
                             <select id="edit-user-role" name="role" x-model="editRole" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                                 @foreach ($roles as $roleOpt)
-                                    <option value="{{ $roleOpt }}">{{ ucfirst($roleOpt) }}</option>
+                                    <option value="{{ $roleOpt }}">{{ $roleOpt === 'vendor_network' ? 'Vendor Network' : ucfirst($roleOpt) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -248,7 +248,7 @@
 
         <div class="content-card p-5">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar User (Admin / Manager / Officer / Vendor / Cabang)</h3>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar User (Admin / Manager / Officer / Vendor / Cabang / Vendor Network)</h3>
                 <button type="button" @click="showAddForm = !showAddForm"
                     class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">
                     Add User
@@ -275,7 +275,7 @@
                     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
                 <select name="role" x-model="role" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                     @foreach ($roles as $roleOpt)
-                        <option value="{{ $roleOpt }}" @selected(old('role') === $roleOpt)>{{ ucfirst($roleOpt) }}</option>
+                        <option value="{{ $roleOpt }}" @selected(old('role') === $roleOpt)>{{ $roleOpt === 'vendor_network' ? 'Vendor Network' : ucfirst($roleOpt) }}</option>
                     @endforeach
                 </select>
                 <select name="division" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90"
@@ -354,7 +354,7 @@
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->name }}</td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->email }}</td>
                                 <td class="max-w-[9rem] break-all px-3 py-3 font-mono text-xs leading-snug text-gray-700 dark:text-gray-300" title="{{ $managedUser->phone }}">{{ $managedUser->phone ?: '—' }}</td>
-                                <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ ucfirst($managedUser->role) }}</td>
+                                <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->role === 'vendor_network' ? 'Vendor Network' : ucfirst($managedUser->role) }}</td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $managedUser->division ?: '-' }}</td>
                                 <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                                     @if ($managedUser->kantor)
@@ -420,7 +420,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada user role admin/manager/officer/vendor/cabang.</td>
+                                <td colspan="10" class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada user yang dapat dikelola.</td>
                             </tr>
                         @endforelse
                     </tbody>

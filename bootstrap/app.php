@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureAdminTwoFactorVerified;
 use App\Http\Middleware\EnsureExternCrApiKey;
 use App\Http\Middleware\LogUserMenuActivity;
+use App\Http\Middleware\RestrictVendorNetworkAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.2fa' => EnsureAdminTwoFactorVerified::class,
             'extern-cr.api-key' => EnsureExternCrApiKey::class,
             'menu.activity' => LogUserMenuActivity::class,
+            'vendor.network.only' => RestrictVendorNetworkAccess::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

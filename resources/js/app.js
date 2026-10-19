@@ -5,31 +5,6 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
-    Alpine.store('theme', {
-        dark: document.documentElement.classList.contains('dark'),
-
-        toggle() {
-            this.dark = !this.dark;
-            try {
-                localStorage.setItem('theme', this.dark ? 'dark' : 'light');
-            } catch (e) {
-                /* ignore */
-            }
-            document.documentElement.classList.toggle('dark', this.dark);
-            try {
-                let meta = document.querySelector('meta[name="color-scheme"]');
-                if (!meta) {
-                    meta = document.createElement('meta');
-                    meta.setAttribute('name', 'color-scheme');
-                    document.head.appendChild(meta);
-                }
-                meta.setAttribute('content', this.dark ? 'dark' : 'light');
-            } catch (e) {
-                /* ignore */
-            }
-        },
-    });
-
     Alpine.data('assistantChat', (cfg) => ({
         open: false,
         input: '',
