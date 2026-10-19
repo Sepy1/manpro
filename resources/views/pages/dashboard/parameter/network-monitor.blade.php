@@ -40,6 +40,24 @@
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Rentang 1–1.440 menit. Nilai umum yang disarankan: 5 menit.</p>
                 </div>
 
+                <div>
+                    <label for="high_ping_threshold_ms" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Ambang high ping
+                    </label>
+                    <div class="flex max-w-sm items-center gap-3">
+                        <input id="high_ping_threshold_ms" name="high_ping_threshold_ms" type="number"
+                            min="{{ \App\Models\NetworkMonitorSetting::MIN_HIGH_PING_THRESHOLD_MS }}"
+                            max="{{ \App\Models\NetworkMonitorSetting::MAX_HIGH_PING_THRESHOLD_MS }}"
+                            value="{{ old('high_ping_threshold_ms', $highPingThresholdMs) }}" required
+                            class="h-11 w-32 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white" />
+                        <span class="text-sm text-gray-600 dark:text-gray-300">ms</span>
+                    </div>
+                    @error('high_ping_threshold_ms')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Kantor dengan reply di atas nilai ini ditandai kuning. Default: 50 ms.</p>
+                </div>
+
                 <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600">
                     Simpan parameter
                 </button>

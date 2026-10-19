@@ -7,6 +7,6 @@
     x-transition:leave-start="opacity-100"
     x-transition:leave-end="opacity-0"
     @click="$store.sidebar.setMobileOpen(false)"
-    class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm xl:hidden"
+    class="fixed inset-0 z-[99990] touch-none bg-gray-950/65 backdrop-blur-sm xl:hidden"
     aria-hidden="true"
 ></div>

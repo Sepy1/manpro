@@ -63,6 +63,10 @@ class PingOffices extends Command
             $process->run();
             $elapsed = (int) round((hrtime(true) - $startedAt) / 1_000_000);
 
+            if (preg_match('/(?:time|waktu)[=<]\s*(\d+)\s*ms/i', $process->getOutput(), $matches)) {
+                $elapsed = max(1, (int) $matches[1]);
+            }
+
             return $process->isSuccessful() ? ['reply', $elapsed] : ['rto', null];
         } catch (\Throwable) {
             return ['rto', null];

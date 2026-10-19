@@ -22,6 +22,7 @@
                 isExpanded: window.innerWidth >= 1280, // true for desktop, false for mobile
                 isMobileOpen: false,
                 isHovered: false,
+                isDesktop: window.innerWidth >= 1280,
 
                 toggleExpanded() {
                     this.isExpanded = !this.isExpanded;
@@ -38,6 +39,22 @@
                     this.isMobileOpen = val;
                 },
 
+                closeMobile() {
+                    if (window.innerWidth < 1280) {
+                        this.isMobileOpen = false;
+                    }
+                },
+
+                syncViewport() {
+                    const desktop = window.innerWidth >= 1280;
+                    if (desktop === this.isDesktop) return;
+
+                    this.isDesktop = desktop;
+                    this.isMobileOpen = false;
+                    this.isHovered = false;
+                    this.isExpanded = desktop;
+                },
+
                 setHovered(val) {
                     // Only allow hover effects on desktop when sidebar is collapsed
                     if (window.innerWidth >= 1280 && !this.isExpanded) {
@@ -49,17 +66,9 @@
     </script>
 </head>
 
-<body class="h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-gray-900 dark:text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
-const checkMobile = () => {
-    if (window.innerWidth < 1280) {
-        $store.sidebar.setMobileOpen(false);
-        $store.sidebar.isExpanded = false;
-    } else {
-        $store.sidebar.isMobileOpen = false;
-        $store.sidebar.isExpanded = true;
-    }
-};
-window.addEventListener('resize', checkMobile);
+<body class="h-screen h-[100dvh] overflow-hidden bg-slate-100 text-slate-900 dark:bg-gray-900 dark:text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
+$store.sidebar.isDesktop = window.innerWidth >= 1280;
+window.addEventListener('resize', () => $store.sidebar.syncViewport(), { passive: true });
 const isInternalLink = (link) => {
     if (!link) return false;
     if (link.target && link.target !== '_self') return false;

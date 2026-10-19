@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kantor;
+use App\Models\NetworkMonitorSetting;
+use App\Support\NetworkStatusSummary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -14,6 +16,7 @@ class NetworkMapController extends Controller
     {
         return view('pages.dashboard.network-map', [
             'locations' => $this->locations(),
+            'highPingThresholdMs' => NetworkMonitorSetting::highPingThresholdMs(),
         ]);
     }
 
@@ -21,12 +24,15 @@ class NetworkMapController extends Controller
     {
         return response()->json([
             'locations' => $this->locations(),
+            'high_ping_threshold_ms' => NetworkMonitorSetting::highPingThresholdMs(),
+            'summary' => NetworkStatusSummary::get(),
             'updated_at' => now()->toIso8601String(),
         ]);
     }
 
     private function locations(): Collection
     {
+        $highPingThreshold = NetworkMonitorSetting::highPingThresholdMs();
         $kantors = Kantor::query()
             ->where('is_active', true)
             ->with(['kasKantor' => fn ($query) => $query
@@ -35,13 +41,24 @@ class NetworkMapController extends Controller
             ->get();
 
         $locations = $kantors
-            ->flatMap(function (Kantor $kantor) {
+            ->flatMap(function (Kantor $kantor) use ($highPingThreshold) {
                 $items = collect();
                 $problemKas = $kantor->kasKantor
                     ->where('ping_status', 'rto')
                     ->map(fn ($kas) => [
                         'code' => $kas->kode_kas,
                         'name' => $kas->nama_kas ?: $kas->kode_kas,
+                        'ping_checked_at' => $kas->ping_checked_at?->toIso8601String(),
+                    ])
+                    ->values()
+                    ->all();
+                $highPingKas = $kantor->kasKantor
+                    ->where('ping_status', 'reply')
+                    ->filter(fn ($kas) => (int) $kas->ping_latency_ms > $highPingThreshold)
+                    ->map(fn ($kas) => [
+                        'code' => $kas->kode_kas,
+                        'name' => $kas->nama_kas ?: $kas->kode_kas,
+                        'ping_latency_ms' => $kas->ping_latency_ms,
                         'ping_checked_at' => $kas->ping_checked_at?->toIso8601String(),
                     ])
                     ->values()
@@ -60,6 +77,7 @@ class NetworkMapController extends Controller
                         'ping_latency_ms' => $kantor->ping_latency_ms,
                         'ping_checked_at' => $kantor->ping_checked_at?->toIso8601String(),
                         'problem_kas' => $problemKas,
+                        'high_ping_kas' => $highPingKas,
                     ]);
                 }
 
@@ -80,6 +98,7 @@ class NetworkMapController extends Controller
                         'ping_latency_ms' => $kas->ping_latency_ms,
                         'ping_checked_at' => $kas->ping_checked_at?->toIso8601String(),
                         'problem_kas' => [],
+                        'high_ping_kas' => [],
                     ]);
                 }
 

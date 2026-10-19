@@ -27,7 +27,7 @@
             @unless ($isLivestreamMode)
                 <button
                     type="button"
-                    class="pointer-events-auto fixed left-4 top-4 z-[100000] flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 xl:hidden"
+                    class="pointer-events-auto fixed left-3 top-3 z-[100000] flex h-11 w-11 items-center justify-center rounded-xl border border-gray-700 bg-gray-900 text-gray-300 shadow-lg shadow-black/20 sm:left-4 sm:top-4 xl:hidden"
                     x-show="!$store.sidebar.isMobileOpen"
                     @click="$store.sidebar.toggleMobileOpen()"
                     aria-label="Buka menu"
@@ -47,7 +47,7 @@
 
             <main
                 @class([
-                    'flex min-h-0 flex-1 flex-col overflow-hidden p-4 text-slate-800 max-xl:pt-16 max-xl:pl-14 md:p-6 dark:text-gray-100',
+                    'flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-16 text-slate-800 sm:px-4 sm:pb-4 md:px-6 md:pb-6 xl:pt-6 dark:text-gray-100',
                     'p-0 max-xl:pt-0 max-xl:pl-0 md:p-0' => $isLivestreamMode,
                     'w-full max-w-none' => request()->routeIs('admin.dashboard')
                         || request()->routeIs('admin.map.*')

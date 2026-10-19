@@ -1,38 +1,46 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-    <div class="flex min-h-0 flex-1 flex-col gap-4" x-data="networkMap(@js($locations), @js(route('admin.map.status')))" x-init="init()">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="network-map-page flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-4" x-data="networkMap(@js($locations), @js(route('admin.map.status')), @js($highPingThresholdMs))" x-init="init()">
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">Monitoring jaringan</p>
-                <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">Peta Kantor Jawa Tengah</h1>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Sebaran kantor cabang dan kantor kas yang telah memiliki koordinat.</p>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 sm:text-xs sm:tracking-[0.2em]">Monitoring jaringan</p>
+                <h1 class="mt-0.5 text-xl font-bold text-gray-900 dark:text-white sm:mt-1 sm:text-2xl">Peta Kantor Jawa Tengah</h1>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:mt-1 sm:text-sm">Sebaran kantor cabang dan kantor kas yang telah memiliki koordinat.</p>
             </div>
             @if (auth()->user()?->role === 'admin')
-                <a href="{{ route('admin.manajemen-kantor.index') }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-brand-500 px-4 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-500/10">
+                <a href="{{ route('admin.manajemen-kantor.index') }}" class="inline-flex h-9 w-full items-center justify-center rounded-lg border border-brand-500 px-3 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-500/10 sm:h-10 sm:w-auto sm:px-4 sm:text-sm">
                     Kelola koordinat
                 </a>
             @endif
         </div>
 
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <div class="flex flex-col gap-3 border-b border-gray-200 p-3 sm:flex-row sm:items-center dark:border-gray-800">
-                <div class="relative flex-1">
-                    <input x-model="search" @input.debounce.200ms="refreshMarkers()" type="search" placeholder="Cari nama atau kode kantor..." class="h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-3 pr-9 text-sm dark:border-gray-700 dark:text-white" />
+            <div class="flex shrink-0 flex-col gap-2 border-b border-gray-200 p-2 sm:flex-row sm:items-center sm:gap-3 sm:p-3 dark:border-gray-800">
+                <div class="relative min-w-0 flex-1">
+                    <input x-model="search" @input.debounce.200ms="refreshMarkers()" type="search" placeholder="Cari nama atau kode kantor..." class="h-9 w-full rounded-lg border border-gray-300 bg-transparent pl-3 pr-9 text-xs dark:border-gray-700 dark:text-white sm:h-10 sm:text-sm" />
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <span class="grid w-full grid-cols-2 gap-x-3 gap-y-1 text-[9px] text-gray-500 sm:hidden dark:text-gray-400">
+                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-blue-600"></i> Reply</span>
+                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-red-600"></i> RTO</span>
+                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-amber-400"></i> High ping / Kas bermasalah</span>
+                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-slate-500"></i> Belum diuji</span>
+                    </span>
                     <span class="hidden items-center gap-3 pr-2 text-[11px] text-gray-500 lg:flex dark:text-gray-400">
                         <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-blue-600"></i> Reply</span>
                         <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-red-600"></i> RTO</span>
-                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-amber-400"></i> Kas bermasalah</span>
+                        <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-amber-400"></i> High ping / Kas bermasalah</span>
                         <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-slate-500"></i> Belum diuji</span>
                     </span>
-                    <button type="button" @click="toggleType('cabang')" :class="showCabang ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-300 text-gray-500 dark:border-gray-700'" class="h-9 rounded-lg border px-3 text-xs font-semibold">Cabang</button>
-                    <button type="button" @click="toggleType('kas')" :class="showKas ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-300 text-gray-500 dark:border-gray-700'" class="h-9 rounded-lg border px-3 text-xs font-semibold">Kantor Kas</button>
-                    <button type="button" @click="fitVisible()" class="h-9 rounded-lg border border-gray-300 px-3 text-xs font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-300">Lihat semua</button>
+                    <div class="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:gap-2">
+                        <button type="button" @click="toggleType('cabang')" :class="showCabang ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-300 text-gray-500 dark:border-gray-700'" class="h-8 min-w-0 rounded-lg border px-1 text-[10px] font-semibold sm:h-9 sm:px-3 sm:text-xs">Cabang</button>
+                        <button type="button" @click="toggleType('kas')" :class="showKas ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-300 text-gray-500 dark:border-gray-700'" class="h-8 min-w-0 rounded-lg border px-1 text-[10px] font-semibold sm:h-9 sm:px-3 sm:text-xs">Kantor Kas</button>
+                        <button type="button" @click="fitVisible()" class="h-8 min-w-0 rounded-lg border border-gray-300 px-1 text-[10px] font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:h-9 sm:px-3 sm:text-xs">Lihat semua</button>
+                    </div>
                 </div>
             </div>
-            <div class="relative min-h-[420px] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950">
+            <div class="relative min-h-[280px] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950 sm:min-h-[420px]">
                 <div id="network-map" class="absolute inset-0 z-0 h-full w-full"></div>
                 <div x-show="locations.length === 0" class="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/75 p-6 text-center backdrop-blur-sm dark:bg-gray-900/75">
                     <div>
@@ -98,11 +106,15 @@
         .leaflet-control-attribution { margin:0; padding:2px 6px; background:rgb(255 255 255 / .82); color:#475569; font-size:10px; }
         .leaflet-control-attribution a { color:#2563eb; }
         .leaflet-popup { position:absolute; margin-bottom:20px; text-align:center; }
-        .leaflet-popup-content-wrapper { position:relative; padding:1px; background:#fff; color:#1e293b; border-radius:12px; box-shadow:0 4px 20px rgb(15 23 42 / .2); text-align:left; }
-        .leaflet-popup-content { margin:14px 18px; line-height:1.4; }
+        .leaflet-popup-content-wrapper { position:relative; overflow:hidden; padding:1px; background:#fff; color:#1e293b; border-radius:12px; box-shadow:0 4px 20px rgb(15 23 42 / .2); text-align:left; }
+        .leaflet-popup-content { overflow:hidden; margin:14px 18px; line-height:1.4; }
+        .leaflet-popup-scrolled { overflow-x:hidden !important; overflow-y:auto !important; }
         .leaflet-popup-tip-container { position:absolute; left:50%; width:40px; height:20px; margin-left:-20px; overflow:hidden; pointer-events:none; }
         .leaflet-popup-tip { width:17px; height:17px; margin:-10px auto 0; padding:1px; background:#fff; transform:rotate(45deg); box-shadow:3px 3px 8px rgb(15 23 42 / .12); }
         .leaflet-popup-close-button { position:absolute; top:4px; right:6px; z-index:1; padding:4px; color:#64748b; text-decoration:none; font-size:20px; }
+        .network-warning-popup { display:flex; width:280px; max-width:calc(100vw - 100px); max-height:min(420px, 62vh); flex-direction:column; overflow:hidden; }
+        .network-warning-popup__summary { flex:0 0 auto; }
+        .network-warning-popup__list { min-height:0; flex:1 1 auto; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; padding-right:5px; }
         .office-map-marker { background: transparent; border: 0; }
         .office-pin { display:flex; align-items:center; justify-content:center; width:34px; height:34px; border:3px solid white; border-radius:50% 50% 50% 8px; color:white; box-shadow:0 4px 12px rgb(15 23 42 / .35); transform:rotate(-45deg); }
         .office-pin svg { transform:rotate(45deg); }
@@ -112,12 +124,22 @@
         .office-pin--unknown { background:#64748b; }
         .office-pin--cash { width:29px; height:29px; }
         .leaflet-popup-content-wrapper { border-radius:12px; }
+        @media (max-width: 639px) {
+            .network-map-page { height:calc(100dvh - 5rem); }
+            .leaflet-control-zoom a { width:29px; height:29px; line-height:27px; font-size:18px; }
+            .leaflet-control-attribution { max-width:72vw; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:8px; }
+            .leaflet-popup-content { margin:11px 12px; }
+            .network-warning-popup { width:min(270px, calc(100vw - 105px)); max-height:52dvh; }
+            .office-pin { width:31px; height:31px; }
+            .office-pin--cash { width:27px; height:27px; }
+        }
     </style>
     <script>
-        function networkMap(locations, statusEndpoint) {
+        function networkMap(locations, statusEndpoint, highPingThreshold) {
             return {
                 locations,
                 statusEndpoint,
+                highPingThreshold,
                 map: null,
                 layer: null,
                 provinceBounds: null,
@@ -242,15 +264,24 @@
                         const typeLabel = item.type === 'cabang' ? 'Kantor Cabang' : 'Kantor Kas';
                         const parent = item.parent ? `<p style="margin:4px 0 0;color:#64748b">Cabang: ${this.escape(item.parent)}</p>` : '';
                         const problemKas = Array.isArray(item.problem_kas) ? item.problem_kas : [];
-                        const displayStatus = item.type === 'cabang' && item.ping_status !== 'rto' && problemKas.length > 0 ? 'warning' : item.ping_status;
-                        const pingLabel = displayStatus === 'reply' ? 'Reply' : (displayStatus === 'rto' ? 'RTO' : (displayStatus === 'warning' ? `${problemKas.length} kantor kas bermasalah` : 'Belum diuji'));
+                        const highPingKas = Array.isArray(item.high_ping_kas) ? item.high_ping_kas : [];
+                        const isHighPing = item.ping_status === 'reply' && Number(item.ping_latency_ms) > Number(this.highPingThreshold);
+                        const hasKasProblem = item.type === 'cabang' && item.ping_status !== 'rto' && (problemKas.length > 0 || highPingKas.length > 0);
+                        const displayStatus = item.ping_status === 'rto' ? 'rto' : ((isHighPing || hasKasProblem) ? 'warning' : item.ping_status);
+                        const pingLabel = isHighPing ? `High Ping · ${item.ping_latency_ms} ms` : (displayStatus === 'reply' ? 'Reply' : (displayStatus === 'rto' ? 'RTO' : (displayStatus === 'warning' ? `${problemKas.length + highPingKas.length} kantor kas bermasalah` : 'Belum diuji')));
                         const pingColor = displayStatus === 'reply' ? '#2563eb' : (displayStatus === 'rto' ? '#dc2626' : (displayStatus === 'warning' ? '#d97706' : '#64748b'));
                         const checkedAt = item.ping_checked_at ? new Date(item.ping_checked_at).toLocaleString('id-ID') : '-';
                         const problemList = problemKas.length
-                            ? `<div><strong style="font-size:11px;color:#b45309">Kantor kas RTO:</strong><div style="max-height:230px;overflow-y:auto;padding-right:3px">${problemKas.map(kas => `<div style="margin-top:6px;padding:6px 8px;border-radius:7px;background:#fff7ed;font-size:11px;color:#7c2d12"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</div></div>`
+                            ? `<section><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#dc2626">Kantor kas RTO (${problemKas.length})</strong></div>${problemKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;font-size:11px;color:#991b1b"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
+                            : '';
+                        const highPingKasList = highPingKas.length
+                            ? `<section style="margin-top:${problemKas.length ? '9px' : '0'}"><div style="position:sticky;top:0;z-index:1;padding:3px 0 5px;background:#fff"><strong style="font-size:11px;color:#b45309">Kantor kas high ping (${highPingKas.length})</strong></div>${highPingKas.map(kas => `<div style="margin-bottom:6px;padding:6px 8px;border-radius:7px;background:#fffbeb;font-size:11px;color:#78350f"><strong>${this.escape(kas.code)} · ${this.escape(kas.name)}</strong><br>Latency: <strong>${kas.ping_latency_ms} ms</strong> · Ambang: ${this.highPingThreshold} ms<br>Dicek: ${kas.ping_checked_at ? new Date(kas.ping_checked_at).toLocaleString('id-ID') : '-'}</div>`).join('')}</section>`
+                            : '';
+                        const highPingDetail = isHighPing
+                            ? `<div style="margin-bottom:${problemKas.length || highPingKas.length ? '9px' : '0'};padding:8px 10px;border-radius:7px;background:#fffbeb;color:#92400e;font-size:11px"><strong>High Ping · ${typeLabel}</strong><div style="margin-top:4px;font-size:12px;color:#78350f"><strong>${this.escape(item.code)} · ${this.escape(item.name)}</strong></div>${item.parent ? `<div style="margin-top:2px">Cabang induk: ${this.escape(item.parent)}</div>` : ''}<div style="margin-top:6px">Latency: <strong>${item.ping_latency_ms} ms</strong><br>Ambang: ${this.highPingThreshold} ms<br>Diperiksa: ${checkedAt}</div></div>`
                             : '';
                         const popupContent = displayStatus === 'warning'
-                            ? `<div style="min-width:220px;max-width:290px">${problemList}</div>`
+                            ? `<div class="network-warning-popup"><div class="network-warning-popup__summary">${highPingDetail}</div><div class="network-warning-popup__list">${problemList}${highPingKasList}</div></div>`
                             : `<div style="min-width:220px;max-width:290px"><strong>${this.escape(item.name)}</strong><p style="margin:4px 0 0;color:#64748b">${typeLabel} · ${this.escape(item.code)}</p>${parent}<p style="margin:8px 0 0"><strong style="color:${pingColor}">${pingLabel}</strong>${item.ping_latency_ms ? ` · ${item.ping_latency_ms} ms` : ''}</p><p style="margin:3px 0 0;font-size:11px;color:#94a3b8">Diperiksa: ${checkedAt}</p></div>`;
                         L.marker([item.latitude, item.longitude], { icon: this.icon(item.type, displayStatus), title: item.name })
                             .bindPopup(popupContent, {
@@ -270,11 +301,26 @@
                         const data = await response.json();
                         if (Array.isArray(data.locations)) {
                             this.locations = data.locations;
+                            if (Number(data.high_ping_threshold_ms) > 0) this.highPingThreshold = Number(data.high_ping_threshold_ms);
+                            if (data.summary) this.updateSidebarSummary(data.summary);
                             this.refreshMarkers();
                         }
                     } catch (_) {
                         /* Pertahankan status terakhir jika jaringan browser sedang bermasalah. */
                     }
+                },
+                updateSidebarSummary(summary) {
+                    window.dispatchEvent(new CustomEvent('network-summary-updated', { detail: summary }));
+                    const values = {
+                        'network-summary-kas-rto': summary.kas_rto,
+                        'network-summary-cabang-rto': summary.cabang_rto,
+                        'network-summary-slow': summary.slow,
+                        'network-summary-threshold': summary.high_ping_threshold_ms
+                    };
+                    Object.entries(values).forEach(([id, value]) => {
+                        const element = document.getElementById(id);
+                        if (element) element.textContent = Number(value) || 0;
+                    });
                 },
                 toggleType(type) {
                     if (type === 'cabang') this.showCabang = !this.showCabang;
