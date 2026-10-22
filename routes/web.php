@@ -162,6 +162,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
     Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');
     Route::get('/aset-ti/end-point', [PcInventoryController::class, 'index'])->name('aset-ti.end-point.index');
+    Route::put('/aset-ti/end-point/{inventory}', [PcInventoryController::class, 'update'])->name('aset-ti.end-point.update');
+    Route::delete('/aset-ti/end-point/{inventory}', [PcInventoryController::class, 'destroy'])->name('aset-ti.end-point.destroy');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');

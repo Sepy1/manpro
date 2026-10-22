@@ -1,11 +1,16 @@
 """Aplikasi client inventaris PC (Windows). Jalankan: python client.py"""
-import sys, socket, platform, hashlib, psutil, requests
+import sys, os, socket, platform, hashlib, psutil, requests
 import tkinter as tk
 from tkinter import ttk, messagebox
 from urllib.parse import urlparse
+import certifi
 
 SERVER_URL = "http://127.0.0.1:8000/api/inventory"   # ganti dengan IP server
 OFFICES_URL = SERVER_URL.rstrip("/") + "/offices"
+# Untuk HTTPS publik, gunakan bundle CA terbaru dari certifi. Untuk sertifikat
+# internal/self-signed, letakkan file CA bernama server-ca.pem di folder client.py.
+CUSTOM_CA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server-ca.pem")
+SSL_VERIFY = CUSTOM_CA_FILE if os.path.isfile(CUSTOM_CA_FILE) else certifi.where()
 API_KEY = "GANTI_API_KEY_RAHASIA"                        # sama dengan server.py
 
 
@@ -308,7 +313,8 @@ def collect():
 
 def get_offices():
     """Ambil master kantor dan kantor kas aktif dari aplikasi server."""
-    response = requests.get(OFFICES_URL, headers={"X-API-Key": API_KEY}, timeout=15)
+    response = requests.get(OFFICES_URL, headers={"X-API-Key": API_KEY}, timeout=15,
+                            verify=SSL_VERIFY)
     response.raise_for_status()
     payload = response.json()
     offices = payload.get("data")
@@ -413,7 +419,8 @@ class App(tk.Tk):
         self.btn.config(state="disabled")
         self.update_idletasks()
         try:
-            r = requests.post(SERVER_URL, json=data, headers={"X-API-Key": API_KEY}, timeout=15)
+            r = requests.post(SERVER_URL, json=data, headers={"X-API-Key": API_KEY}, timeout=15,
+                              verify=SSL_VERIFY)
             if r.status_code == 200:
                 messagebox.showinfo("Berhasil", "Data berhasil dikirim ke server.")
                 self.destroy()

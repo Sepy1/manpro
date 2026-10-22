@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Kantor;
 use App\Models\PcInventory;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -78,6 +79,55 @@ class PcInventoryController extends Controller
             ],
             'filteredCount' => $filteredCount,
             'totalCount' => PcInventory::query()->count(),
+            'editInventory' => $request->integer('edit')
+                ? PcInventory::query()->findOrFail($request->integer('edit'))
+                : null,
         ]);
+    }
+
+    public function update(Request $request, PcInventory $inventory): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $validated = $request->validate([
+            'nama_user' => ['required', 'string', 'max:255'],
+            'jabatan' => ['required', Rule::in([
+                'Kepala Divisi', 'Kepala Cabang', 'Kepala Kantor Kas', 'Kepala Bidang',
+                'Kepala Sub Bidang', 'Staf / AO / Admin', 'Teller', 'Customer Service',
+            ])],
+            'status_perangkat' => ['required', Rule::in(['Inventaris', 'Device Pribadi (BYOD)'])],
+            'kantor_id' => ['required', 'integer', Rule::exists('kantors', 'id')->where('is_active', true)],
+            'kas_kantor_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('kas_kantor', 'id')->where(fn ($query) => $query
+                    ->where('kantor_id', $request->integer('kantor_id'))
+                    ->where('is_active', true)),
+            ],
+        ]);
+
+        $kantor = Kantor::query()->findOrFail($validated['kantor_id']);
+        $kasKantor = isset($validated['kas_kantor_id'])
+            ? $kantor->kasKantor()->findOrFail($validated['kas_kantor_id'])
+            : null;
+
+        $inventory->update([
+            ...$validated,
+            'kode_kantor' => $kantor->kode_kantor,
+            'kode_kas' => $kasKantor?->kode_kas,
+        ]);
+
+        return redirect()->route('admin.aset-ti.end-point.index')
+            ->with('status', 'Data end point berhasil diperbarui.');
+    }
+
+    public function destroy(PcInventory $inventory): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $inventory->delete();
+
+        return redirect()->route('admin.aset-ti.end-point.index')
+            ->with('status', 'Data end point berhasil dihapus.');
     }
 }

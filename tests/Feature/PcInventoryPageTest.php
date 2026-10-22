@@ -13,7 +13,7 @@ it('shows and filters endpoint inventory for admins', function () {
     $kantor = Kantor::query()->create(['kode_kantor' => '001', 'nama_kantor' => 'Cabang Utama', 'is_active' => true]);
     $kas = KasKantor::query()->create(['kantor_id' => $kantor->id, 'kode_kas' => 'K01', 'nama_kas' => 'Kas Kota', 'is_active' => true]);
 
-    PcInventory::query()->create([
+    $inventory = PcInventory::query()->create([
         'hostname' => 'PC-FILTER-01', 'machine_guid' => 'guid-filter-01', 'serial_number' => 'SN-01',
         'mainboard_type' => 'Board', 'antivirus_status' => 'Aktif', 'antivirus_name' => 'Defender',
         'os_info' => 'Windows 11', 'cpu_name' => 'Intel', 'cpu_cores' => 4, 'cpu_threads' => 8,
@@ -42,6 +42,28 @@ it('shows and filters endpoint inventory for admins', function () {
         ->assertSee('Cabang Utama')
         ->assertSee('Kas Kota')
         ->assertDontSee('PC-OTHER');
+
+    $this->actingAs($admin)
+        ->put(route('admin.aset-ti.end-point.update', $inventory), [
+            'nama_user' => 'Budi Diperbarui',
+            'jabatan' => 'Kepala Bidang',
+            'status_perangkat' => 'Device Pribadi (BYOD)',
+            'kantor_id' => $kantor->id,
+            'kas_kantor_id' => $kas->id,
+        ])
+        ->assertRedirect(route('admin.aset-ti.end-point.index'));
+
+    $this->assertDatabaseHas('pc_inventories', [
+        'id' => $inventory->id,
+        'nama_user' => 'Budi Diperbarui',
+        'status_perangkat' => 'Device Pribadi (BYOD)',
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.aset-ti.end-point.destroy', $inventory))
+        ->assertRedirect(route('admin.aset-ti.end-point.index'));
+
+    $this->assertDatabaseMissing('pc_inventories', ['id' => $inventory->id]);
 });
 
 it('forbids non-admin users from endpoint inventory', function () {
