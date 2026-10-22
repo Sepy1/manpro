@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\ExternCrApiKeyController;
 use App\Http\Controllers\Admin\ExternCrController;
-use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\Admin\KantorController;
 use App\Http\Controllers\Admin\KasKantorController;
 use App\Http\Controllers\Admin\LivestreamPlayerController;
@@ -17,17 +16,19 @@ use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ParameterLivestreamController;
 use App\Http\Controllers\Admin\ParameterNetworkMonitorController;
+use App\Http\Controllers\Admin\PcInventoryController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\ExternCrAuthorizationController;
 use App\Http\Controllers\ExternCrSignedPdfDownloadController;
 use App\Http\Controllers\ExternCrVerificationController;
-use App\Http\Controllers\WhatsappWebhookController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/verifikasi/cr-eksternal/{externCr}', [ExternCrVerificationController::class, 'show'])
@@ -160,6 +161,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
     Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');
+    Route::get('/aset-ti/end-point', [PcInventoryController::class, 'index'])->name('aset-ti.end-point.index');
 
     Route::get('/manajemen-vendor', [VendorController::class, 'index'])->name('manajemen-vendor.index');
     Route::post('/manajemen-vendor', [VendorController::class, 'store'])->name('manajemen-vendor.store');

@@ -77,7 +77,7 @@ class MenuHelper
         if ($role === 'admin') {
             $items[] = [
                 'icon' => 'building',
-                'name' => 'Data Center',
+                'name' => 'Server Dan EndPoint',
                 'subItems' => [
                     [
                         'name' => 'Data Center',
@@ -94,6 +94,10 @@ class MenuHelper
                     [
                         'name' => 'Statistik server',
                         'path' => '/admin/aset-ti/statistik-server',
+                    ],
+                    [
+                        'name' => 'End Point',
+                        'path' => '/admin/aset-ti/end-point',
                     ],
                 ],
             ];

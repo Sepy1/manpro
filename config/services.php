@@ -2,6 +2,10 @@
 
 return [
 
+    'inventory' => [
+        'api_key' => env('INVENTORY_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
