@@ -7,6 +7,7 @@ use App\Exports\DcDrcTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Imports\DcDrcDevicesImport;
 use App\Models\DcDrcDevice;
+use App\Models\DcDrcDeviceType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -157,6 +158,63 @@ class DcDrcDeviceController extends Controller
         return redirect()->route('admin.aset-ti.data-center', ['tab' => 'dc-drc']);
     }
 
+    public function room(): View
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $devices = DcDrcDevice::query()
+            ->with(['hostedVms' => function ($query): void {
+                $query->whereRaw("LOWER(device_type) = 'vm'")
+                    ->orderBy('server_name')
+                    ->select([
+                        'id',
+                        'server_name',
+                        'vm_host_id',
+                        'ip_address',
+                        'vlan',
+                        'os',
+                        'cpu_cores',
+                        'ram_gb',
+                        'storage_gb',
+                        'status',
+                        'system_role',
+                        'environment',
+                        'owner_team',
+                        'notes',
+                    ]);
+            }])
+            ->whereRaw("LOWER(TRIM(COALESCE(device_type, ''))) <> 'vm'")
+            ->orderBy('server_name')
+            ->get([
+                'id',
+                'server_name',
+                'device_type',
+                'ip_address',
+                'vlan',
+                'nic_model',
+                'os',
+                'cpu_cores',
+                'ram_gb',
+                'storage_gb',
+                'objid_cpu',
+                'objid_ram',
+                'objid_ping',
+                'objid_diskfree',
+                'objid_traffic',
+                'site',
+                'status',
+                'system_role',
+                'environment',
+                'owner_team',
+                'notes',
+            ]);
+
+        return view('pages.dashboard.aset-ti.data-center-room', [
+            'devices' => $devices,
+            'storageKey' => 'data-center-room-layout-v1-user-' . auth()->id(),
+        ]);
+    }
+
     public function index(): View
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
@@ -273,6 +331,11 @@ class DcDrcDeviceController extends Controller
                 ->whereRaw("LOWER(device_type) = 'vm host'")
                 ->orderBy('server_name')
                 ->get(['id', 'server_name']),
+            'deviceTypes' => DcDrcDeviceType::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(),
             'filters' => ['keyword' => $keyword],
             'sortBy' => $sortBy,
             'sortDir' => $sortDir,

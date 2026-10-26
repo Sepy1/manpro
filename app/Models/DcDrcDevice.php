@@ -52,4 +52,22 @@ class DcDrcDevice extends Model
     {
         return $this->hasMany(self::class, 'vm_host_id');
     }
+
+    public static function resolveRoom(?string $site): string
+    {
+        $normalized = strtolower(trim((string) $site));
+
+        if (str_contains($normalized, 'drc')
+            || str_contains($normalized, 'disaster')
+            || str_contains($normalized, 'recovery')) {
+            return 'DRC';
+        }
+
+        return 'DC';
+    }
+
+    public function roomCode(): string
+    {
+        return self::resolveRoom($this->site);
+    }
 }

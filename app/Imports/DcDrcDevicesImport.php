@@ -3,11 +3,14 @@
 namespace App\Imports;
 
 use App\Models\DcDrcDevice;
+use App\Models\DcDrcDeviceType;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Events\AfterImport;
 
-class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
+class DcDrcDevicesImport implements ToModel, WithEvents, WithHeadingRow, WithValidation
 {
     public function model(array $row)
     {
@@ -41,7 +44,7 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
             'objid_ping' => $this->normalizeNullableString($row['objid_ping'] ?? null),
             'objid_diskfree' => $this->normalizeNullableString($row['objid_diskfree'] ?? null),
             'objid_traffic' => $this->normalizeNullableString($row['objid_traffic'] ?? null),
-            'site' => $this->normalizeNullableString($row['lokasi'] ?? null),
+            'site' => $this->normalizeLocation($row['lokasi'] ?? null),
             'system_role' => $this->normalizeNullableString($row['fungsi'] ?? null),
             'environment' => $this->normalizeNullableString($row['environment'] ?? null),
             'owner_team' => $this->normalizeNullableString($row['owner_team'] ?? null),
@@ -68,7 +71,20 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
     {
         return [
             'server_name' => ['required', 'string', 'max:255'],
-            'tipe' => ['nullable', 'string', 'max:255'],
+            'tipe' => [
+                'required',
+                'string',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $exists = DcDrcDeviceType::query()
+                        ->whereRaw('LOWER(name) = ?', [strtolower(trim((string) $value))])
+                        ->exists();
+
+                    if (!$exists) {
+                        $fail('Tipe perangkat tidak terdaftar pada Parameter Tipe Perangkat DC/DRC.');
+                    }
+                },
+            ],
             'vm_server' => ['nullable', 'string', 'max:255'],
             'ip_address' => ['nullable', 'string', 'max:255'],
             // Excel often parses VLAN as numeric, so allow mixed scalar input.
@@ -84,12 +100,48 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
             'objid_ping' => ['nullable', 'max:255'],
             'objid_diskfree' => ['nullable', 'max:255'],
             'objid_traffic' => ['nullable', 'max:255'],
-            'lokasi' => ['nullable', 'string', 'max:255'],
+            'lokasi' => [
+                'required',
+                'string',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $normalized = strtolower(trim((string) $value));
+                    $isDc = in_array($normalized, ['dc', 'data center'], true);
+                    $isDrc = in_array($normalized, ['drc', 'disaster recovery', 'disaster recovery center'], true);
+
+                    if (!$isDc && !$isDrc) {
+                        $fail('Lokasi wajib diisi DC atau DRC.');
+                    }
+                },
+            ],
             'fungsi' => ['nullable', 'string', 'max:255'],
             'environment' => ['nullable', 'string', 'max:255'],
             'owner_team' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'string', 'max:255'],
             'keterangan' => ['nullable', 'string'],
+        ];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterImport::class => static function (): void {
+                DcDrcDevice::query()
+                    ->whereRaw("LOWER(device_type) = 'vm'")
+                    ->whereNull('vm_host_id')
+                    ->whereNotNull('host_server')
+                    ->orderBy('id')
+                    ->each(function (DcDrcDevice $vm): void {
+                        $hostId = DcDrcDevice::query()
+                            ->whereRaw("LOWER(device_type) = 'vm host'")
+                            ->whereRaw('LOWER(server_name) = ?', [strtolower((string) $vm->host_server)])
+                            ->value('id');
+
+                        if ($hostId) {
+                            $vm->update(['vm_host_id' => $hostId]);
+                        }
+                    });
+            },
         ];
     }
 
@@ -126,12 +178,21 @@ class DcDrcDevicesImport implements ToModel, WithHeadingRow, WithValidation
 
         $compactValue = strtolower(preg_replace('/[\s_-]+/', '', $rawValue) ?? $rawValue);
 
-        return match ($compactValue) {
+        $normalized = match ($compactValue) {
             'vm' => 'VM',
             'vmhost' => 'vm host',
             'baremetal' => 'bare metal',
             'physical' => 'physical',
             default => $rawValue,
         };
+
+        return DcDrcDeviceType::query()
+            ->whereRaw('LOWER(name) = ?', [strtolower($normalized)])
+            ->value('name') ?? $normalized;
+    }
+
+    private function normalizeLocation(mixed $location): string
+    {
+        return DcDrcDevice::resolveRoom($this->normalizeNullableString($location));
     }
 }

@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ParameterLivestreamController;
 use App\Http\Controllers\Admin\ParameterNetworkMonitorController;
+use App\Http\Controllers\Admin\ParameterDcDrcDeviceTypeController;
 use App\Http\Controllers\Admin\PcInventoryController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
@@ -149,6 +150,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::put('/aset-ti/cctv/{device}', [CctvController::class, 'update'])->name('aset-ti.cctv.update');
     Route::delete('/aset-ti/cctv/{device}', [CctvController::class, 'destroy'])->name('aset-ti.cctv.delete');
     Route::get('/aset-ti/perangkat-dc-drc-dashboard', [DcDrcDeviceController::class, 'dashboard'])->name('aset-ti.perangkat-dc-drc.dashboard');
+    Route::get('/aset-ti/data-center-room', [DcDrcDeviceController::class, 'room'])->name('aset-ti.data-center-room');
     Route::get('/aset-ti/perangkat-dc-drc', [DcDrcDeviceController::class, 'index'])->name('aset-ti.perangkat-dc-drc.index');
     Route::post('/aset-ti/perangkat-dc-drc', [DcDrcDeviceController::class, 'store'])->name('aset-ti.perangkat-dc-drc.store');
     Route::put('/aset-ti/perangkat-dc-drc/{device}', [DcDrcDeviceController::class, 'update'])->name('aset-ti.perangkat-dc-drc.update');
@@ -192,6 +194,10 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::put('/parameter/livestream', [ParameterLivestreamController::class, 'update'])->name('parameter.livestream.update');
     Route::get('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'index'])->name('parameter.network-monitor.index');
     Route::put('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'update'])->name('parameter.network-monitor.update');
+    Route::get('/parameter/dc-drc-device-types', [ParameterDcDrcDeviceTypeController::class, 'index'])->name('parameter.dc-drc-device-types.index');
+    Route::post('/parameter/dc-drc-device-types', [ParameterDcDrcDeviceTypeController::class, 'store'])->name('parameter.dc-drc-device-types.store');
+    Route::put('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'update'])->name('parameter.dc-drc-device-types.update');
+    Route::delete('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'destroy'])->name('parameter.dc-drc-device-types.destroy');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
     Route::get('/cr-eksternal/dashboard', [ExternCrController::class, 'dashboard'])->name('cr-eksternal.dashboard');

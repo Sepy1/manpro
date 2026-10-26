@@ -12,6 +12,7 @@ class DcDrcDevicesExport implements FromCollection, WithHeadings
     {
         return DcDrcDevice::query()
             ->with('vmHost:id,server_name')
+            ->orderByRaw("CASE WHEN LOWER(device_type) = 'vm' THEN 1 ELSE 0 END")
             ->orderBy('id')
             ->get()
             ->map(function (DcDrcDevice $device) {
@@ -31,7 +32,7 @@ class DcDrcDevicesExport implements FromCollection, WithHeadings
                     'objid_ping' => $device->objid_ping,
                     'objid_diskfree' => $device->objid_diskfree,
                     'objid_traffic' => $device->objid_traffic,
-                    'lokasi' => $device->site,
+                    'lokasi' => $device->roomCode(),
                     'fungsi' => $device->system_role,
                     'environment' => $device->environment,
                     'owner_team' => $device->owner_team,

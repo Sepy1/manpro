@@ -1,6 +1,7 @@
 @php
     $isEdit = $isEdit ?? false;
     $vmHosts = $vmHosts ?? collect();
+    $deviceTypes = $deviceTypes ?? collect();
 @endphp
 
 <input type="text" name="server_name" value="{{ $isEdit ? '' : old('server_name') }}" {{ $isEdit ? 'x-model=editForm.server_name' : '' }} required placeholder="Server Name"
@@ -8,10 +9,9 @@
 <select name="device_type" {{ $isEdit ? 'x-model=editForm.device_type' : '' }}
     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
     <option value="">Pilih Tipe</option>
-    <option value="VM" @selected(!$isEdit && old('device_type') === 'VM')>VM</option>
-    <option value="vm host" @selected(!$isEdit && old('device_type') === 'vm host')>vm host</option>
-    <option value="bare metal" @selected(!$isEdit && old('device_type') === 'bare metal')>bare metal</option>
-    <option value="physical" @selected(!$isEdit && old('device_type') === 'physical')>physical</option>
+    @foreach ($deviceTypes as $deviceType)
+        <option value="{{ $deviceType->name }}" @selected(!$isEdit && old('device_type') === $deviceType->name)>{{ $deviceType->name }}</option>
+    @endforeach
 </select>
 
 <div>

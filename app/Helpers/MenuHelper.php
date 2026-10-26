@@ -92,6 +92,10 @@ class MenuHelper
                         'path' => '/admin/aset-ti/perangkat-dc-drc',
                     ],
                     [
+                        'name' => 'Data Center Room',
+                        'path' => '/admin/aset-ti/data-center-room',
+                    ],
+                    [
                         'name' => 'Statistik server',
                         'path' => '/admin/aset-ti/statistik-server',
                     ],
@@ -164,6 +168,10 @@ class MenuHelper
                     [
                         'name' => 'Monitoring Jaringan',
                         'path' => '/admin/parameter/network-monitor',
+                    ],
+                    [
+                        'name' => 'Tipe Perangkat DC/DRC',
+                        'path' => '/admin/parameter/dc-drc-device-types',
                     ],
                     [
                         'name' => 'Manajemen User',

@@ -1,5 +1,6 @@
 @php
     $vmHosts = $vmHosts ?? collect();
+    $deviceTypes = $deviceTypes ?? collect();
 @endphp
 
 <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
@@ -18,10 +19,9 @@
                     <select name="device_type" x-model="editForm.device_type"
                         class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
                         <option value="">Pilih Tipe</option>
-                        <option value="VM">VM</option>
-                        <option value="vm host">vm host</option>
-                        <option value="bare metal">bare metal</option>
-                        <option value="physical">physical</option>
+                        @foreach ($deviceTypes as $deviceType)
+                            <option value="{{ $deviceType->name }}">{{ $deviceType->name }}</option>
+                        @endforeach
                     </select>
                 </td>
             </tr>

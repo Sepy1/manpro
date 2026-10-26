@@ -1,5 +1,5 @@
 """Aplikasi client inventaris PC (Windows). Jalankan: python client.py"""
-import sys, os, socket, platform, hashlib, psutil, requests
+import sys, os, ssl, socket, platform, hashlib, tempfile, atexit, psutil, requests
 import tkinter as tk
 from tkinter import ttk, messagebox
 from urllib.parse import urlparse
@@ -7,10 +7,34 @@ import certifi
 
 SERVER_URL = "http://127.0.0.1:8000/api/inventory"   # ganti dengan IP server
 OFFICES_URL = SERVER_URL.rstrip("/") + "/offices"
-# Untuk HTTPS publik, gunakan bundle CA terbaru dari certifi. Untuk sertifikat
-# internal/self-signed, letakkan file CA bernama server-ca.pem di folder client.py.
-CUSTOM_CA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server-ca.pem")
-SSL_VERIFY = CUSTOM_CA_FILE if os.path.isfile(CUSTOM_CA_FILE) else certifi.where()
+def _ssl_ca_bundle():
+    """Gabungkan CA certifi dan Windows agar HTTPS tetap diverifikasi dengan aman."""
+    custom_ca = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server-ca.pem")
+    if os.path.isfile(custom_ca):
+        return custom_ca
+    if not hasattr(ssl, "enum_certificates"):
+        return certifi.where()
+
+    bundle = tempfile.NamedTemporaryFile(prefix="inventory-ca-", suffix=".pem", delete=False)
+    bundle_path = bundle.name
+    seen = set()
+    try:
+        with open(certifi.where(), "rb") as source:
+            bundle.write(source.read())
+        for store_name in ("ROOT", "CA"):
+            for cert_bytes, encoding, _trust in ssl.enum_certificates(store_name):
+                if encoding != "x509_asn" or cert_bytes in seen:
+                    continue
+                seen.add(cert_bytes)
+                bundle.write(ssl.DER_cert_to_PEM_cert(cert_bytes).encode("ascii"))
+    finally:
+        bundle.close()
+
+    atexit.register(lambda: os.path.isfile(bundle_path) and os.remove(bundle_path))
+    return bundle_path
+
+
+SSL_VERIFY = _ssl_ca_bundle()
 API_KEY = "GANTI_API_KEY_RAHASIA"                        # sama dengan server.py
 
 
