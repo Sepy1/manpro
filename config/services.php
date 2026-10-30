@@ -6,6 +6,10 @@ return [
         'api_key' => env('INVENTORY_API_KEY'),
     ],
 
+    'backup_monitoring' => [
+        'api_key' => env('BACKUP_MONITORING_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

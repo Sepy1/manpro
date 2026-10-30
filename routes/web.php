@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AsetTiController;
 use App\Http\Controllers\Admin\AssistantChatController;
+use App\Http\Controllers\Admin\BackupMonitoringController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
 use App\Http\Controllers\Admin\DivisionController;
@@ -160,6 +161,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::post('/aset-ti/perangkat-dc-drc/import', [DcDrcDeviceController::class, 'import'])->name('aset-ti.perangkat-dc-drc.import');
     Route::get('/aset-ti/monitoring', [MonitoringController::class, 'index'])->name('aset-ti.monitoring.index');
     Route::get('/aset-ti/monitoring/data', [MonitoringController::class, 'data'])->name('aset-ti.monitoring.data');
+    Route::get('/monitoring-backup', [BackupMonitoringController::class, 'index'])->name('monitoring-backup.index');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
     Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');

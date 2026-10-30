@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdminTwoFactorVerified;
+use App\Http\Middleware\EnsureBackupMonitoringApiKey;
 use App\Http\Middleware\EnsureExternCrApiKey;
 use App\Http\Middleware\EnsureInventoryApiKey;
 use App\Http\Middleware\LogUserMenuActivity;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin.2fa' => EnsureAdminTwoFactorVerified::class,
+            'backup-monitoring.api-key' => EnsureBackupMonitoringApiKey::class,
             'extern-cr.api-key' => EnsureExternCrApiKey::class,
             'inventory.api-key' => EnsureInventoryApiKey::class,
             'menu.activity' => LogUserMenuActivity::class,

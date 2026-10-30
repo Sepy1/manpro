@@ -88,6 +88,10 @@ class MenuHelper
                         'path' => '/admin/aset-ti/monitoring',
                     ],
                     [
+                        'name' => 'Monitoring Backup',
+                        'path' => '/admin/monitoring-backup',
+                    ],
+                    [
                         'name' => 'Perangkat dc-drc',
                         'path' => '/admin/aset-ti/perangkat-dc-drc',
                     ],
