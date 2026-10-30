@@ -1,7 +1,11 @@
 <?php
 
+use App\Exports\BackupMonitoringEventsExport;
 use App\Models\BackupMonitoringEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Excel as ExcelWriter;
+use Maatwebsite\Excel\Facades\Excel;
 
 uses(RefreshDatabase::class);
 
@@ -64,6 +68,7 @@ it('shows received backup events to admins only', function () {
         ->assertSee('Monitoring Backup')
         ->assertSee($event->server)
         ->assertSee($event->nama_db)
+        ->assertSee('1,250.50 MB')
         ->assertSee($event->lokasi_file);
 
     $response->assertSee('href="/admin/monitoring-backup"', false);
@@ -98,4 +103,48 @@ it('validates backup monitoring date filters', function () {
     $this->actingAs(\App\Models\User::factory()->admin()->create())
         ->get('/admin/monitoring-backup?date_from=2026-10-31&date_until=2026-10-30')
         ->assertSessionHasErrors('date_until');
+});
+
+it('exports backup events matching the selected filters', function () {
+    BackupMonitoringEvent::query()->create(backupMonitoringPayload([
+        'tanggal' => '2026-10-30 21:30:00',
+        'server' => 'DB-SERVER-01',
+        'status' => 'SUCCESS',
+    ]));
+    BackupMonitoringEvent::query()->create(backupMonitoringPayload([
+        'tanggal' => '2026-10-29 21:30:00',
+        'server' => 'DB-SERVER-02',
+        'status' => 'FAILED',
+        'nama_db' => 'db_archive',
+    ]));
+
+    Excel::fake();
+    $this->travelTo(Carbon::parse('2026-10-31 12:00:00'));
+
+    $this->actingAs(\App\Models\User::factory()->admin()->create())
+        ->get('/admin/monitoring-backup/export?keyword=core&status=SUCCESS&date_from=2026-10-30&date_until=2026-10-30')
+        ->assertOk();
+
+    Excel::assertDownloaded('monitoring-backup-20261031-120000.xlsx', function (BackupMonitoringEventsExport $export): bool {
+        return $export->query()->get()->pluck('server')->all() === ['DB-SERVER-01'];
+    });
+
+    $this->travelBack();
+});
+
+it('restricts backup monitoring exports to admins', function () {
+    $this->actingAs(\App\Models\User::factory()->create(['role' => 'officer']))
+        ->get('/admin/monitoring-backup/export')
+        ->assertForbidden();
+});
+
+it('generates an xlsx workbook for backup monitoring exports', function () {
+    BackupMonitoringEvent::query()->create(backupMonitoringPayload());
+
+    $workbook = Excel::raw(
+        new BackupMonitoringEventsExport(BackupMonitoringEvent::query()),
+        ExcelWriter::XLSX
+    );
+
+    expect(substr($workbook, 0, 2))->toBe('PK');
 });

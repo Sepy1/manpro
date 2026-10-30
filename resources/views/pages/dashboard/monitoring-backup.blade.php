@@ -46,8 +46,9 @@
                 <input type="date" name="date_until" value="{{ $filters['date_until'] }}"
                     class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90" />
             </label>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
+                <a href="{{ route('admin.monitoring-backup.export', request()->query()) }}" class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">Export Excel</a>
                 <a href="{{ route('admin.monitoring-backup.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">Reset</a>
             </div>
         </form>
@@ -75,7 +76,7 @@
                             <td class="whitespace-nowrap px-3 py-3 text-xs text-gray-700 dark:text-gray-300">{{ $event->tanggal->format('Y-m-d H:i:s') }}</td>
                             <td class="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900 dark:text-white/90">{{ $event->server }}</td>
                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $event->nama_db }}</td>
-                            <td class="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-300">{{ number_format((float) $event->ukuran, 2, '.', ',') }}</td>
+                            <td class="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-300">{{ number_format((float) $event->ukuran, 2, '.', ',') }} MB</td>
                             <td class="whitespace-nowrap px-3 py-3 text-xs">
                                 <span class="inline-flex rounded-full px-2 py-1 font-medium {{ $statusClass }}">{{ $event->status }}</span>
                             </td>
