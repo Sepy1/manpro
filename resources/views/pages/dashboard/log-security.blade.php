@@ -6,7 +6,7 @@
     <x-dashboard.accent-card
         accent-index="0"
         shell-overflow="visible"
-        class="flex min-h-0 h-full flex-col"
+        class="flex min-h-0 min-w-0 h-full flex-col"
         padding="p-5 lg:p-6"
     >
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -48,7 +48,7 @@
             </div>
         </form>
 
-        <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-gray-200 dark:border-gray-800">
+        <div class="w-full min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800">
             <table class="min-w-[1400px] w-full border-separate border-spacing-0 text-left">
                 <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-gray-50 dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
                     <tr class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
