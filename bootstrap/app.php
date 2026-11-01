@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureAdminTwoFactorVerified;
 use App\Http\Middleware\EnsureBackupMonitoringApiKey;
 use App\Http\Middleware\EnsureExternCrApiKey;
 use App\Http\Middleware\EnsureInventoryApiKey;
+use App\Http\Middleware\EnsureSecurityLogApiKey;
 use App\Http\Middleware\LogUserMenuActivity;
 use App\Http\Middleware\RestrictVendorNetworkAccess;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'backup-monitoring.api-key' => EnsureBackupMonitoringApiKey::class,
             'extern-cr.api-key' => EnsureExternCrApiKey::class,
             'inventory.api-key' => EnsureInventoryApiKey::class,
+            'security-log.api-key' => EnsureSecurityLogApiKey::class,
             'menu.activity' => LogUserMenuActivity::class,
             'vendor.network.only' => RestrictVendorNetworkAccess::class,
         ]);

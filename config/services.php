@@ -10,6 +10,10 @@ return [
         'api_key' => env('BACKUP_MONITORING_API_KEY'),
     ],
 
+    'security_log' => [
+        'api_key' => env('SECURITY_LOG_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

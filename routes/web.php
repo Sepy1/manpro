@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\PcInventoryController;
 use App\Http\Controllers\Admin\ProfileManagementController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
+use App\Http\Controllers\Admin\SecurityLogController;
 use App\Http\Controllers\Admin\UserActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
@@ -163,6 +164,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/aset-ti/monitoring/data', [MonitoringController::class, 'data'])->name('aset-ti.monitoring.data');
     Route::get('/monitoring-backup/export', [BackupMonitoringController::class, 'export'])->name('monitoring-backup.export');
     Route::get('/monitoring-backup', [BackupMonitoringController::class, 'index'])->name('monitoring-backup.index');
+    Route::get('/log-security', [SecurityLogController::class, 'index'])->name('log-security.index');
+    Route::delete('/log-security/{securityLog}', [SecurityLogController::class, 'destroy'])->name('log-security.destroy');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
     Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');

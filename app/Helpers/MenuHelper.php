@@ -92,6 +92,10 @@ class MenuHelper
                         'path' => '/admin/monitoring-backup',
                     ],
                     [
+                        'name' => 'Log Security',
+                        'path' => '/admin/log-security',
+                    ],
+                    [
                         'name' => 'Perangkat dc-drc',
                         'path' => '/admin/aset-ti/perangkat-dc-drc',
                     ],
