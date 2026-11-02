@@ -19,9 +19,55 @@
                 </p>
             </div>
 
-            <form method="POST" action="{{ route('admin.parameter.application-theme.update') }}" x-data="{ selected: @js(old('theme', $activeTheme)) }">
+            <form method="POST" action="{{ route('admin.parameter.application-theme.update') }}" x-data="{
+                selected: @js(old('theme', $activeTheme)),
+                selectedFont: @js(old('font_family', $activeFontFamily)),
+                selectedSize: @js(old('font_size', $activeFontSize))
+            }">
                 @csrf
                 @method('PUT')
+
+                <div class="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 md:grid-cols-2 dark:border-white/10 dark:bg-black/10 lg:p-5">
+                    <div>
+                        <label for="font_family" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Jenis font aplikasi</label>
+                        <select id="font_family" name="font_family" x-model="selectedFont"
+                            class="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                            @foreach ($fontFamilies as $key => $font)
+                                <option value="{{ $key }}">{{ $font['name'] }} — {{ $font['description'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('font_family')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-2 text-sm text-gray-700 dark:text-gray-300"
+                            :style="{ fontFamily: {
+                                figtree: 'Figtree, Inter, system-ui, sans-serif',
+                                system: 'system-ui, sans-serif',
+                                segoe: 'Segoe UI, Arial, sans-serif',
+                                arial: 'Arial, sans-serif',
+                                georgia: 'Georgia, serif'
+                            }[selectedFont] }">
+                            Contoh tampilan: Informasi aplikasi mudah dibaca.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="font_size" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Ukuran font aplikasi</label>
+                        <select id="font_size" name="font_size" x-model="selectedSize"
+                            class="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                            @foreach ($fontSizes as $key => $size)
+                                <option value="{{ $key }}">{{ $size['name'] }} — {{ $size['description'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('font_size')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        <div class="mt-2 flex items-baseline gap-2 text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold" :style="{ fontSize: { compact: '12px', normal: '13px', comfortable: '14px', large: '15.2px' }[selectedSize] }">Aa</span>
+                            <span class="text-xs">Preview ukuran teks</span>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($themes as $key => $theme)

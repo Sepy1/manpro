@@ -1,5 +1,9 @@
 @php($applicationTheme = \App\Models\ApplicationThemeSetting::activeTheme())
 @php($applicationThemeMode = \App\Models\ApplicationThemeSetting::activeMode())
+@php($applicationFontFamily = \App\Models\ApplicationThemeSetting::activeFontFamily())
+@php($applicationFontSize = \App\Models\ApplicationThemeSetting::activeFontSize())
+@php($applicationFontStack = \App\Models\ApplicationThemeSetting::FONT_FAMILIES[$applicationFontFamily]['stack'])
+@php($applicationFontSizeValue = \App\Models\ApplicationThemeSetting::FONT_SIZES[$applicationFontSize]['value'])
 {{-- Terapkan tema sebelum paint agar tidak terjadi kedipan warna. --}}
 <script>
     (function () {
@@ -7,6 +11,10 @@
         root.classList.toggle('dark', @json($applicationThemeMode === 'dark'));
         root.dataset.appTheme = @json($applicationTheme);
         root.dataset.appThemeMode = @json($applicationThemeMode);
+        root.dataset.appFont = @json($applicationFontFamily);
+        root.dataset.appFontSize = @json($applicationFontSize);
+        root.style.setProperty('--app-font-family', @json($applicationFontStack));
+        root.style.setProperty('--app-font-size', @json($applicationFontSizeValue));
         try {
             localStorage.setItem('app-theme', @json($applicationTheme));
         } catch (_) {

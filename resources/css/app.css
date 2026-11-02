@@ -3,7 +3,11 @@
 @tailwind utilities;
 
 html {
-    font-size: 80%;
+    font-size: var(--app-font-size, 80%);
+}
+
+html[data-app-font] body {
+    font-family: var(--app-font-family) !important;
 }
 
 /* Tema aplikasi: seluruh palet mempertahankan kontras tinggi untuk teks dan kontrol. */
@@ -216,6 +220,23 @@ html[data-app-theme-mode="light"] [data-app-sidebar] .menu-item-active .menu-ite
 html[data-app-theme-mode="light"] [data-app-sidebar] .menu-dropdown-item-active,
 html[data-app-theme-mode="light"] [data-app-sidebar] .menu-dropdown-item-active span {
     color: #ffffff !important;
+}
+
+[data-app-sidebar],
+[data-app-sidebar] nav,
+[data-app-sidebar] ul,
+[data-app-sidebar] li {
+    max-width: 100%;
+}
+
+[data-app-sidebar] .no-scrollbar {
+    overflow-x: hidden !important;
+    scrollbar-width: none;
+}
+
+[data-app-sidebar] .no-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 html[data-app-theme] input:focus,

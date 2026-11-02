@@ -8,6 +8,23 @@ use Throwable;
 class ApplicationThemeSetting extends Model
 {
     public const DEFAULT_THEME = 'midnight';
+    public const DEFAULT_FONT_FAMILY = 'figtree';
+    public const DEFAULT_FONT_SIZE = 'normal';
+
+    public const FONT_FAMILIES = [
+        'figtree' => ['name' => 'Figtree', 'description' => 'Modern dan ringkas', 'stack' => 'Figtree, Inter, ui-sans-serif, system-ui, sans-serif'],
+        'system' => ['name' => 'System UI', 'description' => 'Natural sesuai perangkat', 'stack' => 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif'],
+        'segoe' => ['name' => 'Segoe UI', 'description' => 'Jelas dan familiar', 'stack' => '"Segoe UI", Arial, sans-serif'],
+        'arial' => ['name' => 'Arial', 'description' => 'Sederhana dan universal', 'stack' => 'Arial, Helvetica, sans-serif'],
+        'georgia' => ['name' => 'Georgia', 'description' => 'Formal dengan karakter serif', 'stack' => 'Georgia, "Times New Roman", serif'],
+    ];
+
+    public const FONT_SIZES = [
+        'compact' => ['name' => 'Ringkas', 'value' => '75%', 'description' => 'Lebih banyak informasi dalam satu layar'],
+        'normal' => ['name' => 'Normal', 'value' => '80%', 'description' => 'Ukuran standar aplikasi'],
+        'comfortable' => ['name' => 'Nyaman', 'value' => '87.5%', 'description' => 'Lebih lega dan mudah dibaca'],
+        'large' => ['name' => 'Besar', 'value' => '95%', 'description' => 'Keterbacaan maksimal'],
+    ];
 
     public const THEMES = [
         'midnight' => [
@@ -72,7 +89,7 @@ class ApplicationThemeSetting extends Model
         ],
     ];
 
-    protected $fillable = ['theme'];
+    protected $fillable = ['theme', 'font_family', 'font_size'];
 
     public static function activeTheme(): string
     {
@@ -88,5 +105,27 @@ class ApplicationThemeSetting extends Model
     public static function activeMode(): string
     {
         return self::THEMES[self::activeTheme()]['mode'];
+    }
+
+    public static function activeFontFamily(): string
+    {
+        try {
+            $font = (string) (self::query()->value('font_family') ?? self::DEFAULT_FONT_FAMILY);
+        } catch (Throwable) {
+            return self::DEFAULT_FONT_FAMILY;
+        }
+
+        return array_key_exists($font, self::FONT_FAMILIES) ? $font : self::DEFAULT_FONT_FAMILY;
+    }
+
+    public static function activeFontSize(): string
+    {
+        try {
+            $size = (string) (self::query()->value('font_size') ?? self::DEFAULT_FONT_SIZE);
+        } catch (Throwable) {
+            return self::DEFAULT_FONT_SIZE;
+        }
+
+        return array_key_exists($size, self::FONT_SIZES) ? $size : self::DEFAULT_FONT_SIZE;
     }
 }

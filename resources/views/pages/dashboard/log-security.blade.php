@@ -83,50 +83,50 @@
             </div>
         </form>
 
-        <div class="w-full min-h-0 min-w-0 max-w-full flex-1 overflow-auto rounded-xl border border-gray-200 dark:border-gray-800">
-            <table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0 text-left">
+        <div class="w-full min-h-0 min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800">
+            <table class="w-full min-w-0 table-fixed border-separate border-spacing-0 text-left">
                 <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-gray-50 dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
                     <tr class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        <th class="w-36 px-3 py-3">Waktu</th>
-                        <th class="w-40 px-3 py-3">Device / Severity</th>
-                        <th class="w-52 px-3 py-3">Serangan</th>
-                        <th class="w-44 px-3 py-3">Source</th>
-                        <th class="w-44 px-3 py-3">Destination</th>
-                        <th class="px-3 py-3">Request</th>
-                        <th class="w-20 px-3 py-3 text-center">Aksi</th>
+                        <th class="w-[14%] px-2 py-3">Waktu</th>
+                        <th class="w-[14%] px-2 py-3">Device / Severity</th>
+                        <th class="w-[19%] px-2 py-3">Serangan</th>
+                        <th class="w-[14%] px-2 py-3">Source</th>
+                        <th class="w-[14%] px-2 py-3">Destination</th>
+                        <th class="w-[18%] px-2 py-3">Request</th>
+                        <th class="w-[7%] px-2 py-3 text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($logs as $log)
                         <tr class="align-top [&_td]:border-b [&_td]:border-gray-100 dark:[&_td]:border-gray-800">
-                            <td class="px-3 py-3 text-xs text-gray-700 dark:text-gray-300">
-                                <div class="whitespace-nowrap">{{ $log->event_time }}</div>
+                            <td class="break-words px-2 py-3 text-xs text-gray-700 dark:text-gray-300">
+                                <div>{{ $log->event_time }}</div>
                                 <div class="mt-1 text-[11px] text-gray-400">Masuk {{ $log->created_at->format('d/m/Y H:i') }}</div>
                             </td>
-                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white/90">
+                            <td class="min-w-0 px-2 py-3 text-sm font-medium text-gray-900 dark:text-white/90">
                                 <div class="truncate" title="{{ $log->device }}">{{ $log->device }}</div>
                                 <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{{ $log->severity }}</span>
                             </td>
-                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
+                            <td class="break-words px-2 py-3 text-sm text-gray-700 dark:text-gray-300">
                                 <div class="font-medium text-gray-900 dark:text-white/90">{{ $log->attack }}</div>
                                 <div class="mt-1 text-xs text-gray-500">ID {{ $log->attackid }} · {{ $log->subtype }} / {{ $log->action }}</div>
                             </td>
-                            <td class="break-all px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $log->srcip }}:{{ $log->srcport }}</td>
-                            <td class="break-all px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
+                            <td class="break-all px-2 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $log->srcip }}:{{ $log->srcport }}</td>
+                            <td class="break-all px-2 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
                                 {{ $log->dstip }}:{{ $log->dstport }}<br>
                                 <span class="font-sans">{{ $log->service }}</span>
                             </td>
-                            <td class="break-all px-3 py-3 text-xs text-gray-700 dark:text-gray-300">
+                            <td class="break-all px-2 py-3 text-xs text-gray-700 dark:text-gray-300">
                                 @if ($log->method !== '-')
                                     <span>{{ $log->method }}</span>
                                 @endif
                                 {{ $log->url }}
                             </td>
-                            <td class="px-3 py-3 text-center">
+                            <td class="px-1 py-3 text-center">
                                 <form method="POST" action="{{ route('admin.log-security.destroy', $log) }}" onsubmit="return confirm('Hapus log serangan ini?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-900/20">Hapus</button>
+                                    <button class="max-w-full rounded-lg border border-red-300 px-2 py-1.5 text-[11px] font-medium text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-900/20">Hapus</button>
                                 </form>
                             </td>
                         </tr>

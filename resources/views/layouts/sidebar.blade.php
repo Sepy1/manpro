@@ -170,8 +170,8 @@
     </div>
 
     <!-- Navigation Menu -->
-    <div class="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain scroll-smooth">
-        <nav class="mb-6">
+    <div class="no-scrollbar flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain scroll-smooth">
+        <nav class="mb-6 min-w-0">
             <div class="flex flex-col gap-4">
                 @foreach ($menuGroups as $groupIndex => $menuGroup)
                     <div>
@@ -191,13 +191,13 @@
                         </h2>
 
                         <!-- Menu Items -->
-                        <ul class="flex flex-col gap-1.5">
+                        <ul class="min-w-0 flex flex-col gap-1.5">
                             @foreach ($menuGroup['items'] as $itemIndex => $item)
                                 <li>
                                     @if (isset($item['subItems']))
                                         <!-- Menu Item with Submenu -->
                                         <button @click="toggleSubmenu({{ $groupIndex }}, {{ $itemIndex }})"
-                                            class="menu-item group w-full flex-nowrap items-center"
+                                            class="menu-item group min-w-0 w-full flex-nowrap items-center overflow-hidden"
                                             :class="[
                                                 isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ?
                                                 'menu-item-active' : 'menu-item-inactive',
@@ -223,7 +223,7 @@
                                                     ? 'text-white dark:text-sky-300'
                                                     : 'text-blue-50/95 dark:text-gray-200'"
                                                 class="menu-item-text flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap text-base font-semibold transition-colors duration-150">
-                                                {{ $item['name'] }}
+                                                <span class="min-w-0 truncate">{{ $item['name'] }}</span>
                                                 @if (!empty($item['new']))
                                                     <span class="absolute right-10"
                                                         :class="isActive('{{ $item['path'] ?? '' }}') ?
@@ -257,7 +257,7 @@
                                             x-transition:leave-start="opacity-100 translate-y-0"
                                             x-transition:leave-end="opacity-0 -translate-y-1"
                                         >
-                                            <ul class="relative mt-2 space-y-0.5 border-l-2 border-white/25 pl-3 ml-8 dark:border-gray-700/90">
+                                            <ul class="relative mt-2 min-w-0 space-y-0.5 overflow-hidden border-l-2 border-white/25 pl-3 ml-8 dark:border-gray-700/90">
                                                 @foreach ($item['subItems'] as $subItem)
                                                     <li>
                                                         @if (!empty($subItem['logout']))
@@ -271,12 +271,12 @@
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <a href="{{ $subItem['path'] }}" @click="$store.sidebar.closeMobile()" class="group/menu-sub menu-dropdown-item"
+                                                            <a href="{{ $subItem['path'] }}" @click="$store.sidebar.closeMobile()" class="group/menu-sub menu-dropdown-item min-w-0 overflow-hidden"
                                                                 :class="isActive('{{ $subItem['path'] }}') ?
                                                                     'menu-dropdown-item-active' :
                                                                     'menu-dropdown-item-inactive'">
                                                                 <span class="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60 transition-opacity group-hover/menu-sub:opacity-100"></span>
-                                                                <span>{{ $subItem['name'] }}</span>
+                                                                <span class="min-w-0 truncate">{{ $subItem['name'] }}</span>
                                                                 <span class="flex items-center gap-1 ml-auto">
                                                                     @if (!empty($subItem['new']))
                                                                         <span
