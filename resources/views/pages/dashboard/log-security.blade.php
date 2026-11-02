@@ -28,7 +28,7 @@
             </div>
         @endif
 
-        <form method="GET" action="{{ route('admin.log-security.index') }}" class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 dark:border-gray-700">
+        <form method="GET" action="{{ route('admin.log-security.index') }}" class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
             <input
                 type="text"
                 name="keyword"
@@ -54,6 +54,20 @@
                     <option value="{{ $action }}" @selected($filters['action'] === $action)>{{ $action }}</option>
                 @endforeach
             </select>
+            <input
+                type="text"
+                name="source"
+                value="{{ $filters['source'] }}"
+                placeholder="Source IP"
+                class="h-10 min-w-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90"
+            />
+            <input
+                type="text"
+                name="destination"
+                value="{{ $filters['destination'] }}"
+                placeholder="Destination IP"
+                class="h-10 min-w-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90"
+            />
             <label class="flex min-w-0 items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <span class="shrink-0">Dari</span>
                 <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700 dark:text-white/90" />
@@ -62,7 +76,7 @@
                 <span class="shrink-0">Sampai</span>
                 <input type="date" name="date_until" value="{{ $filters['date_until'] }}" class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700 dark:text-white/90" />
             </label>
-            <div class="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4 2xl:col-span-1 2xl:flex-nowrap">
+            <div class="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
                 <a href="{{ route('admin.log-security.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">Reset</a>
             </div>

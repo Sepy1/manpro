@@ -19,6 +19,8 @@ class SecurityLogController extends Controller
             'severity' => ['nullable', 'string', 'max:50'],
             'device' => ['nullable', 'string', 'max:100'],
             'action' => ['nullable', 'string', 'max:100'],
+            'source' => ['nullable', 'string', 'max:45'],
+            'destination' => ['nullable', 'string', 'max:45'],
             'date_from' => ['nullable', 'date'],
             'date_until' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
@@ -47,6 +49,8 @@ class SecurityLogController extends Controller
             ->when(! empty($validated['severity']), fn ($builder) => $builder->where('severity', $validated['severity']))
             ->when(! empty($validated['device']), fn ($builder) => $builder->where('device', $validated['device']))
             ->when(! empty($validated['action']), fn ($builder) => $builder->where('action', $validated['action']))
+            ->when(! empty($validated['source']), fn ($builder) => $builder->where('srcip', 'like', '%'.trim($validated['source']).'%'))
+            ->when(! empty($validated['destination']), fn ($builder) => $builder->where('dstip', 'like', '%'.trim($validated['destination']).'%'))
             ->when(! empty($validated['date_from']), fn ($builder) => $builder->whereDate('event_time', '>=', $validated['date_from']))
             ->when(! empty($validated['date_until']), fn ($builder) => $builder->whereDate('event_time', '<=', $validated['date_until']));
 
@@ -63,6 +67,8 @@ class SecurityLogController extends Controller
                 'severity' => (string) ($validated['severity'] ?? ''),
                 'device' => (string) ($validated['device'] ?? ''),
                 'action' => (string) ($validated['action'] ?? ''),
+                'source' => trim((string) ($validated['source'] ?? '')),
+                'destination' => trim((string) ($validated['destination'] ?? '')),
                 'date_from' => (string) ($validated['date_from'] ?? ''),
                 'date_until' => (string) ($validated['date_until'] ?? ''),
             ],
