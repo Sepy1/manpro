@@ -110,7 +110,7 @@ it('allows admins to search and delete security logs', function () {
         ->assertOk()
         ->assertSee('Log Security')
         ->assertSee('FGT-EDGE-01')
-        ->assertDontSee('FGT-BRANCH-02')
+        ->assertDontSee('Port Scan')
         ->assertSee('href="/admin/log-security"', false);
 
     $this->delete(route('admin.log-security.destroy', $matchingLog))
@@ -132,4 +132,28 @@ it('restricts security log management to admins', function () {
 
     $this->delete(route('admin.log-security.destroy', $log))
         ->assertForbidden();
+});
+
+it('filters security logs by device action and event date range', function () {
+    SecurityAttackLog::query()->create([
+        ...array_diff_key(securityAttackLogPayload(), ['time' => true]),
+        'event_time' => '2026-11-01 21:00:00',
+    ]);
+    SecurityAttackLog::query()->create([
+        ...array_diff_key(securityAttackLogPayload([
+            'device' => 'FGT-BRANCH-02',
+            'action' => 'detected',
+            'attack' => 'Port Scan',
+        ]), ['time' => true]),
+        'event_time' => '2026-10-20 10:00:00',
+    ]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get('/admin/log-security?device=FGT-EDGE-01&action=blocked&date_from=2026-11-01&date_until=2026-11-01')
+        ->assertOk()
+        ->assertSee('SQL Injection')
+        ->assertDontSee('Port Scan');
+
+    $this->get('/admin/log-security?date_from=2026-11-02&date_until=2026-11-01')
+        ->assertSessionHasErrors('date_until');
 });

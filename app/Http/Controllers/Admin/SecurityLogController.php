@@ -17,6 +17,10 @@ class SecurityLogController extends Controller
         $validated = $request->validate([
             'keyword' => ['nullable', 'string', 'max:255'],
             'severity' => ['nullable', 'string', 'max:50'],
+            'device' => ['nullable', 'string', 'max:100'],
+            'action' => ['nullable', 'string', 'max:100'],
+            'date_from' => ['nullable', 'date'],
+            'date_until' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
         $keyword = trim((string) ($validated['keyword'] ?? ''));
 
@@ -40,7 +44,11 @@ class SecurityLogController extends Controller
                     }
                 });
             })
-            ->when(! empty($validated['severity']), fn ($builder) => $builder->where('severity', $validated['severity']));
+            ->when(! empty($validated['severity']), fn ($builder) => $builder->where('severity', $validated['severity']))
+            ->when(! empty($validated['device']), fn ($builder) => $builder->where('device', $validated['device']))
+            ->when(! empty($validated['action']), fn ($builder) => $builder->where('action', $validated['action']))
+            ->when(! empty($validated['date_from']), fn ($builder) => $builder->whereDate('event_time', '>=', $validated['date_from']))
+            ->when(! empty($validated['date_until']), fn ($builder) => $builder->whereDate('event_time', '<=', $validated['date_until']));
 
         return view('pages.dashboard.log-security', [
             'logs' => $query->latest('created_at')->paginate(25)->withQueryString(),
@@ -48,9 +56,15 @@ class SecurityLogController extends Controller
                 ->distinct()
                 ->orderBy('severity')
                 ->pluck('severity'),
+            'devices' => SecurityAttackLog::query()->distinct()->orderBy('device')->pluck('device'),
+            'actions' => SecurityAttackLog::query()->distinct()->orderBy('action')->pluck('action'),
             'filters' => [
                 'keyword' => $keyword,
                 'severity' => (string) ($validated['severity'] ?? ''),
+                'device' => (string) ($validated['device'] ?? ''),
+                'action' => (string) ($validated['action'] ?? ''),
+                'date_from' => (string) ($validated['date_from'] ?? ''),
+                'date_until' => (string) ($validated['date_until'] ?? ''),
             ],
             'filteredCount' => (clone $query)->count(),
             'totalCount' => SecurityAttackLog::query()->count(),

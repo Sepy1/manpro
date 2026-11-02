@@ -28,7 +28,7 @@
             </div>
         @endif
 
-        <form method="GET" action="{{ route('admin.log-security.index') }}" class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
+        <form method="GET" action="{{ route('admin.log-security.index') }}" class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 dark:border-gray-700">
             <input
                 type="text"
                 name="keyword"
@@ -42,53 +42,72 @@
                     <option value="{{ $severity }}" @selected($filters['severity'] === $severity)>{{ $severity }}</option>
                 @endforeach
             </select>
-            <div class="flex flex-wrap gap-2">
+            <select name="device" class="h-10 min-w-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                <option value="">Semua device</option>
+                @foreach ($devices as $device)
+                    <option value="{{ $device }}" @selected($filters['device'] === $device)>{{ $device }}</option>
+                @endforeach
+            </select>
+            <select name="action" class="h-10 min-w-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                <option value="">Semua action</option>
+                @foreach ($actions as $action)
+                    <option value="{{ $action }}" @selected($filters['action'] === $action)>{{ $action }}</option>
+                @endforeach
+            </select>
+            <label class="flex min-w-0 items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <span class="shrink-0">Dari</span>
+                <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700 dark:text-white/90" />
+            </label>
+            <label class="flex min-w-0 items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <span class="shrink-0">Sampai</span>
+                <input type="date" name="date_until" value="{{ $filters['date_until'] }}" class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700 dark:text-white/90" />
+            </label>
+            <div class="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4 2xl:col-span-1 2xl:flex-nowrap">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
                 <a href="{{ route('admin.log-security.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">Reset</a>
             </div>
         </form>
 
-        <div class="w-full min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800">
-            <table class="min-w-[1400px] w-full border-separate border-spacing-0 text-left">
+        <div class="w-full min-h-0 min-w-0 max-w-full flex-1 overflow-auto rounded-xl border border-gray-200 dark:border-gray-800">
+            <table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0 text-left">
                 <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-gray-50 dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
                     <tr class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        <th class="whitespace-nowrap px-3 py-3">Waktu</th>
-                        <th class="px-3 py-3">Device</th>
-                        <th class="px-3 py-3">Severity</th>
-                        <th class="px-3 py-3">Attack</th>
-                        <th class="px-3 py-3">Type / Action</th>
-                        <th class="px-3 py-3">Source</th>
-                        <th class="px-3 py-3">Destination</th>
-                        <th class="px-3 py-3">HTTP / URL</th>
-                        <th class="whitespace-nowrap px-3 py-3">Diterima</th>
-                        <th class="px-3 py-3">Aksi</th>
+                        <th class="w-36 px-3 py-3">Waktu</th>
+                        <th class="w-40 px-3 py-3">Device / Severity</th>
+                        <th class="w-52 px-3 py-3">Serangan</th>
+                        <th class="w-44 px-3 py-3">Source</th>
+                        <th class="w-44 px-3 py-3">Destination</th>
+                        <th class="px-3 py-3">Request</th>
+                        <th class="w-20 px-3 py-3 text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($logs as $log)
                         <tr class="align-top [&_td]:border-b [&_td]:border-gray-100 dark:[&_td]:border-gray-800">
-                            <td class="whitespace-nowrap px-3 py-3 text-xs text-gray-700 dark:text-gray-300">{{ $log->event_time }}</td>
-                            <td class="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900 dark:text-white/90">{{ $log->device }}</td>
-                            <td class="whitespace-nowrap px-3 py-3 text-xs">
+                            <td class="px-3 py-3 text-xs text-gray-700 dark:text-gray-300">
+                                <div class="whitespace-nowrap">{{ $log->event_time }}</div>
+                                <div class="mt-1 text-[11px] text-gray-400">Masuk {{ $log->created_at->format('d/m/Y H:i') }}</div>
+                            </td>
+                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white/90">
+                                <div class="truncate" title="{{ $log->device }}">{{ $log->device }}</div>
                                 <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{{ $log->severity }}</span>
                             </td>
-                            <td class="max-w-72 px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                                <div>{{ $log->attack }} (ID {{ $log->attackid }})</div>
+                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                <div class="font-medium text-gray-900 dark:text-white/90">{{ $log->attack }}</div>
+                                <div class="mt-1 text-xs text-gray-500">ID {{ $log->attackid }} · {{ $log->subtype }} / {{ $log->action }}</div>
                             </td>
-                            <td class="whitespace-nowrap px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $log->subtype }}<br>{{ $log->action }}</td>
-                            <td class="whitespace-nowrap px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $log->srcip }}:{{ $log->srcport }}</td>
-                            <td class="whitespace-nowrap px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
+                            <td class="break-all px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $log->srcip }}:{{ $log->srcport }}</td>
+                            <td class="break-all px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
                                 {{ $log->dstip }}:{{ $log->dstport }}<br>
                                 <span class="font-sans">{{ $log->service }}</span>
                             </td>
-                            <td class="max-w-80 break-all px-3 py-3 text-xs text-gray-700 dark:text-gray-300">
+                            <td class="break-all px-3 py-3 text-xs text-gray-700 dark:text-gray-300">
                                 @if ($log->method !== '-')
                                     <span>{{ $log->method }}</span>
                                 @endif
                                 {{ $log->url }}
                             </td>
-                            <td class="whitespace-nowrap px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                            <td class="whitespace-nowrap px-3 py-3">
+                            <td class="px-3 py-3 text-center">
                                 <form method="POST" action="{{ route('admin.log-security.destroy', $log) }}" onsubmit="return confirm('Hapus log serangan ini?')">
                                     @csrf
                                     @method('DELETE')
@@ -98,7 +117,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                                 Tidak ada log serangan yang sesuai filter.
                             </td>
                         </tr>

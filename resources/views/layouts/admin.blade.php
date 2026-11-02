@@ -16,7 +16,7 @@
 
         <div
             id="page-transition-root"
-            class="flex min-h-0 h-full flex-1 flex-col overflow-hidden opacity-100 blur-0 transition-[margin,filter,opacity] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] will-change-[filter,opacity]"
+            class="flex min-h-0 min-w-0 h-full flex-1 flex-col overflow-hidden opacity-100 blur-0 transition-[margin,filter,opacity] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] will-change-[filter,opacity]"
             @unless ($isLivestreamMode)
                 :class="{
                     'xl:ml-[290px]': $store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen,
@@ -47,7 +47,7 @@
 
             <main
                 @class([
-                    'flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-16 text-slate-800 sm:px-4 sm:pb-4 md:px-6 md:pb-6 xl:pt-6 dark:text-gray-100',
+                    'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-16 text-slate-800 sm:px-4 sm:pb-4 md:px-6 md:pb-6 xl:pt-6 dark:text-gray-100',
                     'p-0 max-xl:pt-0 max-xl:pl-0 md:p-0' => $isLivestreamMode,
                     'w-full max-w-none' => request()->routeIs('admin.dashboard')
                         || request()->routeIs('admin.map.*')
@@ -61,6 +61,7 @@
                         || request()->routeIs('admin.cr-eksternal.*')
                         || request()->routeIs('admin.cr-eksternal-vendor.*')
                         || request()->routeIs('admin.parameter.*')
+                        || request()->routeIs('admin.log-security.*')
                         || request()->routeIs('admin.profil*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
                         && !request()->routeIs('admin.map.*')
@@ -74,6 +75,7 @@
                         && !request()->routeIs('admin.cr-eksternal.*')
                         && !request()->routeIs('admin.cr-eksternal-vendor.*')
                         && !request()->routeIs('admin.parameter.*')
+                        && !request()->routeIs('admin.log-security.*')
                         && !request()->routeIs('admin.profil*'),
                 ])
             >
