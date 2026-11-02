@@ -2,7 +2,10 @@
 
 use App\Models\SecurityAttackLog;
 use App\Models\User;
+use App\Exports\SecurityAttackLogsExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 uses(RefreshDatabase::class);
 
@@ -132,6 +135,9 @@ it('restricts security log management to admins', function () {
 
     $this->delete(route('admin.log-security.destroy', $log))
         ->assertForbidden();
+
+    $this->get(route('admin.log-security.export'))
+        ->assertForbidden();
 });
 
 it('filters security logs by device action source destination and event date range', function () {
@@ -158,4 +164,31 @@ it('filters security logs by device action source destination and event date ran
 
     $this->get('/admin/log-security?date_from=2026-11-02&date_until=2026-11-01')
         ->assertSessionHasErrors('date_until');
+});
+
+it('exports security logs matching the selected filters', function () {
+    SecurityAttackLog::query()->create([
+        ...array_diff_key(securityAttackLogPayload(), ['time' => true]),
+        'event_time' => '2026-11-01 21:00:00',
+    ]);
+    SecurityAttackLog::query()->create([
+        ...array_diff_key(securityAttackLogPayload([
+            'device' => 'FGT-BRANCH-02',
+            'attack' => 'Port Scan',
+        ]), ['time' => true]),
+        'event_time' => '2026-11-01 20:00:00',
+    ]);
+
+    Excel::fake();
+    $this->travelTo(Carbon::parse('2026-11-02 09:30:00'));
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get('/admin/log-security/export?device=FGT-EDGE-01&severity=high')
+        ->assertOk();
+
+    Excel::assertDownloaded('log-security-20261102-093000.xlsx', function (SecurityAttackLogsExport $export): bool {
+        return $export->query()->get()->pluck('device')->all() === ['FGT-EDGE-01'];
+    });
+
+    $this->travelBack();
 });

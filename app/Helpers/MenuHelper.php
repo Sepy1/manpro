@@ -182,6 +182,10 @@ class MenuHelper
                         'path' => '/admin/parameter/dc-drc-device-types',
                     ],
                     [
+                        'name' => 'Tema Aplikasi',
+                        'path' => '/admin/parameter/tema-aplikasi',
+                    ],
+                    [
                         'name' => 'Manajemen User',
                         'path' => '/admin/manajemen-user',
                     ],

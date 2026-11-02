@@ -1,10 +1,14 @@
-{{-- Aplikasi hanya menggunakan tema gelap. Terapkan sebelum paint agar tidak berkedip terang. --}}
+@php($applicationTheme = \App\Models\ApplicationThemeSetting::activeTheme())
+@php($applicationThemeMode = \App\Models\ApplicationThemeSetting::activeMode())
+{{-- Terapkan tema sebelum paint agar tidak terjadi kedipan warna. --}}
 <script>
     (function () {
         var root = document.documentElement;
-        root.classList.add('dark');
+        root.classList.toggle('dark', @json($applicationThemeMode === 'dark'));
+        root.dataset.appTheme = @json($applicationTheme);
+        root.dataset.appThemeMode = @json($applicationThemeMode);
         try {
-            localStorage.removeItem('theme');
+            localStorage.setItem('app-theme', @json($applicationTheme));
         } catch (_) {
             /* private mode / disabled storage */
         }
@@ -16,7 +20,7 @@
                 meta.setAttribute('name', 'color-scheme');
                 document.head.appendChild(meta);
             }
-            meta.setAttribute('content', 'dark');
+            meta.setAttribute('content', @json($applicationThemeMode));
         } catch (e) {
             /* ignore */
         }

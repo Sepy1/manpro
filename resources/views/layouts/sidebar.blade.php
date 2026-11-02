@@ -11,6 +11,7 @@
 @endphp
 
 <aside id="sidebar"
+    data-app-sidebar
     class="fixed left-0 top-0 z-[99999] flex h-screen h-[100dvh] w-[min(88vw,320px)] max-w-[320px] flex-col overflow-hidden rounded-r-2xl border-r border-white/[0.12] bg-gradient-to-br from-[#101b2e] via-[#1a3d62] to-[#132a44] text-blue-50 shadow-[0_28px_64px_-16px_rgba(8,47,73,0.55)] shadow-slate-950/40 ring-1 ring-white/[0.1] backdrop-blur-md transition-[width,transform,box-shadow] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] dark:border-gray-800/80 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 dark:text-gray-200 dark:shadow-black/45 dark:ring-0 sm:px-0 xl:max-w-none"
     x-data="{
         openSubmenus: {},

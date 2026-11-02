@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\LivestreamPlayerController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\NetworkMapController;
 use App\Http\Controllers\Admin\ParameterDcDrcDeviceTypeController;
+use App\Http\Controllers\Admin\ParameterApplicationThemeController;
 use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ParameterLivestreamController;
@@ -165,6 +166,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/monitoring-backup/export', [BackupMonitoringController::class, 'export'])->name('monitoring-backup.export');
     Route::get('/monitoring-backup', [BackupMonitoringController::class, 'index'])->name('monitoring-backup.index');
     Route::get('/log-security', [SecurityLogController::class, 'index'])->name('log-security.index');
+    Route::get('/log-security/export', [SecurityLogController::class, 'export'])->name('log-security.export');
     Route::delete('/log-security/{securityLog}', [SecurityLogController::class, 'destroy'])->name('log-security.destroy');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
@@ -204,6 +206,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::post('/parameter/dc-drc-device-types', [ParameterDcDrcDeviceTypeController::class, 'store'])->name('parameter.dc-drc-device-types.store');
     Route::put('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'update'])->name('parameter.dc-drc-device-types.update');
     Route::delete('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'destroy'])->name('parameter.dc-drc-device-types.destroy');
+    Route::get('/parameter/tema-aplikasi', [ParameterApplicationThemeController::class, 'index'])->name('parameter.application-theme.index');
+    Route::put('/parameter/tema-aplikasi', [ParameterApplicationThemeController::class, 'update'])->name('parameter.application-theme.update');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');
     Route::get('/cr-eksternal/dashboard', [ExternCrController::class, 'dashboard'])->name('cr-eksternal.dashboard');
