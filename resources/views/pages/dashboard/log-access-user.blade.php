@@ -9,10 +9,6 @@
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Aktivitas Login Perangkat</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Menampilkan {{ number_format($filteredCount) }} dari {{ number_format($totalCount) }} log.</p>
             </div>
-            <a href="{{ route('admin.log-access-user.export', request()->query()) }}"
-                class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 transition hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">
-                Export Excel
-            </a>
         </div>
 
         @if (session('success'))
@@ -38,6 +34,10 @@
             <div class="flex gap-2 sm:col-span-2">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
                 <a href="{{ route('admin.log-access-user.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300">Reset</a>
+                <a href="{{ route('admin.log-access-user.export', request()->query()) }}"
+                    class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 transition hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">
+                    Export Excel
+                </a>
             </div>
         </form>
 
