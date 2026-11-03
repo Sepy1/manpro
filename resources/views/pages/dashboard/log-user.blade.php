@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-    <x-common.page-breadcrumb pageTitle="Log User" />
+    <x-common.page-breadcrumb pageTitle="Audit Log" />
 
     <div class="flex min-h-0 h-full flex-col content-card p-5 lg:p-6">
         @if (session('status'))
@@ -11,11 +11,11 @@
         @endif
 
         <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Log Aktivitas User</h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Menampilkan log login dan aktivitas membuka menu.</p>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Audit Aktivitas User Aplikasi</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Riwayat login, login gagal, dan aktivitas membuka menu di dalam aplikasi.</p>
         </div>
 
-            <form method="GET" action="{{ route('admin.manajemen-log-user.index') }}"
+            <form method="GET" action="{{ route('admin.audit-log.index') }}"
                 class="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 md:grid-cols-6 dark:border-gray-700">
                 <select name="user_id"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90">
@@ -49,7 +49,7 @@
                         class="inline-flex h-10 items-center rounded-lg border border-brand-500 px-4 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:border-brand-400 dark:text-white/90 dark:hover:bg-brand-500/10">
                         Filter
                     </button>
-                    <a href="{{ route('admin.manajemen-log-user.index') }}"
+                    <a href="{{ route('admin.audit-log.index') }}"
                         class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">
                         Reset
                     </a>

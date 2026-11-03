@@ -1,8 +1,11 @@
 <?php
 
+use App\Exports\UserAccessLogsExport;
 use App\Models\User;
 use App\Models\UserAccessLog;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 
 uses(RefreshDatabase::class);
 
@@ -77,13 +80,43 @@ it('lets admins view filter and delete user access logs', function () {
 
     $this->actingAs(User::factory()->admin()->create())
         ->get('/admin/log-access-user?keyword=admin&status=success&device=FortiGate-200F')
-        ->assertOk()->assertSee('Log Akses User')->assertSee('192.176.1.201');
+        ->assertOk()->assertSee('Log Akses User')->assertSee('192.176.1.201')->assertSee('Export Excel');
 
     $this->delete(route('admin.log-access-user.destroy', $log))->assertRedirect(route('admin.log-access-user.index'));
     $this->assertDatabaseMissing('user_access_logs', ['id' => $log->id]);
 });
 
+it('exports user access logs matching the selected filters', function () {
+    UserAccessLog::query()->create([
+        ...array_diff_key(userAccessLogPayload(), ['date' => true, 'time' => true]),
+        'event_date' => '2026-11-03', 'event_clock' => '16:11:15',
+    ]);
+    UserAccessLog::query()->create([
+        ...array_diff_key(userAccessLogPayload([
+            'device_name' => 'FortiGate-Branch',
+            'device_id' => 'FG-BRANCH-01',
+            'status' => 'failed',
+        ]), ['date' => true, 'time' => true]),
+        'event_date' => '2026-11-03', 'event_clock' => '16:12:15',
+    ]);
+
+    Excel::fake();
+    $this->travelTo(Carbon::parse('2026-11-03 21:30:00'));
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get('/admin/log-access-user/export?device=FortiGate-200F&status=success')
+        ->assertOk();
+
+    Excel::assertDownloaded('log-akses-user-20261103-213000.xlsx', function (UserAccessLogsExport $export): bool {
+        return $export->query()->get()->pluck('device_name')->all() === ['FortiGate-200F'];
+    });
+
+    $this->travelBack();
+});
+
 it('restricts the user access log page to admins', function () {
-    $this->actingAs(User::factory()->create(['role' => 'officer']))
-        ->get('/admin/log-access-user')->assertForbidden();
+    $this->actingAs(User::factory()->create(['role' => 'officer']));
+
+    $this->get('/admin/log-access-user')->assertForbidden();
+    $this->get('/admin/log-access-user/export')->assertForbidden();
 });

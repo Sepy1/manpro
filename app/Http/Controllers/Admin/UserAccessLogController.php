@@ -2,25 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\UserAccessLogsExport;
 use App\Http\Controllers\Controller;
 use App\Models\UserAccessLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UserAccessLogController extends Controller
 {
     public function index(Request $request): View
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
-        $filters = $request->validate([
-            'keyword' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'string', 'max:50'],
-            'device' => ['nullable', 'string', 'max:255'],
-            'date_from' => ['nullable', 'date'],
-            'date_until' => ['nullable', 'date', 'after_or_equal:date_from'],
-        ]);
+        $filters = $this->validateFilters($request);
         $query = $this->filteredQuery($filters);
 
         return view('pages.dashboard.log-access-user', [
@@ -39,12 +35,33 @@ class UserAccessLogController extends Controller
         ]);
     }
 
+    public function export(Request $request)
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $filters = $this->validateFilters($request);
+        $filename = 'log-akses-user-'.now()->format('Ymd-His').'.xlsx';
+
+        return Excel::download(new UserAccessLogsExport($this->filteredQuery($filters)), $filename);
+    }
+
     public function destroy(UserAccessLog $accessLog): RedirectResponse
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
         $accessLog->delete();
 
         return redirect()->route('admin.log-access-user.index')->with('success', 'Log akses user berhasil dihapus.');
+    }
+
+    private function validateFilters(Request $request): array
+    {
+        return $request->validate([
+            'keyword' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:50'],
+            'device' => ['nullable', 'string', 'max:255'],
+            'date_from' => ['nullable', 'date'],
+            'date_until' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
     }
 
     private function filteredQuery(array $filters): Builder

@@ -146,6 +146,11 @@ class MenuHelper
                 ],
             ];
             $items[] = [
+                'icon' => 'tables',
+                'name' => 'Audit Log',
+                'path' => '/admin/audit-log',
+            ];
+            $items[] = [
                 'icon' => 'pages',
                 'name' => 'Parameter',
                 'subItems' => [
@@ -192,10 +197,6 @@ class MenuHelper
                     [
                         'name' => 'Manajemen User',
                         'path' => '/admin/manajemen-user',
-                    ],
-                    [
-                        'name' => 'Log User',
-                        'path' => '/admin/manajemen-log-user',
                     ],
                 ],
             ];

@@ -5,8 +5,14 @@
 
     <x-dashboard.accent-card accent-index="0" shell-overflow="visible" class="flex min-h-0 min-w-0 h-full flex-col" padding="p-5 lg:p-6">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Aktivitas Login Perangkat</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Menampilkan {{ number_format($filteredCount) }} dari {{ number_format($totalCount) }} log.</p>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Aktivitas Login Perangkat</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Menampilkan {{ number_format($filteredCount) }} dari {{ number_format($totalCount) }} log.</p>
+            </div>
+            <a href="{{ route('admin.log-access-user.export', request()->query()) }}"
+                class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 transition hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">
+                Export Excel
+            </a>
         </div>
 
         @if (session('success'))
@@ -45,7 +51,7 @@
                 <tbody>
                     @forelse ($logs as $log)
                         <tr class="align-top [&_td]:border-b [&_td]:border-gray-100 dark:[&_td]:border-gray-800">
-                            <td class="whitespace-nowrap px-3 py-3 text-xs text-gray-700 dark:text-gray-300">{{ $log->event_date->format('d/m/Y') }}<br>{{ $log->event_clock }} {{ $log->timezone }}</td>
+                            <td class="whitespace-nowrap px-3 py-3 text-xs text-gray-700 dark:text-gray-300">{{ $log->event_date?->format('d/m/Y') ?? '-' }}<br>{{ $log->event_clock ?? '-' }} {{ $log->timezone }}</td>
                             <td class="px-3 py-3 text-sm"><div class="font-semibold text-gray-900 dark:text-white">{{ $log->username }}</div><span @class(['mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' => $log->status === 'success', 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' => $log->status !== 'success'])>{{ $log->status }}</span></td>
                             <td class="px-3 py-3 text-xs text-gray-700 dark:text-gray-300"><div class="font-medium">{{ $log->device_name }}</div><div class="text-gray-500">{{ $log->device_id }} · {{ $log->vendor }}</div></td>
                             <td class="px-3 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{{ $log->source_ip }}<br><span class="font-sans text-gray-500">{{ $log->source_interface }}</span></td>

@@ -170,6 +170,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/log-security/export', [SecurityLogController::class, 'export'])->name('log-security.export');
     Route::delete('/log-security/{securityLog}', [SecurityLogController::class, 'destroy'])->name('log-security.destroy');
     Route::get('/log-access-user', [UserAccessLogController::class, 'index'])->name('log-access-user.index');
+    Route::get('/log-access-user/export', [UserAccessLogController::class, 'export'])->name('log-access-user.export');
     Route::delete('/log-access-user/{accessLog}', [UserAccessLogController::class, 'destroy'])->name('log-access-user.destroy');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
@@ -255,7 +256,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::put('/manajemen-user/{user}', [UserManagementController::class, 'update'])->name('manajemen-user.update');
     Route::delete('/manajemen-user/{user}', [UserManagementController::class, 'destroy'])->name('manajemen-user.delete');
 
-    Route::get('/manajemen-log-user', [UserActivityLogController::class, 'index'])->name('manajemen-log-user.index');
+    Route::get('/audit-log', [UserActivityLogController::class, 'index'])->name('audit-log.index');
+    Route::get('/manajemen-log-user', [UserActivityLogController::class, 'legacyRedirect'])->name('manajemen-log-user.index');
 });
 
 Route::middleware(['auth', 'vendor.network.only', 'menu.activity'])->group(function () {

@@ -5,12 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserActivityLog;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class UserActivityLogController extends Controller
 {
+    public function legacyRedirect(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        return redirect()->route('admin.audit-log.index', $request->query());
+    }
+
     public function index(Request $request): View
     {
         abort_unless(auth()->user()?->role === 'admin', 403);
@@ -29,19 +37,19 @@ class UserActivityLogController extends Controller
 
         $query = UserActivityLog::query()
             ->with(['user:id,name,email,role'])
-            ->when(!empty($validated['user_id']), function ($builder) use ($validated): void {
+            ->when(! empty($validated['user_id']), function ($builder) use ($validated): void {
                 $builder->where('user_id', (int) $validated['user_id']);
             })
-            ->when(!empty($validated['activity_type']), function ($builder) use ($validated): void {
+            ->when(! empty($validated['activity_type']), function ($builder) use ($validated): void {
                 $builder->where('activity_type', $validated['activity_type']);
             })
-            ->when(!empty($validated['period_start']), function ($builder) use ($validated): void {
+            ->when(! empty($validated['period_start']), function ($builder) use ($validated): void {
                 $builder->whereDate('created_at', '>=', $validated['period_start']);
             })
-            ->when(!empty($validated['period_end']), function ($builder) use ($validated): void {
+            ->when(! empty($validated['period_end']), function ($builder) use ($validated): void {
                 $builder->whereDate('created_at', '<=', $validated['period_end']);
             })
-            ->when(!empty($validated['keyword']), function ($builder) use ($validated): void {
+            ->when(! empty($validated['keyword']), function ($builder) use ($validated): void {
                 $keyword = trim((string) $validated['keyword']);
                 $builder->where(function ($nested) use ($keyword): void {
                     $nested->where('route_name', 'like', "%{$keyword}%")
