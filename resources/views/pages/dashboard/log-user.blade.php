@@ -119,8 +119,13 @@
                 </table>
             </div>
 
-        <div class="mt-4 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
-            Total data: {{ $logs->count() }}
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                Menampilkan {{ number_format($logs->firstItem() ?? 0) }}-{{ number_format($logs->lastItem() ?? 0) }} dari {{ number_format($logs->total()) }} data
+            </p>
+            @if ($logs->hasPages())
+                <div>{{ $logs->links() }}</div>
+            @endif
         </div>
     </div>
 @endsection

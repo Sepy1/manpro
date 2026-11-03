@@ -64,7 +64,7 @@ class UserActivityLogController extends Controller
             });
 
         return view('pages.dashboard.log-user', [
-            'logs' => $query->latest('created_at')->get(),
+            'logs' => $query->latest('created_at')->paginate(50)->withQueryString(),
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'email', 'role']),
             'activityTypes' => [
                 UserActivityLog::TYPE_LOGIN => 'Login',

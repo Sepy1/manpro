@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\UserActivityLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 uses(RefreshDatabase::class);
 
@@ -27,7 +28,8 @@ it('shows application user activity in the standalone audit log menu', function 
         ->assertSee('Audit Log')
         ->assertSee('Audit Aktivitas User Aplikasi')
         ->assertSee('Dashboard')
-        ->assertDontSee('Log User');
+        ->assertDontSee('Log User')
+        ->assertViewHas('logs', fn ($logs) => $logs instanceof LengthAwarePaginator && $logs->perPage() === 50);
 });
 
 it('keeps the audit log restricted to admins', function () {
