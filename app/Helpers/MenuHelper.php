@@ -96,6 +96,10 @@ class MenuHelper
                         'path' => '/admin/log-security',
                     ],
                     [
+                        'name' => 'Log Akses User',
+                        'path' => '/admin/log-access-user',
+                    ],
+                    [
                         'name' => 'Perangkat dc-drc',
                         'path' => '/admin/aset-ti/perangkat-dc-drc',
                     ],

@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServerStatisticsController;
 use App\Http\Controllers\Admin\SecurityLogController;
 use App\Http\Controllers\Admin\UserActivityLogController;
+use App\Http\Controllers\Admin\UserAccessLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\VendorExternCrController;
@@ -168,6 +169,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/log-security', [SecurityLogController::class, 'index'])->name('log-security.index');
     Route::get('/log-security/export', [SecurityLogController::class, 'export'])->name('log-security.export');
     Route::delete('/log-security/{securityLog}', [SecurityLogController::class, 'destroy'])->name('log-security.destroy');
+    Route::get('/log-access-user', [UserAccessLogController::class, 'index'])->name('log-access-user.index');
+    Route::delete('/log-access-user/{accessLog}', [UserAccessLogController::class, 'destroy'])->name('log-access-user.destroy');
     Route::get('/aset-ti/statistik-server', [ServerStatisticsController::class, 'index'])->name('aset-ti.server-statistics.index');
     Route::get('/aset-ti/statistik-server/device/{device}/sensor/{metric}', [ServerStatisticsController::class, 'sensor'])->name('aset-ti.server-statistics.sensor');
     Route::get('/aset-ti/statistik-server/pdf', [ServerStatisticsController::class, 'pdf'])->name('aset-ti.server-statistics.pdf');
