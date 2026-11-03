@@ -19,6 +19,7 @@ it('allows admins to view and update the application theme', function () {
         ->assertSee('Graphite')
         ->assertSee('Ocean Teal')
         ->assertSee('Daylight Blue')
+        ->assertSee('Elastic')
         ->assertSee('Fresh Mint')
         ->assertSee('Soft Lavender')
         ->assertSee('Warm Sand')
@@ -60,6 +61,15 @@ it('allows admins to view and update the application theme', function () {
         ->assertOk()
         ->assertSee("root.classList.toggle('dark', false)", false)
         ->assertSee('root.dataset.appThemeMode = "light"', false);
+
+    $this->put(route('admin.parameter.application-theme.update'), [
+        'theme' => 'elastic',
+        'font_family' => 'figtree',
+        'font_size' => 'normal',
+    ])->assertRedirect();
+
+    expect(ApplicationThemeSetting::activeTheme())->toBe('elastic');
+    expect(ApplicationThemeSetting::activeMode())->toBe('light');
 });
 
 it('validates themes and restricts theme management to admins', function () {

@@ -63,6 +63,12 @@ class ApplicationThemeSetting extends Model
             'mode' => 'light',
             'colors' => ['#f8fafc', '#dbeafe', '#2563eb', '#172554'],
         ],
+        'elastic' => [
+            'name' => 'Elastic',
+            'description' => 'Dashboard terang bergaya Elastic dengan panel putih, aksen cyan, dan sidebar bersih.',
+            'mode' => 'light',
+            'colors' => ['#f5f7fa', '#ffffff', '#00bfb3', '#343741'],
+        ],
         'mint' => [
             'name' => 'Fresh Mint',
             'description' => 'Hijau mint ringan untuk suasana kerja yang segar dan tenang.',

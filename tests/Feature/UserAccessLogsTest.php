@@ -40,6 +40,24 @@ it('stores a batch of user access events with the security log api key', functio
     expect(UserAccessLog::query()->count())->toBe(2);
 });
 
+it('accepts nullable and omitted user access event fields', function () {
+    $nullablePayload = array_fill_keys(array_keys(userAccessLogPayload()), null);
+
+    $this->withHeader('X-Security-Log-Api-Key', 'security-test-secret')
+        ->postJson('/api/user-access-logs/events', [$nullablePayload, ['vendor' => null]])
+        ->assertCreated()
+        ->assertJsonPath('data.count', 2);
+
+    expect(UserAccessLog::query()->count())->toBe(2);
+    $this->assertDatabaseHas('user_access_logs', [
+        'vendor' => null,
+        'username' => null,
+        'event_date' => null,
+        'event_clock' => null,
+        'raw_log' => null,
+    ]);
+});
+
 it('rejects user access events without the security log api key', function () {
     $this->postJson('/api/user-access-logs/events', [userAccessLogPayload()])->assertUnauthorized();
 });

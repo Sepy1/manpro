@@ -100,6 +100,23 @@ html[data-app-font] body {
     --app-muted: #475569;
 }
 
+/* Elastic dashboard light: kanvas lembut, panel putih, dan navigasi terang. */
+:root[data-app-theme="elastic"] {
+    --app-bg: #f5f7fa;
+    --app-surface: #ffffff;
+    --app-surface-soft: #eef2f7;
+    --app-border: #d3dae6;
+    --app-sidebar-from: #ffffff;
+    --app-sidebar-via: #f8fafc;
+    --app-sidebar-to: #eef2f7;
+    --app-accent: #0077cc;
+    --app-accent-hover: #005a9e;
+    --app-accent-soft: rgb(0 119 204 / 0.12);
+    --app-accent-text: #006bb4;
+    --app-text: #343741;
+    --app-muted: #69707d;
+}
+
 :root[data-app-theme="mint"] {
     --app-bg: #f0fdf4;
     --app-surface: #ffffff;
@@ -220,6 +237,52 @@ html[data-app-theme-mode="light"] [data-app-sidebar] .menu-item-active .menu-ite
 html[data-app-theme-mode="light"] [data-app-sidebar] .menu-dropdown-item-active,
 html[data-app-theme-mode="light"] [data-app-sidebar] .menu-dropdown-item-active span {
     color: #ffffff !important;
+}
+
+/* Sidebar Elastic sengaja terang agar menyatu dengan dashboard light. */
+html[data-app-theme="elastic"] [data-app-sidebar] {
+    color: #343741 !important;
+    border-color: #d3dae6 !important;
+    box-shadow: 0 18px 42px -24px rgb(52 55 65 / 0.35) !important;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] > .pointer-events-none {
+    display: none;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-item-inactive,
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-dropdown-item-inactive,
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-item-text,
+html[data-app-theme="elastic"] [data-app-sidebar] h2,
+html[data-app-theme="elastic"] [data-app-sidebar] button,
+html[data-app-theme="elastic"] [data-app-sidebar] a,
+html[data-app-theme="elastic"] [data-app-sidebar] span {
+    color: #535966;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-item-inactive:hover,
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-dropdown-item-inactive:hover {
+    background-color: #e8f1f8 !important;
+    color: #1d2733 !important;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-item-active,
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-dropdown-item-active {
+    background: linear-gradient(90deg, rgb(0 191 179 / 0.16), rgb(0 119 204 / 0.08)) !important;
+    border-color: rgb(0 119 204 / 0.22) !important;
+    color: #005a9e !important;
+    box-shadow: inset 3px 0 0 #00bfb3 !important;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-item-active span,
+html[data-app-theme="elastic"] [data-app-sidebar] .menu-dropdown-item-active span {
+    color: #005a9e !important;
+}
+
+html[data-app-theme="elastic"] [data-app-sidebar] .border-white\/25,
+html[data-app-theme="elastic"] [data-app-sidebar] .border-white\/15,
+html[data-app-theme="elastic"] [data-app-sidebar] .border-white\/10 {
+    border-color: #d3dae6 !important;
 }
 
 [data-app-sidebar],
