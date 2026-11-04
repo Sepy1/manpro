@@ -40,6 +40,10 @@ it('shows an attack map and maps private destinations to Semarang', function () 
         ->assertJsonPath('summary.total', 1)
         ->assertJsonPath('summary.blocked', 1)
         ->assertJsonPath('arcs.0.source.country', 'United States')
+        ->assertJsonPath('arcs.0.source_port', 443)
+        ->assertJsonPath('arcs.0.destination_port', 80)
+        ->assertJsonPath('arcs.0.method', 'GET')
+        ->assertJsonPath('arcs.0.url', '/login')
         ->assertJsonPath('arcs.0.destination.city', 'Semarang')
         ->assertJsonPath('arcs.0.destination.is_local', true);
 });

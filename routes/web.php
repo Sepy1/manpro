@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\NetworkMapController;
 use App\Http\Controllers\Admin\ParameterDcDrcDeviceTypeController;
 use App\Http\Controllers\Admin\ParameterApplicationThemeController;
+use App\Http\Controllers\Admin\ParameterAttackMapController;
 use App\Http\Controllers\Admin\ParameterExternCrApplicationController;
 use App\Http\Controllers\Admin\ParameterExternCrChangeReasonController;
 use App\Http\Controllers\Admin\ParameterLivestreamController;
@@ -212,6 +213,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::put('/parameter/livestream', [ParameterLivestreamController::class, 'update'])->name('parameter.livestream.update');
     Route::get('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'index'])->name('parameter.network-monitor.index');
     Route::put('/parameter/network-monitor', [ParameterNetworkMonitorController::class, 'update'])->name('parameter.network-monitor.update');
+    Route::get('/parameter/attack-map', [ParameterAttackMapController::class, 'index'])->name('parameter.attack-map.index');
+    Route::put('/parameter/attack-map', [ParameterAttackMapController::class, 'update'])->name('parameter.attack-map.update');
     Route::get('/parameter/dc-drc-device-types', [ParameterDcDrcDeviceTypeController::class, 'index'])->name('parameter.dc-drc-device-types.index');
     Route::post('/parameter/dc-drc-device-types', [ParameterDcDrcDeviceTypeController::class, 'store'])->name('parameter.dc-drc-device-types.store');
     Route::put('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'update'])->name('parameter.dc-drc-device-types.update');

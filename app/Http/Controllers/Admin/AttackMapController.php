@@ -59,10 +59,16 @@ class AttackMapController extends Controller
         $groups = $logs->groupBy(fn ($log) => $log->srcip.'|'.$log->dstip.'|'.$log->severity)
             ->map(fn ($items) => [
                 'source_ip' => $items->first()->srcip,
+                'source_port' => $items->first()->srcport,
                 'destination_ip' => $items->first()->dstip,
+                'destination_port' => $items->first()->dstport,
                 'severity' => $items->first()->severity,
                 'attack' => $items->first()->attack,
                 'action' => $items->first()->action,
+                'device' => $items->first()->device,
+                'service' => $items->first()->service,
+                'method' => $items->first()->method,
+                'url' => $items->first()->url,
                 'count' => $items->count(),
                 'last_event' => $items->first()->event_time,
             ])->sortByDesc('count')->take(60)->values();

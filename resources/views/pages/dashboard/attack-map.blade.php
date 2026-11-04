@@ -37,6 +37,9 @@
                         <span class="inline-flex items-center gap-1"><i class="h-2.5 w-2.5 rounded-full bg-sky-400"></i> Low</span>
                     </div>
                     <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            <i class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></i> Realtime
+                        </span>
                         <select x-model="hours" @change="load()" class="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-xs dark:border-gray-700 dark:text-white">
                             <option value="1">1 jam</option><option value="6">6 jam</option><option value="12">12 jam</option>
                             <option value="24">24 jam</option><option value="72">3 hari</option><option value="168">7 hari</option>
@@ -107,12 +110,14 @@
             line-height:1.2; padding:3px 6px; white-space:nowrap;
         }
         #attack-world-map .attack-destination-label::before { display:none; }
+        #attack-world-map .leaflet-tooltip-pane,
+        #attack-world-map .leaflet-tooltip { transition:none !important; }
         @keyframes attack-dash { to { stroke-dashoffset:-28; } }
     </style>
     <script>
         function attackMap(endpoint, initialFilters = {}) {
             return {
-                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, request: null, loading: false,
+                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, request: null, visibilityHandler: null, loading: false, lastFingerprint: null,
                 filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
@@ -125,13 +130,31 @@
                 },
                 init() {
                     if (typeof L === 'undefined') return;
-                    this.map = L.map('attack-world-map', { worldCopyJump: true, minZoom: 2 }).setView([12, 20], 2);
+                    this.map = L.map('attack-world-map', {
+                        worldCopyJump: true,
+                        minZoom: 2,
+                        zoomAnimation: false,
+                        fadeAnimation: false,
+                        markerZoomAnimation: false,
+                        wheelDebounceTime: 16,
+                        wheelPxPerZoomLevel: 80,
+                    }).setView([12, 20], 2);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 8, attribution: '&copy; OpenStreetMap' }).addTo(this.map);
                     this.canvasRenderer = L.canvas({ padding: .5, tolerance: 8 });
                     this.layer = L.layerGroup().addTo(this.map);
-                    this.load(); this.timer = setInterval(() => this.load(), 30000);
+                    this.load();
+                    this.timer = setInterval(() => { if (!document.hidden) this.load(false); }, 3000);
+                    this.visibilityHandler = () => { if (!document.hidden) this.load(false); };
+                    document.addEventListener('visibilitychange', this.visibilityHandler);
                 },
-                destroy() { clearInterval(this.timer); this.request?.abort(); this.map?.remove(); },
+                destroy() {
+                    clearInterval(this.timer);
+                    if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
+                    this.request?.abort(); this.map?.remove();
+                },
+                escape(value) {
+                    return String(value ?? '-').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[character]));
+                },
                 color(severity) {
                     const value = String(severity).toLowerCase();
                     if (value.includes('critical')) return '#ef4444';
@@ -174,8 +197,22 @@
                         const weight = Math.min(2.2, .8 + Math.log2(arc.count + 1) * .22);
                         L.polyline(points, { renderer, color: '#0f172a', weight: weight + 1.2, opacity: .45, interactive: false }).addTo(layer);
                         L.polyline(points, { renderer, color, weight, opacity: .9, interactive: false }).addTo(layer);
-                        const line = L.polyline(points, { color: '#ffffff', weight: .8, opacity: .85, dashArray: '2 12', className: 'attack-arc' }).addTo(layer);
-                        line.bindPopup(`<strong>${arc.source_ip} → ${arc.destination_ip}</strong><br>${arc.source.city || '-'}, ${arc.source.country} → ${arc.destination.city || '-'}, ${arc.destination.country}<br>${arc.attack}<br><b>${arc.count} event · ${arc.severity}</b><br>Terakhir: ${arc.last_event}`);
+                        L.polyline(points, { color: '#ffffff', weight: .8, opacity: .85, dashArray: '2 12', className: 'attack-arc', interactive: false }).addTo(layer);
+                        const hitLine = L.polyline(points, { color: '#000000', weight: 12, opacity: 0, interactive: true }).addTo(layer);
+                        hitLine.bindPopup(`
+                            <div style="min-width:240px;line-height:1.55">
+                                <strong>Detail serangan</strong><br>
+                                <b>Source:</b> ${this.escape(arc.source_ip)}:${this.escape(arc.source_port)}<br>
+                                <b>Lokasi source:</b> ${this.escape(arc.source.city)} / ${this.escape(arc.source.country)}<br>
+                                <b>Destination:</b> ${this.escape(arc.destination_ip)}:${this.escape(arc.destination_port)}<br>
+                                <b>Lokasi destination:</b> ${this.escape(arc.destination.city)} / ${this.escape(arc.destination.country)}<br>
+                                <b>Request:</b> ${this.escape(arc.method)} ${this.escape(arc.url)}<br>
+                                <b>Service:</b> ${this.escape(arc.service)}<br>
+                                <b>Attack:</b> ${this.escape(arc.attack)} (${this.escape(arc.severity)})<br>
+                                <b>Action:</b> ${this.escape(arc.action)}<br>
+                                <b>Event:</b> ${this.escape(arc.count)} &middot; <b>Terakhir:</b> ${this.escape(arc.last_event)}
+                            </div>
+                        `);
                         const sourceMarker = L.circleMarker([arc.source.latitude, arc.source.longitude], { renderer, radius: 4 + Math.min(4, Math.log2(arc.count + 1) * .45), color: '#fff', fillColor: color, fillOpacity: 1, weight: 1.5 }).addTo(layer);
                         sourceMarker.bindTooltip(`${arc.source.city || '-'} / ${arc.source.country}`, { permanent: true, direction: 'top', offset: [0, -8], className: 'attack-source-label' });
                         sourceMarker.bindPopup(`<strong>${arc.source_ip}</strong><br>${arc.source.city || '-'}, ${arc.source.country}<br>${arc.count} event`);
@@ -188,19 +225,24 @@
                         }
                     });
                 },
-                async load() {
-                    this.request?.abort(); this.request = new AbortController(); this.loading = true;
+                async load(showSpinner = true) {
+                    if (!showSpinner && this.request) return;
+                    this.request?.abort(); this.request = new AbortController();
+                    const activeRequest = this.request;
+                    if (showSpinner) this.loading = true;
                     try {
                         const url = new URL(this.endpoint, location.origin);
                         Object.entries(this.filters || {}).forEach(([key, value]) => { if (value) url.searchParams.set(key, value); });
                         url.searchParams.set('hours', this.hours);
                         if (this.severity) url.searchParams.set('severity', this.severity); else url.searchParams.delete('severity');
-                        const response = await fetch(url, { signal: this.request.signal, headers: { Accept: 'application/json' } });
+                        const response = await fetch(url, { signal: activeRequest.signal, headers: { Accept: 'application/json' } });
                         if (!response.ok) return;
                         const data = await response.json();
                         this.summary = data.summary;
                         this.geolocation = data.geolocation || { message: null, unresolved: 0, unresolved_ips: [] };
                         this.countries = data.countries;
+                        const fingerprint = JSON.stringify(data.arcs);
+                        const mapChanged = fingerprint !== this.lastFingerprint;
                         this.arcs = data.arcs;
                         const availableCountries = new Set(data.countries.map(country => country.country));
                         this.enabledCountries = Object.fromEntries(
@@ -209,8 +251,14 @@
                         Object.keys(this.enabledCountries).forEach(country => {
                             if (!availableCountries.has(country)) delete this.enabledCountries[country];
                         });
-                        this.draw();
-                    } catch (_) {} finally { this.loading = false; }
+                        if (mapChanged) {
+                            this.lastFingerprint = fingerprint;
+                            this.draw();
+                        }
+                    } catch (_) {} finally {
+                        if (this.request === activeRequest) this.request = null;
+                        if (showSpinner) this.loading = false;
+                    }
                 }
             };
         }

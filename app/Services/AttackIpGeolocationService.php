@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AttackMapSetting;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -25,15 +26,6 @@ class AttackIpGeolocationService
         '196.25.1.1' => ['country' => 'South Africa', 'country_code' => 'ZA', 'city' => 'Johannesburg', 'latitude' => -26.2041, 'longitude' => 28.0473],
     ];
 
-    private const SEMARANG = [
-        'country' => 'Indonesia',
-        'country_code' => 'ID',
-        'city' => 'Semarang',
-        'latitude' => -6.966667,
-        'longitude' => 110.416664,
-        'is_local' => true,
-    ];
-
     public function resolveMany(array $ips): array
     {
         $resolved = [];
@@ -41,10 +33,13 @@ class AttackIpGeolocationService
         $unresolved = [];
         $apiKey = trim((string) config('services.attack_map.ipdata_api_key', ''));
         $validIps = array_values(array_unique(array_filter($ips, fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP))));
+        $centralConfiguration = AttackMapSetting::configuration();
+        $centralIpRanges = $centralConfiguration['central_ip_ranges'];
+        $centralLocation = $centralConfiguration['location'];
 
         foreach ($validIps as $ip) {
-            if ($this->isLocal($ip)) {
-                $resolved[$ip] = self::SEMARANG;
+            if ($this->isLocal($ip) || ($centralIpRanges !== [] && IpUtils::checkIp($ip, $centralIpRanges))) {
+                $resolved[$ip] = $centralLocation;
                 continue;
             }
             if (isset(self::DEMO_LOCATIONS[$ip])) {

@@ -191,6 +191,10 @@ class MenuHelper
                         'path' => '/admin/parameter/network-monitor',
                     ],
                     [
+                        'name' => 'Daftar IP Pusat',
+                        'path' => '/admin/parameter/attack-map',
+                    ],
+                    [
                         'name' => 'Tipe Perangkat DC/DRC',
                         'path' => '/admin/parameter/dc-drc-device-types',
                     ],
