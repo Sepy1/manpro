@@ -10,7 +10,7 @@
         padding="p-5 lg:p-6"
     >
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Log Serangan FortiGate</h3>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Log Security</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 Menampilkan {{ number_format($filteredCount) }} dari {{ number_format($totalCount) }} log.
             </p>
@@ -101,7 +101,6 @@
                         <tr class="align-top [&_td]:border-b [&_td]:border-gray-100 dark:[&_td]:border-gray-800">
                             <td class="break-words px-2 py-3 text-xs text-gray-700 dark:text-gray-300">
                                 <div>{{ $log->event_time }}</div>
-                                <div class="mt-1 text-[11px] text-gray-400">Masuk {{ $log->created_at->format('d/m/Y H:i') }}</div>
                             </td>
                             <td class="min-w-0 px-2 py-3 text-sm font-medium text-gray-900 dark:text-white/90">
                                 <div class="truncate" title="{{ $log->device }}">{{ $log->device }}</div>
