@@ -103,20 +103,18 @@
     <style>
         #attack-world-map { background:#dbeafe; }
         #attack-world-map .attack-arc { animation:attack-dash 2.2s linear infinite; }
-        #attack-world-map .attack-source-label {
-            border:1px solid rgba(255,255,255,.65); border-radius:6px; background:rgba(15,23,42,.82);
-            box-shadow:0 2px 8px rgba(15,23,42,.22); color:#fff; font-size:10px; font-weight:600;
-            line-height:1.2; padding:3px 6px; white-space:nowrap;
+        #attack-world-map .attack-location-marker { background:transparent; border:0; }
+        #attack-world-map .attack-location-dot {
+            position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border:2px solid #fff;
+            border-radius:9999px; box-shadow:0 1px 5px rgba(15,23,42,.4);
         }
-        #attack-world-map .attack-source-label::before { display:none; }
-        #attack-world-map .attack-destination-label {
-            border:1px solid rgba(255,255,255,.75); border-radius:6px; background:rgba(8,145,178,.88);
-            box-shadow:0 2px 8px rgba(15,23,42,.22); color:#fff; font-size:10px; font-weight:700;
-            line-height:1.2; padding:3px 6px; white-space:nowrap;
+        #attack-world-map .attack-location-label {
+            position:absolute; left:50%; z-index:1; transform:translateX(-50%); border:1px solid rgba(255,255,255,.7);
+            border-radius:6px; box-shadow:0 2px 8px rgba(15,23,42,.22); color:#fff; font-size:10px;
+            font-weight:700; line-height:1.2; padding:3px 6px; pointer-events:none; white-space:nowrap;
         }
-        #attack-world-map .attack-destination-label::before { display:none; }
-        #attack-world-map .leaflet-tooltip-pane,
-        #attack-world-map .leaflet-tooltip { transition:none !important; }
+        #attack-world-map .attack-source-marker .attack-location-label { bottom:calc(100% + 2px); background:rgba(15,23,42,.86); }
+        #attack-world-map .attack-destination-marker .attack-location-label { top:calc(100% + 2px); background:rgba(8,145,178,.9); }
         @keyframes attack-dash { to { stroke-dashoffset:-28; } }
     </style>
     <script>
@@ -190,6 +188,14 @@
                 escape(value) {
                     return String(value ?? '-').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[character]));
                 },
+                locationIcon(label, color, type, diameter) {
+                    return L.divIcon({
+                        className: `attack-location-marker attack-${type}-marker`,
+                        html: `<span class="attack-location-dot" style="width:${diameter}px;height:${diameter}px;background:${color}"></span><span class="attack-location-label">${this.escape(label)}</span>`,
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9],
+                    });
+                },
                 color(severity) {
                     const value = String(severity).toLowerCase();
                     if (value.includes('critical')) return '#ef4444';
@@ -225,6 +231,7 @@
                     const layer = window.Alpine?.raw ? window.Alpine.raw(this.layer) : this.layer;
                     const renderer = window.Alpine?.raw ? window.Alpine.raw(this.canvasRenderer) : this.canvasRenderer;
                     layer.clearLayers();
+                    const renderedSources = new Set();
                     const renderedDestinations = new Set();
                     this.arcs.filter(arc => this.isCountryEnabled(arc.source.country)).forEach(arc => {
                         const color = this.color(arc.severity);
@@ -248,15 +255,26 @@
                                 <b>Event:</b> ${this.escape(arc.count)} &middot; <b>Terakhir:</b> ${this.escape(arc.last_event)}
                             </div>
                         `);
-                        const sourceMarker = L.circleMarker([arc.source.latitude, arc.source.longitude], { renderer, radius: 4 + Math.min(4, Math.log2(arc.count + 1) * .45), color: '#fff', fillColor: color, fillOpacity: 1, weight: 1.5 }).addTo(layer);
-                        sourceMarker.bindTooltip(`${arc.source.city || '-'} / ${arc.source.country}`, { permanent: true, direction: 'top', offset: [0, -8], className: 'attack-source-label' });
-                        sourceMarker.bindPopup(`<strong>${arc.source_ip}</strong><br>${arc.source.city || '-'}, ${arc.source.country}<br>${arc.count} event`);
+                        const sourceKey = `${arc.source_ip}|${arc.source.latitude},${arc.source.longitude}`;
+                        if (!renderedSources.has(sourceKey)) {
+                            renderedSources.add(sourceKey);
+                            const sourceDiameter = 9 + Math.min(7, Math.log2(arc.count + 1));
+                            const sourceMarker = L.marker([arc.source.latitude, arc.source.longitude], {
+                                icon: this.locationIcon(`${arc.source.city || '-'} / ${arc.source.country}`, color, 'source', sourceDiameter),
+                                keyboard: false,
+                                zIndexOffset: 500,
+                            }).addTo(layer);
+                            sourceMarker.bindPopup(`<strong>${this.escape(arc.source_ip)}</strong><br>${this.escape(arc.source.city || '-')} / ${this.escape(arc.source.country)}<br>${this.escape(arc.count)} event`);
+                        }
                         const destinationKey = `${arc.destination.latitude},${arc.destination.longitude}`;
                         if (!renderedDestinations.has(destinationKey)) {
                             renderedDestinations.add(destinationKey);
-                            const destinationMarker = L.circleMarker([arc.destination.latitude, arc.destination.longitude], { renderer, radius: arc.destination.is_local ? 7 : 5, color: '#fff', fillColor: '#06b6d4', fillOpacity: 1, weight: 2 }).addTo(layer);
-                            destinationMarker.bindTooltip(`${arc.destination.city || '-'} / ${arc.destination.country}`, { permanent: true, direction: 'bottom', offset: [0, 8], className: 'attack-destination-label' });
-                            destinationMarker.bindPopup(`<strong>${arc.destination_ip}</strong><br>${arc.destination.city || '-'}, ${arc.destination.country}`);
+                            const destinationMarker = L.marker([arc.destination.latitude, arc.destination.longitude], {
+                                icon: this.locationIcon(`${arc.destination.city || '-'} / ${arc.destination.country}`, '#06b6d4', 'destination', arc.destination.is_local ? 14 : 11),
+                                keyboard: false,
+                                zIndexOffset: 600,
+                            }).addTo(layer);
+                            destinationMarker.bindPopup(`<strong>${this.escape(arc.destination_ip)}</strong><br>${this.escape(arc.destination.city || '-')} / ${this.escape(arc.destination.country)}`);
                         }
                     });
                 },
