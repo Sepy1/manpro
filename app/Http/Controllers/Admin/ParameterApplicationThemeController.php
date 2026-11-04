@@ -20,8 +20,10 @@ class ParameterApplicationThemeController extends Controller
             'activeTheme' => ApplicationThemeSetting::activeTheme(),
             'fontFamilies' => ApplicationThemeSetting::FONT_FAMILIES,
             'fontSizes' => ApplicationThemeSetting::FONT_SIZES,
+            'fontWeights' => ApplicationThemeSetting::FONT_WEIGHTS,
             'activeFontFamily' => ApplicationThemeSetting::activeFontFamily(),
             'activeFontSize' => ApplicationThemeSetting::activeFontSize(),
+            'activeFontWeight' => ApplicationThemeSetting::activeFontWeight(),
         ]);
     }
 
@@ -33,6 +35,7 @@ class ParameterApplicationThemeController extends Controller
             'theme' => ['required', Rule::in(array_keys(ApplicationThemeSetting::THEMES))],
             'font_family' => ['required', Rule::in(array_keys(ApplicationThemeSetting::FONT_FAMILIES))],
             'font_size' => ['required', Rule::in(array_keys(ApplicationThemeSetting::FONT_SIZES))],
+            'font_weight' => ['required', Rule::in(array_keys(ApplicationThemeSetting::FONT_WEIGHTS))],
         ]);
 
         ApplicationThemeSetting::query()->updateOrCreate(
@@ -41,6 +44,7 @@ class ParameterApplicationThemeController extends Controller
                 'theme' => $validated['theme'],
                 'font_family' => $validated['font_family'],
                 'font_size' => $validated['font_size'],
+                'font_weight' => $validated['font_weight'],
             ],
         );
 

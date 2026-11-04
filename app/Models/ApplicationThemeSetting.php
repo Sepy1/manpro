@@ -10,6 +10,7 @@ class ApplicationThemeSetting extends Model
     public const DEFAULT_THEME = 'midnight';
     public const DEFAULT_FONT_FAMILY = 'figtree';
     public const DEFAULT_FONT_SIZE = 'normal';
+    public const DEFAULT_FONT_WEIGHT = 'normal';
 
     public const FONT_FAMILIES = [
         'figtree' => ['name' => 'Figtree', 'description' => 'Modern dan ringkas', 'stack' => 'Figtree, Inter, ui-sans-serif, system-ui, sans-serif'],
@@ -24,6 +25,11 @@ class ApplicationThemeSetting extends Model
         'normal' => ['name' => 'Normal', 'value' => '80%', 'description' => 'Ukuran standar aplikasi'],
         'comfortable' => ['name' => 'Nyaman', 'value' => '87.5%', 'description' => 'Lebih lega dan mudah dibaca'],
         'large' => ['name' => 'Besar', 'value' => '95%', 'description' => 'Keterbacaan maksimal'],
+    ];
+
+    public const FONT_WEIGHTS = [
+        'normal' => ['name' => 'Normal', 'value' => '400', 'description' => 'Ketebalan standar untuk teks aplikasi'],
+        'bold' => ['name' => 'Bold', 'value' => '700', 'description' => 'Teks lebih tegas dan mudah terlihat'],
     ];
 
     public const THEMES = [
@@ -95,7 +101,7 @@ class ApplicationThemeSetting extends Model
         ],
     ];
 
-    protected $fillable = ['theme', 'font_family', 'font_size'];
+    protected $fillable = ['theme', 'font_family', 'font_size', 'font_weight'];
 
     public static function activeTheme(): string
     {
@@ -133,5 +139,16 @@ class ApplicationThemeSetting extends Model
         }
 
         return array_key_exists($size, self::FONT_SIZES) ? $size : self::DEFAULT_FONT_SIZE;
+    }
+
+    public static function activeFontWeight(): string
+    {
+        try {
+            $weight = (string) (self::query()->value('font_weight') ?? self::DEFAULT_FONT_WEIGHT);
+        } catch (Throwable) {
+            return self::DEFAULT_FONT_WEIGHT;
+        }
+
+        return array_key_exists($weight, self::FONT_WEIGHTS) ? $weight : self::DEFAULT_FONT_WEIGHT;
     }
 }

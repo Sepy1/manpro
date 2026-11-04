@@ -26,6 +26,7 @@ it('allows admins to view and update the application theme', function () {
         ->assertSee('Rose Quartz')
         ->assertSee('Jenis font aplikasi')
         ->assertSee('Ukuran font aplikasi')
+        ->assertSee('Ketebalan font aplikasi')
         ->assertSee('Segoe UI')
         ->assertSee('Besar');
 
@@ -33,6 +34,7 @@ it('allows admins to view and update the application theme', function () {
         'theme' => 'emerald',
         'font_family' => 'segoe',
         'font_size' => 'comfortable',
+        'font_weight' => 'bold',
     ])
         ->assertRedirect()
         ->assertSessionHas('status');
@@ -40,18 +42,22 @@ it('allows admins to view and update the application theme', function () {
     expect(ApplicationThemeSetting::activeTheme())->toBe('emerald');
     expect(ApplicationThemeSetting::activeFontFamily())->toBe('segoe');
     expect(ApplicationThemeSetting::activeFontSize())->toBe('comfortable');
+    expect(ApplicationThemeSetting::activeFontWeight())->toBe('bold');
 
     $this->get(route('admin.dashboard'))
         ->assertOk()
         ->assertSee('root.dataset.appTheme = "emerald"', false)
         ->assertSee('root.dataset.appThemeMode = "dark"', false)
         ->assertSee('root.dataset.appFont = "segoe"', false)
-        ->assertSee("root.style.setProperty('--app-font-size', \"87.5%\")", false);
+        ->assertSee("root.style.setProperty('--app-font-size', \"87.5%\")", false)
+        ->assertSee('root.dataset.appFontWeight = "bold"', false)
+        ->assertSee("root.style.setProperty('--app-font-weight', \"700\")", false);
 
     $this->put(route('admin.parameter.application-theme.update'), [
         'theme' => 'daylight',
         'font_family' => 'arial',
         'font_size' => 'large',
+        'font_weight' => 'normal',
     ])
         ->assertRedirect();
 
@@ -66,6 +72,7 @@ it('allows admins to view and update the application theme', function () {
         'theme' => 'elastic',
         'font_family' => 'figtree',
         'font_size' => 'normal',
+        'font_weight' => 'normal',
     ])->assertRedirect();
 
     expect(ApplicationThemeSetting::activeTheme())->toBe('elastic');
@@ -80,8 +87,9 @@ it('validates themes and restricts theme management to admins', function () {
             'theme' => 'invalid-theme',
             'font_family' => 'invalid-font',
             'font_size' => 'giant',
+            'font_weight' => 'heavy',
         ])
-        ->assertSessionHasErrors(['theme', 'font_family', 'font_size']);
+        ->assertSessionHasErrors(['theme', 'font_family', 'font_size', 'font_weight']);
 
     $officer = User::factory()->create(['role' => 'officer']);
 
@@ -93,6 +101,7 @@ it('validates themes and restricts theme management to admins', function () {
         'theme' => 'violet',
         'font_family' => 'figtree',
         'font_size' => 'normal',
+        'font_weight' => 'normal',
     ])
         ->assertForbidden();
 });

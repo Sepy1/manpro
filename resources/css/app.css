@@ -8,6 +8,7 @@ html {
 
 html[data-app-font] body {
     font-family: var(--app-font-family) !important;
+    font-weight: var(--app-font-weight, 400);
 }
 
 /* Tema aplikasi: seluruh palet mempertahankan kontras tinggi untuk teks dan kontrol. */
@@ -68,6 +69,53 @@ html[data-app-font] body {
     --app-accent-hover: #334155;
     --app-accent-soft: rgb(148 163 184 / 0.18);
     --app-accent-text: #e2e8f0;
+}
+
+/* Kilau metalik bergerak khusus sidebar Graphite. */
+html[data-app-theme="graphite"] [data-app-sidebar]::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: -15%;
+    bottom: -15%;
+    left: -75%;
+    width: 58%;
+    pointer-events: none;
+    background: linear-gradient(
+        105deg,
+        transparent 8%,
+        rgb(148 163 184 / 0.04) 28%,
+        rgb(255 255 255 / 0.22) 48%,
+        rgb(125 211 252 / 0.12) 58%,
+        transparent 82%
+    );
+    filter: blur(3px);
+    transform: translate3d(0, 0, 0) skewX(-12deg);
+    animation: graphite-sidebar-glow 8s ease-in-out infinite;
+}
+
+@keyframes graphite-sidebar-glow {
+    0%, 12% {
+        transform: translate3d(0, 0, 0) skewX(-12deg);
+        opacity: 0;
+    }
+    22% {
+        opacity: 1;
+    }
+    72% {
+        opacity: 0.9;
+    }
+    88%, 100% {
+        transform: translate3d(310%, 0, 0) skewX(-12deg);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-app-theme="graphite"] [data-app-sidebar]::after {
+        animation: none;
+        display: none;
+    }
 }
 
 :root[data-app-theme="ocean"] {

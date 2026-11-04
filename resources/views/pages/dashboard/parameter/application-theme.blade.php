@@ -22,12 +22,13 @@
             <form method="POST" action="{{ route('admin.parameter.application-theme.update') }}" x-data="{
                 selected: @js(old('theme', $activeTheme)),
                 selectedFont: @js(old('font_family', $activeFontFamily)),
-                selectedSize: @js(old('font_size', $activeFontSize))
+                selectedSize: @js(old('font_size', $activeFontSize)),
+                selectedWeight: @js(old('font_weight', $activeFontWeight))
             }">
                 @csrf
                 @method('PUT')
 
-                <div class="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 md:grid-cols-2 dark:border-white/10 dark:bg-black/10 lg:p-5">
+                <div class="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 md:grid-cols-2 dark:border-white/10 dark:bg-black/10 lg:grid-cols-3 lg:p-5">
                     <div>
                         <label for="font_family" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Jenis font aplikasi</label>
                         <select id="font_family" name="font_family" x-model="selectedFont"
@@ -66,6 +67,23 @@
                             <span class="font-semibold" :style="{ fontSize: { compact: '12px', normal: '13px', comfortable: '14px', large: '15.2px' }[selectedSize] }">Aa</span>
                             <span class="text-xs">Preview ukuran teks</span>
                         </div>
+                    </div>
+
+                    <div>
+                        <label for="font_weight" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Ketebalan font aplikasi</label>
+                        <select id="font_weight" name="font_weight" x-model="selectedWeight"
+                            class="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                            @foreach ($fontWeights as $key => $weight)
+                                <option value="{{ $key }}">{{ $weight['name'] }} — {{ $weight['description'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('font_weight')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-2 text-sm text-gray-700 dark:text-gray-300"
+                            :style="{ fontWeight: { normal: 400, bold: 700 }[selectedWeight] }">
+                            Contoh ketebalan teks aplikasi
+                        </p>
                     </div>
                 </div>
 
