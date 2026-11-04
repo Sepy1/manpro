@@ -9,9 +9,10 @@
         class="flex min-h-0 min-w-0 h-full flex-col"
         padding="p-5 lg:p-6"
     >
+        <div x-data="realtimeFilter" class="contents">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Log Security</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
+            <p x-ref="count" data-filter-count class="text-sm text-gray-500 dark:text-gray-400">
                 Menampilkan {{ number_format($filteredCount) }} dari {{ number_format($totalCount) }} log.
             </p>
         </div>
@@ -29,8 +30,9 @@
         @endif
 
         <form method="GET" action="{{ route('admin.log-security.index') }}"
-            x-data
-            @input.debounce.500ms="$el.requestSubmit()"
+            x-ref="form"
+            @submit.prevent="apply()"
+            @input.debounce.500ms="apply()"
             class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
             <input
                 type="text"
@@ -81,11 +83,14 @@
             </label>
             <div class="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
-                <a href="{{ route('admin.log-security.export', request()->query()) }}" class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">Export Excel</a>
+                <a x-ref="exportLink" data-filter-export href="{{ route('admin.log-security.export', request()->query()) }}" class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">Export Excel</a>
                 <a href="{{ route('admin.log-security.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">Reset</a>
             </div>
         </form>
 
+        <div x-ref="results" data-filter-results @click="paginate($event)"
+            class="flex min-h-0 flex-1 flex-col transition-opacity duration-200"
+            :class="loading ? 'opacity-0' : 'opacity-100'">
         <div class="w-full min-h-0 min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800">
             <table class="w-full min-w-0 table-fixed border-separate border-spacing-0 text-left">
                 <thead class="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:border-b [&_th]:border-gray-200 [&_th]:bg-gray-50 dark:[&_th]:border-gray-800 dark:[&_th]:bg-slate-900">
@@ -146,5 +151,7 @@
         @if ($logs->hasPages())
             <div class="mt-4">{{ $logs->links() }}</div>
         @endif
+        </div>
+        </div>
     </x-dashboard.accent-card>
 @endsection

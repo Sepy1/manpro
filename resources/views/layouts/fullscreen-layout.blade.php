@@ -69,40 +69,33 @@
 <body class="h-screen h-[100dvh] overflow-hidden bg-slate-100 text-slate-900 dark:bg-gray-900 dark:text-gray-100" x-data="{ navigating: false }" x-init="$store.sidebar.isExpanded = window.innerWidth >= 1280;
 $store.sidebar.isDesktop = window.innerWidth >= 1280;
 window.addEventListener('resize', () => $store.sidebar.syncViewport(), { passive: true });
-const isInternalLink = (link) => {
-    if (!link) return false;
-    if (link.target && link.target !== '_self') return false;
-    if (link.hasAttribute('download') || link.hasAttribute('data-no-transition')) return false;
-    const href = link.getAttribute('href') || '';
-    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return false;
-    try {
-        const url = new URL(link.href, window.location.origin);
-        return url.origin === window.location.origin;
-    } catch (_) {
-        return false;
-    }
-};
-document.addEventListener('click', (event) => {
-    if (event.defaultPrevented) return;
-    const link = event.target.closest('a[href]');
-    if (!isInternalLink(link)) return;
-    event.preventDefault();
-    navigating = true;
-    const shell = document.getElementById('page-transition-root');
-    shell?.classList.add('blur-[2px]', 'opacity-85');
-    requestAnimationFrame(() => {
-        setTimeout(() => { window.location.href = link.href; }, 180);
-    });
-});">
+">
 
     {{-- preloader --}}
     <x-common.preloader/>
     {{-- preloader end --}}
 
+    <div id="partial-navigation-spinner"
+        class="pointer-events-none fixed inset-y-0 left-0 right-0 z-[99998] hidden items-center justify-center bg-slate-950/15 backdrop-blur-[1px] transition-[left] duration-300"
+        :class="{
+            'xl:left-[290px]': $store.sidebar.isExpanded || $store.sidebar.isHovered,
+            'xl:left-[90px]': !$store.sidebar.isExpanded && !$store.sidebar.isHovered
+        }"
+        role="status"
+        aria-live="polite"
+        aria-label="Memuat halaman">
+        <div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-900/90 px-5 py-3 text-sm font-medium text-white shadow-2xl shadow-black/30">
+            <span class="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-sky-400" aria-hidden="true"></span>
+            <span>Memuat halaman...</span>
+        </div>
+    </div>
+
     @yield('content')
 
-</body>
+    <div id="page-script-stack" class="hidden">
+        @stack('scripts')
+    </div>
 
-@stack('scripts')
+</body>
 
 </html>
