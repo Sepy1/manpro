@@ -62,6 +62,11 @@ document.addEventListener('alpine:init', () => {
                     this.$refs.exportLink.href = nextExport.href;
                 }
 
+                const nextMapLink = documentResult.querySelector('[data-filter-attack-map]');
+                if (nextMapLink && this.$refs.mapLink) {
+                    this.$refs.mapLink.href = nextMapLink.href;
+                }
+
                 window.history.replaceState({}, '', url);
             } catch (error) {
                 if (error.name !== 'AbortError') {
@@ -491,11 +496,12 @@ const navigateSidebarContent = async (href, pushState = true) => {
         const nextDocument = new DOMParser().parseFromString(await response.text(), 'text/html');
         const nextRoot = nextDocument.getElementById('page-transition-root');
         const finalUrl = response.url || href;
-        const isNetworkMap = new URL(finalUrl, window.location.origin).pathname === '/admin/map';
+        const partialAssetPath = new URL(finalUrl, window.location.origin).pathname;
+        const supportsPartialAssets = ['/admin/map', '/admin/attack-map'].includes(partialAssetPath);
         const nextStackScripts = nextDocument.querySelectorAll('#page-script-stack script');
         const nextRootScripts = nextDocument.querySelectorAll('#page-transition-root script');
 
-        if (!nextRoot || nextRootScripts.length > 0 || (nextStackScripts.length > 0 && !isNetworkMap)) {
+        if (!nextRoot || nextRootScripts.length > 0 || (nextStackScripts.length > 0 && !supportsPartialAssets)) {
             window.location.href = finalUrl;
             return;
         }
@@ -505,7 +511,7 @@ const navigateSidebarContent = async (href, pushState = true) => {
         currentRoot.replaceWith(nextRoot);
         document.querySelectorAll('[data-partial-page-asset]').forEach((asset) => asset.remove());
 
-        if (isNetworkMap) {
+        if (supportsPartialAssets) {
             await installNetworkMapAssets(nextDocument);
         }
 

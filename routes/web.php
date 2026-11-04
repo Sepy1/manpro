@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AsetTiController;
 use App\Http\Controllers\Admin\AssistantChatController;
+use App\Http\Controllers\Admin\AttackMapController;
 use App\Http\Controllers\Admin\BackupMonitoringController;
 use App\Http\Controllers\Admin\CctvController;
 use App\Http\Controllers\Admin\DcDrcDeviceController;
@@ -122,6 +123,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/dashboard', [ProjectController::class, 'dashboard'])->name('dashboard');
     Route::get('/map', [NetworkMapController::class, 'index'])->name('map.index');
     Route::get('/map/status', [NetworkMapController::class, 'status'])->name('map.status');
+    Route::get('/attack-map', [AttackMapController::class, 'index'])->name('attack-map.index');
+    Route::get('/attack-map/data', [AttackMapController::class, 'data'])->name('attack-map.data');
     Route::get('/livestream', [LivestreamPlayerController::class, 'index'])->name('livestream.player');
 
     Route::post('/assistant/chat', [AssistantChatController::class, 'chat'])

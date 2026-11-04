@@ -14,6 +14,11 @@ return [
         'api_key' => env('SECURITY_LOG_API_KEY'),
     ],
 
+    'attack_map' => [
+        'geoip_endpoint' => env('ATTACK_MAP_GEOIP_ENDPOINT', 'https://api.ipdata.co/{ip}'),
+        'ipdata_api_key' => env('IPDATA_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

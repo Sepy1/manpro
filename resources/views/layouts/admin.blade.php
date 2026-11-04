@@ -62,6 +62,7 @@
                         || request()->routeIs('admin.cr-eksternal-vendor.*')
                         || request()->routeIs('admin.parameter.*')
                         || request()->routeIs('admin.log-security.*')
+                        || request()->routeIs('admin.attack-map.*')
                         || request()->routeIs('admin.profil*'),
                     'mx-auto max-w-[--breakpoint-2xl]' => !request()->routeIs('admin.dashboard')
                         && !request()->routeIs('admin.map.*')
@@ -76,6 +77,7 @@
                         && !request()->routeIs('admin.cr-eksternal-vendor.*')
                         && !request()->routeIs('admin.parameter.*')
                         && !request()->routeIs('admin.log-security.*')
+                        && !request()->routeIs('admin.attack-map.*')
                         && !request()->routeIs('admin.profil*'),
                 ])
             >

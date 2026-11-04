@@ -96,6 +96,10 @@ class MenuHelper
                         'path' => '/admin/log-security',
                     ],
                     [
+                        'name' => 'Attack Map',
+                        'path' => '/admin/attack-map',
+                    ],
+                    [
                         'name' => 'Log Akses User',
                         'path' => '/admin/log-access-user',
                     ],

@@ -83,6 +83,8 @@
             </label>
             <div class="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4">
                 <button class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Filter</button>
+                <a x-ref="mapLink" data-filter-attack-map href="{{ route('admin.attack-map.index', request()->query()) }}"
+                    class="inline-flex h-10 items-center rounded-lg border border-cyan-500 px-4 text-sm font-medium text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300 dark:hover:bg-cyan-500/10">Attack Map</a>
                 <a x-ref="exportLink" data-filter-export href="{{ route('admin.log-security.export', request()->query()) }}" class="inline-flex h-10 items-center rounded-lg border border-green-600 px-4 text-sm font-medium text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">Export Excel</a>
                 <a href="{{ route('admin.log-security.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10">Reset</a>
             </div>
