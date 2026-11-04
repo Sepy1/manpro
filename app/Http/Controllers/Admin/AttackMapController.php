@@ -88,6 +88,7 @@ class AttackMapController extends Controller
                 'blocked' => $logs->filter(fn ($log) => str_contains(strtolower($log->action), 'block'))->count(),
             ],
             'generated_at' => now()->toIso8601String(),
+            'geolocation' => $geo->diagnostics(),
         ]);
     }
 }

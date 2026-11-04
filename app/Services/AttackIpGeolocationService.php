@@ -5,10 +5,13 @@ namespace App\Services;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\IpUtils;
 
 class AttackIpGeolocationService
 {
+    private array $diagnostics = [];
+
     private const DEMO_LOCATIONS = [
         '8.8.8.8' => ['country' => 'United States', 'country_code' => 'US', 'city' => 'New York', 'latitude' => 40.7128, 'longitude' => -74.0060],
         '1.202.0.1' => ['country' => 'China', 'country_code' => 'CN', 'city' => 'Beijing', 'latitude' => 39.9042, 'longitude' => 116.4074],
@@ -35,11 +38,11 @@ class AttackIpGeolocationService
     {
         $resolved = [];
         $missing = [];
+        $unresolved = [];
+        $apiKey = trim((string) config('services.attack_map.ipdata_api_key', ''));
+        $validIps = array_values(array_unique(array_filter($ips, fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP))));
 
-        foreach (array_values(array_unique(array_filter($ips))) as $ip) {
-            if (! filter_var($ip, FILTER_VALIDATE_IP)) {
-                continue;
-            }
+        foreach ($validIps as $ip) {
             if ($this->isLocal($ip)) {
                 $resolved[$ip] = self::SEMARANG;
                 continue;
@@ -53,16 +56,20 @@ class AttackIpGeolocationService
                 $cached = Cache::get($cacheKey);
                 if (is_array($cached)) {
                     $resolved[$ip] = $cached;
+                } else {
+                    $unresolved[] = $ip;
                 }
                 continue;
             }
             $missing[] = $ip;
         }
 
-        $endpoint = (string) config('services.attack_map.geoip_endpoint', 'https://api.ipdata.co/{ip}');
-        $apiKey = trim((string) config('services.attack_map.ipdata_api_key', ''));
-        $query = ['fields' => 'ip,city,country_name,country_code,latitude,longitude'];
+        $endpoint = $apiKey === ''
+            ? (string) config('services.attack_map.geoip_free_endpoint', 'https://ipdata.free/{ip}')
+            : (string) config('services.attack_map.geoip_endpoint', 'https://api.ipdata.co/{ip}');
+        $query = [];
         if ($apiKey !== '') {
+            $query['fields'] = 'ip,city,country_name,country_code,latitude,longitude';
             $query['api-key'] = $apiKey;
         }
         foreach (array_chunk($missing, 25) as $chunk) {
@@ -74,17 +81,20 @@ class AttackIpGeolocationService
             foreach ($chunk as $ip) {
                 $response = $responses[$ip] ?? null;
                 if (! $response?->successful()) {
-                    Cache::put($this->cacheKey($ip), false, now()->addHour());
+                    Cache::put($this->cacheKey($ip), false, now()->addMinutes(5));
+                    $unresolved[] = $ip;
                     continue;
                 }
                 $data = $response->json();
                 if (! is_numeric($data['latitude'] ?? null) || ! is_numeric($data['longitude'] ?? null)) {
-                    Cache::put($this->cacheKey($ip), false, now()->addHour());
+                    Cache::put($this->cacheKey($ip), false, now()->addMinutes(5));
+                    $unresolved[] = $ip;
                     continue;
                 }
+                $countryCode = strtoupper((string) ($data['country_code'] ?? $data['country'] ?? ''));
                 $location = [
-                    'country' => (string) ($data['country_name'] ?? 'Unknown'),
-                    'country_code' => (string) ($data['country_code'] ?? ''),
+                    'country' => $this->countryName((string) ($data['country_name'] ?? ''), $countryCode),
+                    'country_code' => $countryCode,
                     'city' => (string) ($data['city'] ?? ''),
                     'latitude' => (float) $data['latitude'],
                     'longitude' => (float) $data['longitude'],
@@ -95,7 +105,29 @@ class AttackIpGeolocationService
             }
         }
 
+        $unresolved = array_values(array_unique(array_diff($unresolved, array_keys($resolved))));
+        $this->diagnostics = [
+            'requested' => count($validIps),
+            'resolved' => count($resolved),
+            'unresolved' => count($unresolved),
+            'unresolved_ips' => $unresolved,
+            'api_key_configured' => $apiKey !== '',
+            'mode' => $apiKey === '' ? 'free_without_key' : 'api_key',
+            'message' => $unresolved === []
+                ? null
+                : 'Sebagian koordinat gagal dipetakan. Periksa koneksi server ke ipdata.free, batas kuota harian, dan log aplikasi.',
+        ];
+
+        if ($unresolved !== [] && Cache::add('attack-map:geoip:warning', true, now()->addMinutes(10))) {
+            Log::warning('Attack Map gagal memetakan sebagian alamat IP.', $this->diagnostics);
+        }
+
         return $resolved;
+    }
+
+    public function diagnostics(): array
+    {
+        return $this->diagnostics;
     }
 
     private function isLocal(string $ip): bool
@@ -108,6 +140,18 @@ class AttackIpGeolocationService
 
     private function cacheKey(string $ip): string
     {
-        return 'attack-map:geoip:ipdata:v1:'.sha1($ip);
+        return 'attack-map:geoip:ipdata:v3:'.sha1($ip);
+    }
+
+    private function countryName(string $countryName, string $countryCode): string
+    {
+        if ($countryName !== '') {
+            return $countryName;
+        }
+        if ($countryCode !== '' && class_exists(\Locale::class)) {
+            return \Locale::getDisplayRegion('-'.$countryCode, 'en') ?: $countryCode;
+        }
+
+        return $countryCode !== '' ? $countryCode : 'Unknown';
     }
 }

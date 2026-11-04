@@ -16,6 +16,12 @@
             </template>
         </div>
 
+        <div x-show="geolocation.message" x-cloak class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/70 dark:bg-amber-950/40 dark:text-amber-200">
+            <span class="font-semibold">Geolokasi IP:</span>
+            <span x-text="geolocation.message"></span>
+            <span x-show="geolocation.unresolved" class="ml-1" x-text="`(${geolocation.unresolved} IP belum terpetakan)`"></span>
+        </div>
+
         <div class="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
             <div class="flex min-h-[430px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <div class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-200 p-2 sm:p-3 dark:border-gray-800">
@@ -70,6 +76,9 @@
                     </template>
                     <p x-show="!loading && countries.length === 0" class="py-8 text-center text-sm text-gray-500">Belum ada lokasi yang dapat dipetakan.</p>
                 </div>
+                <p class="mt-4 border-t border-gray-200 pt-3 text-[10px] text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                    <a href="https://ipdata.co" target="_blank" rel="noopener noreferrer" class="hover:text-brand-500">IP geolocation by ipdata.co</a>
+                </p>
             </aside>
         </div>
     </div>
@@ -93,7 +102,7 @@
         function attackMap(endpoint, initialFilters = {}) {
             return {
                 endpoint, map: null, layer: null, canvasRenderer: null, timer: null, request: null, loading: false,
-                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0 }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
                     { label: 'Source IP', value: this.summary.sources.toLocaleString('id-ID') },
@@ -172,6 +181,7 @@
                         if (!response.ok) return;
                         const data = await response.json();
                         this.summary = data.summary;
+                        this.geolocation = data.geolocation || { message: null, unresolved: 0 };
                         this.countries = data.countries;
                         this.arcs = data.arcs;
                         const availableCountries = new Set(data.countries.map(country => country.country));

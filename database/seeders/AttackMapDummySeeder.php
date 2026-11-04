@@ -24,7 +24,7 @@ class AttackMapDummySeeder extends Seeder
         ];
 
         foreach ($attacks as $index => [$code, $country, $city, $sourceIp, $latitude, $longitude, $severity, $attack, $count]) {
-            Cache::put('attack-map:geoip:ipdata:v1:'.sha1($sourceIp), [
+            Cache::put('attack-map:geoip:ipdata:v3:'.sha1($sourceIp), [
                 'country' => $country,
                 'country_code' => $code,
                 'city' => $city,

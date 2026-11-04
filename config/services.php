@@ -16,6 +16,7 @@ return [
 
     'attack_map' => [
         'geoip_endpoint' => env('ATTACK_MAP_GEOIP_ENDPOINT', 'https://api.ipdata.co/{ip}'),
+        'geoip_free_endpoint' => env('ATTACK_MAP_GEOIP_FREE_ENDPOINT', 'https://ipdata.free/{ip}'),
         'ipdata_api_key' => env('IPDATA_API_KEY'),
     ],
 
