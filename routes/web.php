@@ -103,6 +103,9 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+Route::get('/branding/login-logo', [ParameterApplicationThemeController::class, 'loginLogo'])
+    ->name('branding.login-logo');
+
 Route::get('/dashboard', function () {
     if (auth()->user()?->role === 'vendor_network') {
         return redirect()->route('admin.map.index');
@@ -211,6 +214,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::put('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'update'])->name('parameter.dc-drc-device-types.update');
     Route::delete('/parameter/dc-drc-device-types/{deviceType}', [ParameterDcDrcDeviceTypeController::class, 'destroy'])->name('parameter.dc-drc-device-types.destroy');
     Route::get('/parameter/tema-aplikasi', [ParameterApplicationThemeController::class, 'index'])->name('parameter.application-theme.index');
+    Route::get('/parameter/tema-aplikasi/logo', [ParameterApplicationThemeController::class, 'logo'])->name('parameter.application-theme.logo');
     Route::put('/parameter/tema-aplikasi', [ParameterApplicationThemeController::class, 'update'])->name('parameter.application-theme.update');
 
     Route::get('/cr-eksternal', [ExternCrController::class, 'index'])->name('cr-eksternal.index');

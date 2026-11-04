@@ -19,16 +19,18 @@
                 </p>
             </div>
 
-            <form method="POST" action="{{ route('admin.parameter.application-theme.update') }}" x-data="{
+            <form method="POST" action="{{ route('admin.parameter.application-theme.update') }}" enctype="multipart/form-data" x-data="{
                 selected: @js(old('theme', $activeTheme)),
                 selectedFont: @js(old('font_family', $activeFontFamily)),
                 selectedSize: @js(old('font_size', $activeFontSize)),
-                selectedWeight: @js(old('font_weight', $activeFontWeight))
+                selectedWeight: @js(old('font_weight', $activeFontWeight)),
+                logoPreview: @js($activeLogoUrl),
+                loginLogoPreview: @js($activeLoginLogoUrl)
             }">
                 @csrf
                 @method('PUT')
 
-                <div class="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 md:grid-cols-2 dark:border-white/10 dark:bg-black/10 lg:grid-cols-3 lg:p-5">
+                <div class="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 md:grid-cols-2 dark:border-white/10 dark:bg-black/10 xl:grid-cols-4 lg:p-5">
                     <div>
                         <label for="font_family" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Jenis font aplikasi</label>
                         <select id="font_family" name="font_family" x-model="selectedFont"
@@ -84,6 +86,40 @@
                             :style="{ fontWeight: { normal: 400, bold: 700 }[selectedWeight] }">
                             Contoh ketebalan teks aplikasi
                         </p>
+                    </div>
+
+                    <div>
+                        <label for="logo" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Logo sidebar</label>
+                        <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"
+                            @change="const file = $event.target.files[0]; if (file) logoPreview = URL.createObjectURL(file)"
+                            class="block h-11 w-full rounded-xl border border-gray-300 bg-white text-sm text-gray-700 file:mr-3 file:h-full file:border-0 file:bg-brand-500 file:px-3 file:text-sm file:font-medium file:text-white dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200" />
+                        @error('logo')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        <div class="mt-2 flex h-14 w-full items-center overflow-hidden rounded-lg border border-gray-200 bg-slate-800 px-3 dark:border-gray-700">
+                            <template x-if="logoPreview">
+                                <img :src="logoPreview" alt="Preview logo sidebar" class="max-h-11 w-full object-contain object-left" />
+                            </template>
+                            <span x-show="!logoPreview" class="text-xs text-slate-300">Control Center (logo belum diunggah)</span>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">PNG, JPG, atau WebP. Maksimal 2 MB.</p>
+                    </div>
+
+                    <div>
+                        <label for="login_logo" class="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">Login Logo</label>
+                        <input id="login_logo" name="login_logo" type="file" accept="image/png,image/jpeg,image/webp"
+                            @change="const file = $event.target.files[0]; if (file) loginLogoPreview = URL.createObjectURL(file)"
+                            class="block h-11 w-full rounded-xl border border-gray-300 bg-white text-sm text-gray-700 file:mr-3 file:h-full file:border-0 file:bg-brand-500 file:px-3 file:text-sm file:font-medium file:text-white dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200" />
+                        @error('login_logo')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        <div class="mt-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white px-3 dark:border-gray-700 dark:bg-gray-900">
+                            <template x-if="loginLogoPreview">
+                                <img :src="loginLogoPreview" alt="Preview logo login" class="max-h-16 w-full object-contain" />
+                            </template>
+                            <span x-show="!loginLogoPreview" class="text-xs text-gray-500 dark:text-gray-400">Logo login bawaan</span>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Menggantikan logo di atas form login.</p>
                     </div>
                 </div>
 

@@ -3,10 +3,13 @@
 use App\Models\ApplicationThemeSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 it('allows admins to view and update the application theme', function () {
+    Storage::fake('public');
     $admin = User::factory()->admin()->create();
 
     $this->actingAs($admin)
@@ -35,6 +38,8 @@ it('allows admins to view and update the application theme', function () {
         'font_family' => 'segoe',
         'font_size' => 'comfortable',
         'font_weight' => 'bold',
+        'logo' => UploadedFile::fake()->image('logo.png', 640, 180),
+        'login_logo' => UploadedFile::fake()->image('login-logo.png', 512, 256),
     ])
         ->assertRedirect()
         ->assertSessionHas('status');
@@ -43,6 +48,18 @@ it('allows admins to view and update the application theme', function () {
     expect(ApplicationThemeSetting::activeFontFamily())->toBe('segoe');
     expect(ApplicationThemeSetting::activeFontSize())->toBe('comfortable');
     expect(ApplicationThemeSetting::activeFontWeight())->toBe('bold');
+    expect(ApplicationThemeSetting::activeLogoPath())->not->toBeNull();
+    expect(ApplicationThemeSetting::activeLoginLogoPath())->not->toBeNull();
+    Storage::disk('public')->assertExists(ApplicationThemeSetting::activeLogoPath());
+    Storage::disk('public')->assertExists(ApplicationThemeSetting::activeLoginLogoPath());
+
+    $this->get(route('admin.parameter.application-theme.logo'))
+        ->assertOk()
+        ->assertHeader('content-type', 'image/png');
+
+    $this->get(route('branding.login-logo'))
+        ->assertOk()
+        ->assertHeader('content-type', 'image/png');
 
     $this->get(route('admin.dashboard'))
         ->assertOk()
@@ -51,6 +68,7 @@ it('allows admins to view and update the application theme', function () {
         ->assertSee('root.dataset.appFont = "segoe"', false)
         ->assertSee("root.style.setProperty('--app-font-size', \"87.5%\")", false)
         ->assertSee('root.dataset.appFontWeight = "bold"', false)
+        ->assertSee('Logo aplikasi')
         ->assertSee("root.style.setProperty('--app-font-weight', \"700\")", false);
 
     $this->put(route('admin.parameter.application-theme.update'), [

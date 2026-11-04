@@ -101,7 +101,7 @@ class ApplicationThemeSetting extends Model
         ],
     ];
 
-    protected $fillable = ['theme', 'font_family', 'font_size', 'font_weight'];
+    protected $fillable = ['theme', 'font_family', 'font_size', 'font_weight', 'logo_path', 'login_logo_path'];
 
     public static function activeTheme(): string
     {
@@ -150,5 +150,27 @@ class ApplicationThemeSetting extends Model
         }
 
         return array_key_exists($weight, self::FONT_WEIGHTS) ? $weight : self::DEFAULT_FONT_WEIGHT;
+    }
+
+    public static function activeLogoPath(): ?string
+    {
+        try {
+            $path = self::query()->value('logo_path');
+        } catch (Throwable) {
+            return null;
+        }
+
+        return is_string($path) && $path !== '' ? $path : null;
+    }
+
+    public static function activeLoginLogoPath(): ?string
+    {
+        try {
+            $path = self::query()->value('login_logo_path');
+        } catch (Throwable) {
+            return null;
+        }
+
+        return is_string($path) && $path !== '' ? $path : null;
     }
 }

@@ -5,6 +5,10 @@
     $networkSummary = auth()->user()?->role === 'vendor_network'
         ? \App\Support\NetworkStatusSummary::get()
         : null;
+    $applicationLogoPath = \App\Models\ApplicationThemeSetting::activeLogoPath();
+    $applicationLogoUrl = $applicationLogoPath
+        ? route('admin.parameter.application-theme.logo', ['v' => \App\Models\ApplicationThemeSetting::query()->max('updated_at')])
+        : null;
 
     // Get current path
     $currentPath = request()->path();
@@ -121,16 +125,18 @@
                         fill="currentColor"></path>
                 </svg>
             </button>
-            <span
-                class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 text-xs font-bold text-white shadow-lg shadow-blue-950/40 ring-2 ring-white/25 transition-transform duration-200 hover:scale-105"
-            >
-                CC
-            </span>
+            <a href="/" class="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 text-xs font-bold text-white shadow-lg shadow-blue-950/40 ring-2 ring-white/25 transition-transform duration-200 hover:scale-105">
+                @if ($applicationLogoUrl)
+                    <img src="{{ $applicationLogoUrl }}" alt="Logo aplikasi" class="h-full w-full object-contain p-0.5" />
+                @else
+                    CC
+                @endif
+            </a>
         </div>
 
         {{-- Mobile / sidebar terbuka / hover desktop: satu baris; collapse desktop di kanan --}}
         <div
-            class="flex w-full items-center gap-2"
+            class="relative flex w-full items-center gap-2"
             x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
         >
             <button
@@ -150,16 +156,20 @@
                         fill="currentColor" />
                 </svg>
             </button>
-            <div class="min-w-0 flex-1">
-                <a href="/" @click="$store.sidebar.closeMobile()">
-                    <span class="block truncate text-lg font-bold leading-snug text-white drop-shadow-sm dark:text-white/90">
-                        Control Center
-                    </span>
+            <div class="min-w-0 flex-1 xl:w-full">
+                <a href="/" class="flex h-16 w-full items-center overflow-hidden xl:h-20" @click="$store.sidebar.closeMobile()">
+                    @if ($applicationLogoUrl)
+                        <img src="{{ $applicationLogoUrl }}" alt="Logo aplikasi" class="max-h-16 w-full object-contain object-left xl:max-h-20" />
+                    @else
+                        <span class="block truncate text-lg font-bold leading-snug text-white drop-shadow-sm dark:text-white/90">
+                            Control Center
+                        </span>
+                    @endif
                 </a>
             </div>
             <button
                 type="button"
-                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 text-blue-100 transition-all duration-200 hover:scale-105 hover:border-white/35 hover:bg-white/15 active:scale-95 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-white/[0.04] lg:h-11 lg:w-11 xl:flex"
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-[var(--app-sidebar-from)]/90 text-blue-100 shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:border-white/35 hover:bg-white/15 active:scale-95 dark:border-gray-700 dark:bg-gray-950/90 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-white/[0.04] lg:h-11 lg:w-11 xl:absolute xl:right-0 xl:top-1 xl:flex"
                 :class="{ 'bg-white/10 shadow-inner shadow-sky-950/20 dark:bg-white/[0.04]': !$store.sidebar.isExpanded }"
                 @click="$store.sidebar.toggleExpanded()"
                 aria-label="Perlebar atau rapatkan sidebar">

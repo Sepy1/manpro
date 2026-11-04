@@ -2,8 +2,10 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    @php($loginLogoPath = \App\Models\ApplicationThemeSetting::activeLoginLogoPath())
     <div class="mb-5 flex justify-center">
-        <img src="/images/logo/logo.png" alt="Logo" class="w-64 h-auto object-contain" />
+        <img src="{{ $loginLogoPath ? route('branding.login-logo', ['v' => \App\Models\ApplicationThemeSetting::query()->max('updated_at')]) : asset('images/logo/logo.png') }}"
+            alt="Logo login" class="h-auto max-h-44 w-full max-w-sm object-contain" />
     </div>
 
     <form method="POST" action="{{ route('login') }}">
