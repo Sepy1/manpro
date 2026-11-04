@@ -49,6 +49,16 @@
                             @foreach ($severities as $severity)<option value="{{ $severity }}">{{ $severity }}</option>@endforeach
                         </select>
                         <button type="button" @click="load()" class="h-9 rounded-lg bg-brand-500 px-4 text-xs font-medium text-white">Refresh</button>
+                        <label class="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                            <input type="checkbox" x-model="showSourceLabels" @change="draw()"
+                                class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+                            <span>Label SRC</span>
+                        </label>
+                        <label class="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                            <input type="checkbox" x-model="showDestinationLabels" @change="draw()"
+                                class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+                            <span>Label DST</span>
+                        </label>
                     </div>
                 </div>
                 <div class="relative min-h-[360px] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950">
@@ -121,7 +131,7 @@
         function attackMap(endpoint, initialFilters = {}) {
             return {
                 endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
-                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
                     { label: 'Source IP', value: this.summary.sources.toLocaleString('id-ID') },
@@ -188,10 +198,10 @@
                 escape(value) {
                     return String(value ?? '-').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[character]));
                 },
-                locationIcon(label, color, type, diameter) {
+                locationIcon(label, color, type, diameter, showLabel = true) {
                     return L.divIcon({
                         className: `attack-location-marker attack-${type}-marker`,
-                        html: `<span class="attack-location-dot" style="width:${diameter}px;height:${diameter}px;background:${color}"></span><span class="attack-location-label">${this.escape(label)}</span>`,
+                        html: `<span class="attack-location-dot" style="width:${diameter}px;height:${diameter}px;background:${color}"></span>${showLabel ? `<span class="attack-location-label">${this.escape(label)}</span>` : ''}`,
                         iconSize: [18, 18],
                         iconAnchor: [9, 9],
                     });
@@ -260,7 +270,7 @@
                             renderedSources.add(sourceKey);
                             const sourceDiameter = 9 + Math.min(7, Math.log2(arc.count + 1));
                             const sourceMarker = L.marker([arc.source.latitude, arc.source.longitude], {
-                                icon: this.locationIcon(`${arc.source.city || '-'} / ${arc.source.country}`, color, 'source', sourceDiameter),
+                                icon: this.locationIcon(`${arc.source.city || '-'} / ${arc.source.country}`, color, 'source', sourceDiameter, this.showSourceLabels),
                                 keyboard: false,
                                 zIndexOffset: 500,
                             }).addTo(layer);
@@ -270,7 +280,7 @@
                         if (!renderedDestinations.has(destinationKey)) {
                             renderedDestinations.add(destinationKey);
                             const destinationMarker = L.marker([arc.destination.latitude, arc.destination.longitude], {
-                                icon: this.locationIcon(`${arc.destination.city || '-'} / ${arc.destination.country}`, '#06b6d4', 'destination', arc.destination.is_local ? 14 : 11),
+                                icon: this.locationIcon(`${arc.destination.city || '-'} / ${arc.destination.country}`, '#06b6d4', 'destination', arc.destination.is_local ? 14 : 11, this.showDestinationLabels),
                                 keyboard: false,
                                 zIndexOffset: 600,
                             }).addTo(layer);
