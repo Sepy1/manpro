@@ -40,6 +40,14 @@
                         <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                             <i class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></i> Realtime
                         </span>
+                        <button type="button" @click="openPeriodModal()"
+                            class="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"
+                            :class="appliedDateFrom || appliedDateUntil ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300' : 'border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-300'">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+                            </svg>
+                            <span x-text="appliedDateFrom || appliedDateUntil ? 'Periode aktif' : 'Periode'"></span>
+                        </button>
                         <select x-model="hours" @change="load()" class="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-xs dark:border-gray-700 dark:text-white">
                             <option value="1">1 jam</option><option value="6">6 jam</option><option value="12">12 jam</option>
                             <option value="24">24 jam</option><option value="72">3 hari</option><option value="168">7 hari</option>
@@ -106,6 +114,34 @@
                 </p>
             </aside>
         </div>
+
+        <div x-show="showPeriodModal" x-cloak @keydown.escape.window="showPeriodModal = false"
+            class="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+            @click.self="showPeriodModal = false">
+            <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Periode Log Security</h3>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tampilkan serangan berdasarkan tanggal event.</p>
+                    </div>
+                    <button type="button" @click="showPeriodModal = false" class="rounded-lg px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10">&times;</button>
+                </div>
+                <div class="mt-5">
+                    <input x-ref="periodInput" type="text" class="sr-only" tabindex="-1" aria-hidden="true">
+                    <div x-ref="periodCalendar" class="flex min-h-[310px] justify-center"></div>
+                    <div class="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-center text-xs text-gray-600 dark:bg-white/5 dark:text-gray-300">
+                        <span x-show="!dateFrom">Pilih tanggal awal, lalu pilih tanggal akhir.</span>
+                        <span x-show="dateFrom && !dateUntil"><b x-text="dateFrom"></b> — pilih tanggal akhir.</span>
+                        <span x-show="dateFrom && dateUntil"><b x-text="dateFrom"></b> sampai <b x-text="dateUntil"></b></span>
+                    </div>
+                </div>
+                <p x-show="periodError" x-text="periodError" class="mt-3 text-xs font-medium text-red-600 dark:text-red-400"></p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" @click="resetPeriod()" class="h-10 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">Reset</button>
+                    <button type="button" @click="applyPeriod()" class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Terapkan</button>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -125,13 +161,42 @@
         }
         #attack-world-map .attack-source-marker .attack-location-label { bottom:calc(100% + 2px); background:rgba(15,23,42,.86); }
         #attack-world-map .attack-destination-marker .attack-location-label { top:calc(100% + 2px); background:rgba(8,145,178,.9); }
+        .dark .flatpickr-calendar { background:#111827; border-color:#374151; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+        .dark .flatpickr-months .flatpickr-month,
+        .dark .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .dark .flatpickr-current-month input.cur-year,
+        .dark span.flatpickr-weekday { background:#111827; color:#e5e7eb; }
+        .dark .flatpickr-day { color:#d1d5db; }
+        .dark .flatpickr-day.prevMonthDay,
+        .dark .flatpickr-day.nextMonthDay { color:#6b7280; }
+        .dark .flatpickr-day:hover { background:#1f2937; border-color:#374151; }
+        .flatpickr-day.inRange {
+            background:#dbeafe !important; border-color:#bfdbfe !important; color:#1e3a8a !important;
+            box-shadow:-5px 0 0 #dbeafe,5px 0 0 #dbeafe !important;
+        }
+        .flatpickr-day.selected,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange,
+        .flatpickr-day.selected:hover,
+        .flatpickr-day.startRange:hover,
+        .flatpickr-day.endRange:hover {
+            background:#2563eb !important; border-color:#2563eb !important; color:#fff !important;
+            box-shadow:none !important;
+        }
+        .dark .flatpickr-day.inRange {
+            background:#1e3a8a !important; border-color:#1d4ed8 !important; color:#dbeafe !important;
+            box-shadow:-5px 0 0 #1e3a8a,5px 0 0 #1e3a8a !important;
+        }
+        .dark .flatpickr-day.selected,
+        .dark .flatpickr-day.startRange,
+        .dark .flatpickr-day.endRange { background:#2563eb !important; border-color:#60a5fa !important; color:#fff !important; }
         @keyframes attack-dash { to { stroke-dashoffset:-28; } }
     </style>
     <script>
         function attackMap(endpoint, initialFilters = {}) {
             return {
-                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
-                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, datePicker: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
+                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showPeriodModal: false, dateFrom: initialFilters.date_from || '', dateUntil: initialFilters.date_until || '', appliedDateFrom: initialFilters.date_from || '', appliedDateUntil: initialFilters.date_until || '', periodError: '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
                     { label: 'Source IP', value: this.summary.sources.toLocaleString('id-ID') },
@@ -144,6 +209,25 @@
                 init() {
                     this.destroyed = false;
                     this.initializeMap(0);
+                    this.$nextTick(() => this.initializePeriodCalendar());
+                },
+                initializePeriodCalendar() {
+                    if (this.datePicker || typeof window.flatpickr !== 'function' || !this.$refs.periodInput) return;
+                    const defaults = [this.dateFrom, this.dateUntil].filter(Boolean);
+                    this.datePicker = window.flatpickr(this.$refs.periodInput, {
+                        mode: 'range',
+                        inline: true,
+                        appendTo: this.$refs.periodCalendar,
+                        dateFormat: 'Y-m-d',
+                        defaultDate: defaults,
+                        locale: window.flatpickrIndonesian || 'default',
+                        monthSelectorType: 'static',
+                        onChange: (selectedDates, _, instance) => {
+                            this.dateFrom = selectedDates[0] ? instance.formatDate(selectedDates[0], 'Y-m-d') : '';
+                            this.dateUntil = selectedDates[1] ? instance.formatDate(selectedDates[1], 'Y-m-d') : '';
+                            this.periodError = selectedDates.length === 1 ? 'Pilih satu tanggal lagi sebagai tanggal akhir.' : '';
+                        },
+                    });
                 },
                 initializeMap(attempt = 0) {
                     if (this.destroyed || this.map) return;
@@ -193,6 +277,7 @@
                     clearTimeout(this.mapInitTimer);
                     this.resizeTimers.forEach(timer => clearTimeout(timer));
                     if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
+                    this.datePicker?.destroy();
                     this.request?.abort(); this.map?.remove();
                 },
                 escape(value) {
@@ -223,6 +308,37 @@
                 toggleAllCountries(enabled) {
                     this.enabledCountries = Object.fromEntries(this.countries.map(country => [country.country, enabled]));
                     this.draw();
+                },
+                openPeriodModal() {
+                    this.showPeriodModal = true;
+                    this.$nextTick(() => this.datePicker?.redraw());
+                },
+                applyPeriod() {
+                    if (!this.dateFrom || !this.dateUntil) {
+                        this.periodError = 'Pilih tanggal awal dan tanggal akhir pada kalender.';
+                        return;
+                    }
+                    if (this.dateFrom && this.dateUntil && this.dateFrom > this.dateUntil) {
+                        this.periodError = 'Tanggal akhir tidak boleh lebih kecil dari tanggal awal.';
+                        return;
+                    }
+                    this.periodError = '';
+                    this.appliedDateFrom = this.dateFrom;
+                    this.appliedDateUntil = this.dateUntil;
+                    this.filters = { ...this.filters, date_from: this.dateFrom, date_until: this.dateUntil };
+                    this.showPeriodModal = false;
+                    this.load();
+                },
+                resetPeriod() {
+                    this.dateFrom = '';
+                    this.dateUntil = '';
+                    this.appliedDateFrom = '';
+                    this.appliedDateUntil = '';
+                    this.periodError = '';
+                    this.datePicker?.clear(false);
+                    this.filters = { ...this.filters, date_from: '', date_until: '' };
+                    this.showPeriodModal = false;
+                    this.load();
                 },
                 curve(source, destination) {
                     const x1 = Number(source.longitude), x2 = Number(destination.longitude);
