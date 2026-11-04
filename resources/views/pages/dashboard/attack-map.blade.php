@@ -20,6 +20,11 @@
             <span class="font-semibold">Geolokasi IP:</span>
             <span x-text="geolocation.message"></span>
             <span x-show="geolocation.unresolved" class="ml-1" x-text="`(${geolocation.unresolved} IP belum terpetakan)`"></span>
+            <div x-show="geolocation.unresolved_ips?.length" class="mt-2 flex flex-wrap gap-1.5">
+                <template x-for="ip in (geolocation.unresolved_ips || [])" :key="ip">
+                    <code class="rounded-md border border-amber-300/70 bg-white/70 px-2 py-1 text-xs font-semibold text-amber-900 dark:border-amber-700 dark:bg-slate-950/50 dark:text-amber-100" x-text="ip"></code>
+                </template>
+            </div>
         </div>
 
         <div class="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
@@ -96,13 +101,19 @@
             line-height:1.2; padding:3px 6px; white-space:nowrap;
         }
         #attack-world-map .attack-source-label::before { display:none; }
+        #attack-world-map .attack-destination-label {
+            border:1px solid rgba(255,255,255,.75); border-radius:6px; background:rgba(8,145,178,.88);
+            box-shadow:0 2px 8px rgba(15,23,42,.22); color:#fff; font-size:10px; font-weight:700;
+            line-height:1.2; padding:3px 6px; white-space:nowrap;
+        }
+        #attack-world-map .attack-destination-label::before { display:none; }
         @keyframes attack-dash { to { stroke-dashoffset:-28; } }
     </style>
     <script>
         function attackMap(endpoint, initialFilters = {}) {
             return {
                 endpoint, map: null, layer: null, canvasRenderer: null, timer: null, request: null, loading: false,
-                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0 }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
                     { label: 'Source IP', value: this.summary.sources.toLocaleString('id-ID') },
@@ -156,6 +167,7 @@
                     const layer = window.Alpine?.raw ? window.Alpine.raw(this.layer) : this.layer;
                     const renderer = window.Alpine?.raw ? window.Alpine.raw(this.canvasRenderer) : this.canvasRenderer;
                     layer.clearLayers();
+                    const renderedDestinations = new Set();
                     this.arcs.filter(arc => this.isCountryEnabled(arc.source.country)).forEach(arc => {
                         const color = this.color(arc.severity);
                         const points = this.curve(arc.source, arc.destination);
@@ -167,7 +179,13 @@
                         const sourceMarker = L.circleMarker([arc.source.latitude, arc.source.longitude], { renderer, radius: 4 + Math.min(4, Math.log2(arc.count + 1) * .45), color: '#fff', fillColor: color, fillOpacity: 1, weight: 1.5 }).addTo(layer);
                         sourceMarker.bindTooltip(`${arc.source.city || '-'} / ${arc.source.country}`, { permanent: true, direction: 'top', offset: [0, -8], className: 'attack-source-label' });
                         sourceMarker.bindPopup(`<strong>${arc.source_ip}</strong><br>${arc.source.city || '-'}, ${arc.source.country}<br>${arc.count} event`);
-                        L.circleMarker([arc.destination.latitude, arc.destination.longitude], { renderer, radius: arc.destination.is_local ? 7 : 5, color: '#fff', fillColor: '#06b6d4', fillOpacity: 1, weight: 2 }).bindTooltip(`${arc.destination.city}, ${arc.destination.country}`).addTo(layer);
+                        const destinationKey = `${arc.destination.latitude},${arc.destination.longitude}`;
+                        if (!renderedDestinations.has(destinationKey)) {
+                            renderedDestinations.add(destinationKey);
+                            const destinationMarker = L.circleMarker([arc.destination.latitude, arc.destination.longitude], { renderer, radius: arc.destination.is_local ? 7 : 5, color: '#fff', fillColor: '#06b6d4', fillOpacity: 1, weight: 2 }).addTo(layer);
+                            destinationMarker.bindTooltip(`${arc.destination.city || '-'} / ${arc.destination.country}`, { permanent: true, direction: 'bottom', offset: [0, 8], className: 'attack-destination-label' });
+                            destinationMarker.bindPopup(`<strong>${arc.destination_ip}</strong><br>${arc.destination.city || '-'}, ${arc.destination.country}`);
+                        }
                     });
                 },
                 async load() {
@@ -181,7 +199,7 @@
                         if (!response.ok) return;
                         const data = await response.json();
                         this.summary = data.summary;
-                        this.geolocation = data.geolocation || { message: null, unresolved: 0 };
+                        this.geolocation = data.geolocation || { message: null, unresolved: 0, unresolved_ips: [] };
                         this.countries = data.countries;
                         this.arcs = data.arcs;
                         const availableCountries = new Set(data.countries.map(country => country.country));

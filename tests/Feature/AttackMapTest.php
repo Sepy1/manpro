@@ -69,6 +69,18 @@ it('uses the free ipdata endpoint without an api key', function () {
     Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://ipdata.free/9.9.9.9'));
 });
 
+it('reports every ip that fails geolocation', function () {
+    Cache::flush();
+    config()->set('services.attack_map.ipdata_api_key', 'test-api-key');
+    Http::fake(['https://api.ipdata.co/*' => Http::response(['message' => 'rate limited'], 429)]);
+
+    $service = app(\App\Services\AttackIpGeolocationService::class);
+    $service->resolveMany(['9.9.9.8', '9.9.9.7']);
+
+    expect($service->diagnostics()['unresolved'])->toBe(2)
+        ->and($service->diagnostics()['unresolved_ips'])->toBe(['9.9.9.8', '9.9.9.7']);
+});
+
 it('restricts the attack map to admins', function () {
     $officer = User::factory()->create(['role' => 'officer']);
     $this->actingAs($officer)->get(route('admin.attack-map.index'))->assertForbidden();
