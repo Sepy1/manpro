@@ -28,7 +28,10 @@
             </div>
         @endif
 
-        <form method="GET" action="{{ route('admin.log-security.index') }}" class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
+        <form method="GET" action="{{ route('admin.log-security.index') }}"
+            x-data
+            @input.debounce.500ms="$el.requestSubmit()"
+            class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
             <input
                 type="text"
                 name="keyword"

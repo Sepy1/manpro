@@ -22,7 +22,10 @@
             </div>
         @endif
 
-        <form method="GET" action="{{ route('admin.monitoring-backup.index') }}" class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <form method="GET" action="{{ route('admin.monitoring-backup.index') }}"
+            x-data
+            @input.debounce.500ms="$el.requestSubmit()"
+            class="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
             <input
                 type="text"
                 name="keyword"

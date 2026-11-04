@@ -18,7 +18,10 @@
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">{{ $errors->first() }}</div>
         @endif
 
-        <form method="GET" action="{{ route('admin.log-access-user.index') }}" class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
+        <form method="GET" action="{{ route('admin.log-access-user.index') }}"
+            x-data
+            @input.debounce.500ms="$el.requestSubmit()"
+            class="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-700">
             <input name="keyword" value="{{ $filters['keyword'] }}" placeholder="Cari user, IP, perangkat, pesan..." class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
             <select name="status" class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                 <option value="">Semua status</option>
