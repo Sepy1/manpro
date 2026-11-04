@@ -56,6 +56,13 @@
                     <div x-show="loading" class="absolute inset-0 z-[1000] flex items-center justify-center bg-white/45 backdrop-blur-[1px] dark:bg-slate-950/45">
                         <span class="h-9 w-9 animate-spin rounded-full border-4 border-gray-400/25 border-t-brand-500"></span>
                     </div>
+                    <div x-show="mapError" x-cloak class="absolute inset-0 z-[1001] flex items-center justify-center bg-slate-100/95 p-6 text-center dark:bg-slate-950/95">
+                        <div class="max-w-md rounded-xl border border-red-300 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">
+                            <p class="font-semibold">Peta gagal dimuat</p>
+                            <p class="mt-1" x-text="mapError"></p>
+                            <button type="button" @click="retryMap()" class="mt-3 rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white">Coba lagi</button>
+                        </div>
+                    </div>
                     <div class="pointer-events-none absolute bottom-3 left-3 z-[900] rounded-lg bg-slate-950/80 px-3 py-2 text-[11px] text-slate-200">
                         Garis menunjukkan arah source → destination · IP private diarahkan ke Semarang
                     </div>
@@ -93,8 +100,6 @@
 @endsection
 
 @push('scripts')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <style>
         #attack-world-map { background:#dbeafe; }
         #attack-world-map .attack-arc { animation:attack-dash 2.2s linear infinite; }
@@ -117,7 +122,7 @@
     <script>
         function attackMap(endpoint, initialFilters = {}) {
             return {
-                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, request: null, visibilityHandler: null, loading: false, lastFingerprint: null,
+                endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
                 filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
@@ -129,26 +134,56 @@
                     return this.countries.length > 0 && this.countries.every(country => this.isCountryEnabled(country.country));
                 },
                 init() {
-                    if (typeof L === 'undefined') return;
-                    this.map = L.map('attack-world-map', {
-                        worldCopyJump: true,
-                        minZoom: 2,
-                        zoomAnimation: false,
-                        fadeAnimation: false,
-                        markerZoomAnimation: false,
-                        wheelDebounceTime: 16,
-                        wheelPxPerZoomLevel: 80,
-                    }).setView([12, 20], 2);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 8, attribution: '&copy; OpenStreetMap' }).addTo(this.map);
-                    this.canvasRenderer = L.canvas({ padding: .5, tolerance: 8 });
-                    this.layer = L.layerGroup().addTo(this.map);
-                    this.load();
-                    this.timer = setInterval(() => { if (!document.hidden) this.load(false); }, 3000);
-                    this.visibilityHandler = () => { if (!document.hidden) this.load(false); };
-                    document.addEventListener('visibilitychange', this.visibilityHandler);
+                    this.destroyed = false;
+                    this.initializeMap(0);
+                },
+                initializeMap(attempt = 0) {
+                    if (this.destroyed || this.map) return;
+                    if (typeof L === 'undefined') {
+                        if (attempt >= 50) {
+                            this.mapError = 'Library peta belum tersedia. Periksa koneksi ke unpkg.com lalu tekan Coba lagi.';
+                            return;
+                        }
+                        clearTimeout(this.mapInitTimer);
+                        this.mapInitTimer = setTimeout(() => this.initializeMap(attempt + 1), 100);
+                        return;
+                    }
+                    this.$nextTick(() => requestAnimationFrame(() => {
+                        if (this.destroyed || this.map || !document.getElementById('attack-world-map')) return;
+                        this.mapError = '';
+                        this.map = L.map('attack-world-map', {
+                            worldCopyJump: true,
+                            minZoom: 2,
+                            zoomAnimation: false,
+                            fadeAnimation: false,
+                            markerZoomAnimation: false,
+                            wheelDebounceTime: 16,
+                            wheelPxPerZoomLevel: 80,
+                        }).setView([12, 20], 2);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 8, attribution: '&copy; OpenStreetMap' }).addTo(this.map);
+                        this.canvasRenderer = L.canvas({ padding: .5, tolerance: 8 });
+                        this.layer = L.layerGroup().addTo(this.map);
+                        [0, 150, 400].forEach(delay => this.resizeTimers.push(setTimeout(() => this.map?.invalidateSize(false), delay)));
+                        this.load();
+                        this.timer = setInterval(() => { if (!document.hidden) this.load(false); }, 3000);
+                        this.visibilityHandler = () => {
+                            if (!document.hidden) {
+                                this.map?.invalidateSize(false);
+                                this.load(false);
+                            }
+                        };
+                        document.addEventListener('visibilitychange', this.visibilityHandler);
+                    }));
+                },
+                retryMap() {
+                    this.mapError = '';
+                    this.initializeMap(0);
                 },
                 destroy() {
+                    this.destroyed = true;
                     clearInterval(this.timer);
+                    clearTimeout(this.mapInitTimer);
+                    this.resizeTimers.forEach(timer => clearTimeout(timer));
                     if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
                     this.request?.abort(); this.map?.remove();
                 },
