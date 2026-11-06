@@ -39,6 +39,8 @@ it('shows an attack map and maps private destinations to Semarang', function () 
         ->assertOk()
         ->assertJsonPath('summary.total', 1)
         ->assertJsonPath('summary.blocked', 1)
+        ->assertJsonPath('arcs.0.action', 'blocked')
+        ->assertJsonPath('arcs.0.action_label', 'Diblokir')
         ->assertJsonPath('arcs.0.source.country', 'United States')
         ->assertJsonPath('arcs.0.source_port', 443)
         ->assertJsonPath('arcs.0.destination_port', 80)
@@ -47,6 +49,23 @@ it('shows an attack map and maps private destinations to Semarang', function () 
         ->assertJsonPath('arcs.0.destination.city', 'Semarang')
         ->assertJsonPath('arcs.0.destination.is_local', true);
 });
+
+it('shows blocked-equivalent actions as Diblokir on the attack map', function (string $action) {
+    $admin = User::factory()->admin()->create();
+    SecurityAttackLog::query()->create([
+        'device' => 'FGT-01', 'severity' => 'high', 'attack' => 'Network Attack',
+        'attackid' => '1002', 'subtype' => 'ips', 'action' => $action,
+        'srcip' => '9.9.9.9', 'srcport' => 443, 'dstip' => '192.168.1.10', 'dstport' => 80,
+        'service' => 'HTTP', 'method' => 'GET', 'url' => '/', 'event_time' => now()->format('Y-m-d H:i:s'),
+    ]);
+
+    $this->actingAs($admin)
+        ->getJson(route('admin.attack-map.data', ['hours' => 24]))
+        ->assertOk()
+        ->assertJsonPath('summary.blocked', 1)
+        ->assertJsonPath('arcs.0.action', $action)
+        ->assertJsonPath('arcs.0.action_label', 'Diblokir');
+})->with(['droped', 'dropped', 'blocked', 'clear_sessions']);
 
 it('uses the free ipdata endpoint without an api key', function () {
     Cache::flush();

@@ -65,6 +65,7 @@ class AttackMapController extends Controller
                 'severity' => $items->first()->severity,
                 'attack' => $items->first()->attack,
                 'action' => $items->first()->action,
+                'action_label' => $this->actionLabel((string) $items->first()->action),
                 'device' => $items->first()->device,
                 'service' => $items->first()->service,
                 'method' => $items->first()->method,
@@ -77,6 +78,7 @@ class AttackMapController extends Controller
         $arcs = $groups->map(function ($group) use ($locations) {
             $source = $locations[$group['source_ip']] ?? null;
             $destination = $locations[$group['destination_ip']] ?? null;
+
             return $source && $destination ? [...$group, 'source' => $source, 'destination' => $destination] : null;
         })->filter()->values();
 
@@ -91,10 +93,20 @@ class AttackMapController extends Controller
                 'total' => $logs->count(),
                 'sources' => $logs->pluck('srcip')->unique()->count(),
                 'countries' => $arcs->pluck('source.country')->unique()->count(),
-                'blocked' => $logs->filter(fn ($log) => str_contains(strtolower($log->action), 'block'))->count(),
+                'blocked' => $logs->filter(fn ($log) => $this->isBlockedAction((string) $log->action))->count(),
             ],
             'generated_at' => now()->toIso8601String(),
             'geolocation' => $geo->diagnostics(),
         ]);
+    }
+
+    private function actionLabel(string $action): string
+    {
+        return $this->isBlockedAction($action) ? 'Diblokir' : $action;
+    }
+
+    private function isBlockedAction(string $action): bool
+    {
+        return in_array(strtolower(trim($action)), ['droped', 'dropped', 'blocked', 'clear_sessions'], true);
     }
 }

@@ -377,7 +377,7 @@
                                 <b>Request:</b> ${this.escape(arc.method)} ${this.escape(arc.url)}<br>
                                 <b>Service:</b> ${this.escape(arc.service)}<br>
                                 <b>Attack:</b> ${this.escape(arc.attack)} (${this.escape(arc.severity)})<br>
-                                <b>Action:</b> ${this.escape(arc.action)}<br>
+                                <b>Action:</b> ${this.escape(arc.action_label || arc.action)}<br>
                                 <b>Event:</b> ${this.escape(arc.count)} &middot; <b>Terakhir:</b> ${this.escape(arc.last_event)}
                             </div>
                         `);
