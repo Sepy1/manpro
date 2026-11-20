@@ -13,8 +13,8 @@
                         authorizeCr: cfg.initialAuthorizeExternCr ?? false,
                     }));
 
-                    Alpine.data('manajemenUserIndex', () => ({
-                        showAddForm: false,
+                    Alpine.data('manajemenUserIndex', cfg => ({
+                        showAddForm: cfg.showAddForm ?? false,
                         editModal: false,
                         editAction: '',
                         editUserId: null,
@@ -65,7 +65,7 @@
 
     <div
         class="space-y-4"
-        x-data="manajemenUserIndex()"
+        x-data="manajemenUserIndex(@js(['showAddForm' => old('_form') === 'create']))"
         @keydown.escape.window="closeEdit()"
     >
         @if (session('status'))
@@ -263,6 +263,7 @@
             @endphp
             <form x-show="showAddForm" x-cloak x-data="createUserForm(@js(['initialRole' => old('role', 'admin'), 'initialTfaAdmin' => $createInitialTfa, 'initialAuthorizeExternCr' => $createInitialAuthorize]))" method="POST" action="{{ route('admin.manajemen-user.store') }}" class="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 md:grid-cols-7 dark:border-gray-700">
                 @csrf
+                <input type="hidden" name="_form" value="create" />
                 <input type="hidden" name="two_factor_enabled" :value="tfaAdmin ? 1 : 0" />
                 <input type="hidden" name="can_authorize_extern_cr" :value="authorizeCr ? 1 : 0" />
                 <input type="text" name="name" value="{{ old('name') }}" required placeholder="Nama"
@@ -297,8 +298,18 @@
                         </option>
                     @endforeach
                 </select>
-                <input type="password" name="password" required placeholder="Password"
+                <input type="password" name="password" required minlength="8" placeholder="Password (minimal 8 karakter)"
                     class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:text-white/90" />
+                @if ($errors->any() && old('_form') === 'create')
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200 md:col-span-7" role="alert">
+                        <p class="font-semibold">User belum dapat disimpan:</p>
+                        <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <div class="rounded-lg border border-gray-200 bg-slate-50/90 px-3 py-3 dark:border-gray-600 dark:bg-slate-800/50 md:col-span-7" x-transition>
                     <label class="flex cursor-pointer items-start gap-3 text-sm text-gray-800 dark:text-gray-100">
                         <input type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-900" x-model="tfaAdmin" />
