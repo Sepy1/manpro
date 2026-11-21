@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\UserAccessLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\VendorExternCrController;
+use App\Http\Controllers\Admin\VpnManagementController;
 use App\Http\Controllers\ExternCrAuthorizationController;
 use App\Http\Controllers\ExternCrSignedPdfDownloadController;
 use App\Http\Controllers\ExternCrVerificationController;
@@ -127,6 +128,16 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/attack-map', [AttackMapController::class, 'index'])->name('attack-map.index');
     Route::get('/attack-map/data', [AttackMapController::class, 'data'])->name('attack-map.data');
     Route::get('/livestream', [LivestreamPlayerController::class, 'index'])->name('livestream.player');
+
+    Route::get('/vpn', [VpnManagementController::class, 'index'])->name('vpn.index');
+    Route::post('/vpn/clients', [VpnManagementController::class, 'store'])->name('vpn.clients.store');
+    Route::put('/vpn/clients/{vpnClient}', [VpnManagementController::class, 'update'])->name('vpn.clients.update');
+    Route::patch('/vpn/clients/{vpnClient}/toggle', [VpnManagementController::class, 'toggle'])->name('vpn.clients.toggle');
+    Route::post('/vpn/clients/{vpnClient}/certificate', [VpnManagementController::class, 'certificate'])->name('vpn.clients.certificate');
+    Route::post('/vpn/clients/{vpnClient}/revoke', [VpnManagementController::class, 'revoke'])->name('vpn.clients.revoke');
+    Route::get('/vpn/clients/{vpnClient}/download', [VpnManagementController::class, 'download'])->name('vpn.clients.download');
+    Route::post('/vpn/server/restart', [VpnManagementController::class, 'restartServer'])->name('vpn.server.restart');
+    Route::delete('/vpn/clients/{vpnClient}', [VpnManagementController::class, 'destroy'])->name('vpn.clients.destroy');
 
     Route::post('/assistant/chat', [AssistantChatController::class, 'chat'])
         ->middleware(['throttle:30,1'])

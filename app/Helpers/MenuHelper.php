@@ -76,6 +76,13 @@ class MenuHelper
 
         if ($role === 'admin') {
             $items[] = [
+                'icon' => 'authentication',
+                'name' => 'Manajemen VPN',
+                'subItems' => [
+                    ['name' => 'Dashboard & Client', 'path' => '/admin/vpn'],
+                ],
+            ];
+            $items[] = [
                 'icon' => 'building',
                 'name' => 'Server Dan EndPoint',
                 'subItems' => [

@@ -3,11 +3,13 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import flatpickr from 'flatpickr';
 import { Indonesian } from 'flatpickr/dist/l10n/id.js';
+import ApexCharts from 'apexcharts';
 import 'flatpickr/dist/flatpickr.min.css';
 
 window.Alpine = Alpine;
 window.flatpickr = flatpickr;
 window.flatpickrIndonesian = Indonesian;
+window.ApexCharts = ApexCharts;
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('realtimeFilter', () => ({
