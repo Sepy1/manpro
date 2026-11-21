@@ -142,6 +142,8 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::post('/vpn/clients/{vpnClient}/certificate', [VpnManagementController::class, 'certificate'])->name('vpn.clients.certificate');
     Route::post('/vpn/clients/{vpnClient}/revoke', [VpnManagementController::class, 'revoke'])->name('vpn.clients.revoke');
     Route::get('/vpn/clients/{vpnClient}/download', [VpnManagementController::class, 'download'])->name('vpn.clients.download');
+    Route::post('/vpn/clients/{vpnClient}/mfa/enroll', [VpnManagementController::class, 'enrollMfa'])->name('vpn.clients.mfa.enroll');
+    Route::delete('/vpn/clients/{vpnClient}/mfa', [VpnManagementController::class, 'disableMfa'])->name('vpn.clients.mfa.disable');
     Route::post('/vpn/server/restart', [VpnManagementController::class, 'restartServer'])->name('vpn.server.restart');
     Route::delete('/vpn/clients/{vpnClient}', [VpnManagementController::class, 'destroy'])->name('vpn.clients.destroy');
 

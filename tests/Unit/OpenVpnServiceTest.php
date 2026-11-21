@@ -40,3 +40,38 @@ it('refuses subnet style CCD for net30 topology', function () {
     expect(fn () => (new OpenVpnService)->writeCcd($client))->toThrow(RuntimeException::class, "Topology 'net30' terdeteksi");
     unlink($path);
 });
+
+it('builds an MFA profile compatible with OpenVPN Connect', function () {
+    $profile = <<<'OVPN'
+client
+dev tun
+proto udp
+remote 103.131.217.51 1194
+resolve-retry infinite
+persist-key
+persist-tun
+auth-retry interact
+auth-nocache
+data-ciphers AES-256-GCM:AES-128-GCM
+<ca>
+certificate
+</ca>
+OVPN;
+
+    $normalized = (new OpenVpnService)->normalizeClientProfile($profile);
+
+    expect($normalized)
+        ->toContain("remote 103.131.217.51 1194\nauth-user-pass\n")
+        ->not->toContain('auth-nocache')
+        ->not->toContain('auth-retry')
+        ->not->toContain('resolve-retry')
+        ->not->toContain('persist-key')
+        ->not->toContain('persist-tun')
+        ->not->toContain('data-ciphers');
+});
+
+it('does not duplicate auth-user-pass in an existing profile', function () {
+    $normalized = (new OpenVpnService)->normalizeClientProfile("client\nauth-user-pass\nremote vpn.example.test 1194\n");
+
+    expect(substr_count($normalized, 'auth-user-pass'))->toBe(1);
+});

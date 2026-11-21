@@ -8,6 +8,7 @@ use App\Models\VpnClient;
 use App\Models\VpnConnection;
 use App\Models\VpnGroup;
 use App\Services\OpenVpnService;
+use Endroid\QrCode\Builder\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,8 +121,8 @@ class VpnManagementController extends Controller
     {
         $this->authorizeAdmin();
         $data = $this->validated($request, $vpnClient);
-        if ($vpnClient->certificate_status === 'active' && ($data['common_name'] ?? $vpnClient->common_name) !== $vpnClient->common_name) {
-            return back()->withErrors(['common_name' => 'Common Name tidak dapat diubah saat sertifikat aktif. Revoke sertifikat terlebih dahulu.']);
+        if (($vpnClient->certificate_status === 'active' || $vpnClient->mfa_enabled_at !== null) && ($data['common_name'] ?? $vpnClient->common_name) !== $vpnClient->common_name) {
+            return back()->withErrors(['common_name' => 'Common Name tidak dapat diubah saat sertifikat atau 2FA aktif. Revoke sertifikat dan nonaktifkan 2FA terlebih dahulu.']);
         }
         try {
             $oldCn = $vpnClient->common_name;
@@ -220,12 +221,52 @@ class VpnManagementController extends Controller
         }
     }
 
+    public function enrollMfa(Request $request, VpnClient $vpnClient): RedirectResponse
+    {
+        $this->authorizeAdmin();
+        try {
+            $enrollment = $this->openVpn->enrollMfa($vpnClient);
+            $wasEnabled = $vpnClient->mfa_enabled_at !== null;
+            $vpnClient->update([
+                'mfa_enabled_at' => now(),
+                'mfa_last_reset_at' => $wasEnabled ? now() : null,
+            ]);
+            $this->log($wasEnabled ? 'mfa_reset' : 'mfa_enrolled', $vpnClient, $wasEnabled ? 'Google Authenticator direset' : 'Google Authenticator diaktifkan', $request);
+
+            return back()->with('mfa_enrollment', [
+                'client_name' => $vpnClient->name,
+                'common_name' => $vpnClient->common_name,
+                'qr_data_uri' => (new Builder)->build(data: $enrollment['otpauth_uri'], size: 260, margin: 8)->getDataUri(),
+                'recovery_codes' => $enrollment['recovery_codes'],
+            ])->with('success', $wasEnabled ? '2FA berhasil direset. QR lama tidak berlaku.' : '2FA berhasil dibuat. Pindai QR sebelum menutup halaman ini.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['vpn' => $e->getMessage()]);
+        }
+    }
+
+    public function disableMfa(Request $request, VpnClient $vpnClient): RedirectResponse
+    {
+        $this->authorizeAdmin();
+        try {
+            $this->openVpn->disableMfa($vpnClient);
+            $vpnClient->update(['mfa_enabled_at' => null, 'mfa_last_reset_at' => now()]);
+            $this->log('mfa_disabled', $vpnClient, 'Google Authenticator dinonaktifkan; koneksi VPN akan ditolak sampai enrollment baru', $request);
+
+            return back()->with('success', '2FA dinonaktifkan. User tidak dapat terhubung sampai 2FA dibuat kembali.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['vpn' => $e->getMessage()]);
+        }
+    }
+
     public function destroy(Request $request, VpnClient $vpnClient): RedirectResponse
     {
         $this->authorizeAdmin();
         try {
             if ($vpnClient->certificate_status === 'active') {
                 $this->openVpn->revokeCertificate($vpnClient);
+            }
+            if ($vpnClient->mfa_enabled_at !== null) {
+                $this->openVpn->disableMfa($vpnClient);
             }
             $this->openVpn->deleteCcd($vpnClient);
             $vpnClient->status = 'disabled';

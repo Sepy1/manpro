@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VpnClient extends Model
 {
-    protected $fillable = ['name', 'username', 'common_name', 'department', 'branch_office', 'vpn_group_id', 'inventory_number', 'vpn_ip', 'allowed_destinations', 'certificate_issued_at', 'certificate_expires_at', 'status', 'certificate_status', 'last_connected_at', 'created_by'];
+    protected $fillable = ['name', 'username', 'common_name', 'department', 'branch_office', 'vpn_group_id', 'inventory_number', 'vpn_ip', 'allowed_destinations', 'certificate_issued_at', 'certificate_expires_at', 'status', 'certificate_status', 'last_connected_at', 'mfa_enabled_at', 'mfa_last_reset_at', 'created_by'];
 
     protected function casts(): array
     {
-        return ['allowed_destinations' => 'array', 'certificate_issued_at' => 'date', 'certificate_expires_at' => 'date', 'last_connected_at' => 'datetime'];
+        return ['allowed_destinations' => 'array', 'certificate_issued_at' => 'date', 'certificate_expires_at' => 'date', 'last_connected_at' => 'datetime', 'mfa_enabled_at' => 'datetime', 'mfa_last_reset_at' => 'datetime'];
     }
 
     public function connections(): HasMany

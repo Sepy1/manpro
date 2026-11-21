@@ -115,6 +115,7 @@ class OpenVpnService
             if (! str_contains($profile, '<key>') || ! str_contains($profile, '<tls-crypt>')) {
                 throw new RuntimeException('Profil OpenVPN remote tidak lengkap.');
             }
+            $profile = $this->normalizeClientProfile($profile);
             $outputDir = config('openvpn.client_output_dir');
             File::ensureDirectoryExists($outputDir, 0700);
             $path = $this->profilePath($client);
@@ -142,11 +143,72 @@ class OpenVpnService
         foreach (['ca' => 'ca', 'cert' => 'cert', 'key' => 'key'] as $key => $tag) {
             $profile .= "<{$tag}>\n".trim(file_get_contents($files[$key]))."\n</{$tag}>\n";
         }
+        $profile = $this->normalizeClientProfile($profile);
         $path = $outputDir.DIRECTORY_SEPARATOR.$client->common_name.'.ovpn';
         File::put($path, $profile);
         @chmod($path, 0600);
 
         return $path;
+    }
+
+    public function normalizeClientProfile(string $profile): string
+    {
+        // OpenVPN Connect (OpenVPN 3) rejects these OpenVPN Community options
+        // during profile import. The server still controls cipher negotiation.
+        $profile = preg_replace(
+            '/^[ \t]*(?:auth-nocache|auth-retry|resolve-retry|persist-key|persist-tun|data-ciphers)\b[^\r\n]*(?:\R|$)/mi',
+            '',
+            $profile
+        ) ?? $profile;
+
+        if (! preg_match('/^[ \t]*auth-user-pass(?:[ \t].*)?$/mi', $profile)) {
+            $replacementCount = 0;
+            $profile = preg_replace(
+                '/^(remote\s+[^\r\n]+\R)/mi',
+                "$1auth-user-pass\n",
+                $profile,
+                1,
+                $replacementCount
+            ) ?? $profile;
+
+            if ($replacementCount === 0) {
+                $profile = "auth-user-pass\n".$profile;
+            }
+        }
+
+        return rtrim($profile)."\n";
+    }
+
+    /** @return array{otpauth_uri:string,recovery_codes:array<int,string>} */
+    public function enrollMfa(VpnClient $client): array
+    {
+        $this->assertSafeCommonName($client->common_name);
+        if (! $this->isRemote()) {
+            throw new RuntimeException('Enrollment MFA hanya tersedia melalui koneksi SSH ke server OpenVPN.');
+        }
+
+        $payload = json_decode($this->remote('mfa', ['enroll', $client->common_name])->output(), true);
+        if (! is_array($payload)
+            || ! is_string($payload['otpauth_uri'] ?? null)
+            || ! str_starts_with($payload['otpauth_uri'], 'otpauth://totp/')
+            || ! is_array($payload['recovery_codes'] ?? null)) {
+            throw new RuntimeException('Respons enrollment MFA dari server tidak valid.');
+        }
+
+        return [
+            'otpauth_uri' => $payload['otpauth_uri'],
+            'recovery_codes' => array_values(array_map('strval', $payload['recovery_codes'])),
+        ];
+    }
+
+    public function disableMfa(VpnClient $client): void
+    {
+        $this->assertSafeCommonName($client->common_name);
+        if (! $this->isRemote()) {
+            throw new RuntimeException('Pengelolaan MFA hanya tersedia melalui koneksi SSH ke server OpenVPN.');
+        }
+
+        $this->remote('mfa', ['disable', $client->common_name]);
     }
 
     public function profilePath(VpnClient $client): string

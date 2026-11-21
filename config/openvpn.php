@@ -16,6 +16,7 @@ return [
         'profile' => '/usr/local/sbin/manpro-openvpn-profile',
         'service' => '/usr/local/sbin/manpro-openvpn-service',
         'policy' => '/usr/local/sbin/manpro-openvpn-policy',
+        'mfa' => '/usr/local/sbin/manpro-openvpn-mfa',
     ],
     'server_config' => env('OPENVPN_SERVER_CONFIG', '/etc/openvpn/server/server.conf'),
     'server_dir' => env('OPENVPN_SERVER_DIR', '/etc/openvpn/server'),
