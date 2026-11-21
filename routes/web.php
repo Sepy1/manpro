@@ -130,6 +130,7 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
     Route::get('/livestream', [LivestreamPlayerController::class, 'index'])->name('livestream.player');
 
     Route::get('/vpn', [VpnManagementController::class, 'index'])->name('vpn.index');
+    Route::get('/vpn/users', [VpnManagementController::class, 'users'])->name('vpn.users.index');
     Route::post('/vpn/clients', [VpnManagementController::class, 'store'])->name('vpn.clients.store');
     Route::put('/vpn/clients/{vpnClient}', [VpnManagementController::class, 'update'])->name('vpn.clients.update');
     Route::patch('/vpn/clients/{vpnClient}/toggle', [VpnManagementController::class, 'toggle'])->name('vpn.clients.toggle');

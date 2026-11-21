@@ -20,3 +20,15 @@ it('shows the vpn dashboard to an admin', function () {
         ->get(route('admin.vpn.index'))
         ->assertOk()->assertSee('Manajemen VPN')->assertSee('10.200.0.0/24');
 });
+
+it('shows vpn user management to an admin', function () {
+    $this->mock(OpenVpnService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('connectedClients')->once()->andReturn([]);
+    });
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.vpn.users.index'))
+        ->assertOk()
+        ->assertSee('Manajemen User VPN')
+        ->assertSee('Download File Import', false);
+});

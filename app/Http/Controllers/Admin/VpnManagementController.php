@@ -58,6 +58,41 @@ class VpnManagementController extends Controller
         ]);
     }
 
+    public function users(Request $request): View
+    {
+        $this->authorizeAdmin();
+        $this->syncConnections();
+
+        $keyword = trim((string) $request->query('keyword', ''));
+        $status = (string) $request->query('status', '');
+        $certificate = (string) $request->query('certificate', '');
+
+        $clients = VpnClient::query()
+            ->with(['connections' => fn ($query) => $query->latest('connected_at')->limit(10)])
+            ->withCount('connections')
+            ->when($keyword !== '', function ($query) use ($keyword) {
+                $query->where(function ($query) use ($keyword) {
+                    $query->where('name', 'like', "%{$keyword}%")
+                        ->orWhere('username', 'like', "%{$keyword}%")
+                        ->orWhere('common_name', 'like', "%{$keyword}%")
+                        ->orWhere('vpn_ip', 'like', "%{$keyword}%")
+                        ->orWhere('department', 'like', "%{$keyword}%")
+                        ->orWhere('branch_office', 'like', "%{$keyword}%");
+                });
+            })
+            ->when(in_array($status, ['active', 'disabled'], true), fn ($query) => $query->where('status', $status))
+            ->when(in_array($certificate, ['not_generated', 'active', 'revoked'], true), fn ($query) => $query->where('certificate_status', $certificate))
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('pages.dashboard.vpn.users', [
+            'clients' => $clients,
+            'onlineIds' => VpnConnection::whereNull('disconnected_at')->whereNotNull('vpn_client_id')->pluck('vpn_client_id')->all(),
+            'filters' => compact('keyword', 'status', 'certificate'),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorizeAdmin();

@@ -79,7 +79,8 @@ class MenuHelper
                 'icon' => 'authentication',
                 'name' => 'Manajemen VPN',
                 'subItems' => [
-                    ['name' => 'Dashboard & Client', 'path' => '/admin/vpn'],
+                    ['name' => 'Dashboard VPN', 'path' => '/admin/vpn'],
+                    ['name' => 'Manajemen User VPN', 'path' => '/admin/vpn/users'],
                 ],
             ];
             $items[] = [
