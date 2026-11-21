@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\VendorExternCrController;
 use App\Http\Controllers\Admin\VpnManagementController;
+use App\Http\Controllers\Admin\VpnGroupController;
 use App\Http\Controllers\ExternCrAuthorizationController;
 use App\Http\Controllers\ExternCrSignedPdfDownloadController;
 use App\Http\Controllers\ExternCrVerificationController;
@@ -131,6 +132,10 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
 
     Route::get('/vpn', [VpnManagementController::class, 'index'])->name('vpn.index');
     Route::get('/vpn/users', [VpnManagementController::class, 'users'])->name('vpn.users.index');
+    Route::get('/vpn/groups', [VpnGroupController::class, 'index'])->name('vpn.groups.index');
+    Route::post('/vpn/groups', [VpnGroupController::class, 'store'])->name('vpn.groups.store');
+    Route::put('/vpn/groups/{vpnGroup}', [VpnGroupController::class, 'update'])->name('vpn.groups.update');
+    Route::delete('/vpn/groups/{vpnGroup}', [VpnGroupController::class, 'destroy'])->name('vpn.groups.destroy');
     Route::post('/vpn/clients', [VpnManagementController::class, 'store'])->name('vpn.clients.store');
     Route::put('/vpn/clients/{vpnClient}', [VpnManagementController::class, 'update'])->name('vpn.clients.update');
     Route::patch('/vpn/clients/{vpnClient}/toggle', [VpnManagementController::class, 'toggle'])->name('vpn.clients.toggle');

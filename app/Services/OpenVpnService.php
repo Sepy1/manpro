@@ -177,6 +177,28 @@ class OpenVpnService
         $this->run(['systemctl', 'restart', config('openvpn.service')], '/');
     }
 
+    public function syncAccessPolicy(VpnClient $client): void
+    {
+        $client->loadMissing('group');
+        $this->assertManagedIp($client->vpn_ip);
+        $destinations = $client->status === 'active' ? $client->effectiveAllowedDestinations() : [];
+
+        if (! $this->isRemote()) {
+            return;
+        }
+
+        if ($client->status !== 'active' || $destinations === []) {
+            $this->remote('policy', ['clear', $client->vpn_ip]);
+
+            return;
+        }
+
+        foreach ($destinations as $destination) {
+            $this->assertDestination($destination);
+        }
+        $this->remote('policy', ['apply', $client->vpn_ip, ...$destinations]);
+    }
+
     /** @return array<int, array{common_name:string,real_ip:?string,vpn_ip:?string,bytes_received:int,bytes_sent:int,connected_at:\Illuminate\Support\Carbon}> */
     public function connectedClients(): array
     {
@@ -285,6 +307,14 @@ class OpenVpnService
         $network = ip2long('10.200.0.0');
         if ($long === false || $long <= $network || $long >= ip2long('10.200.0.255') || $long === $server) {
             throw new RuntimeException('IP harus berupa alamat host 10.200.0.0/24, bukan IP server, network, atau broadcast.');
+        }
+    }
+
+    private function assertDestination(string $destination): void
+    {
+        [$ip, $prefix] = array_pad(explode('/', $destination, 2), 2, null);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || ($prefix !== null && (! ctype_digit($prefix) || (int) $prefix < 0 || (int) $prefix > 32))) {
+            throw new RuntimeException("Allowed destination tidak valid: {$destination}");
         }
     }
 }

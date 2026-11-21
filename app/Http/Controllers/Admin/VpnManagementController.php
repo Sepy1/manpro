@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VpnAdminActivity;
 use App\Models\VpnClient;
 use App\Models\VpnConnection;
+use App\Models\VpnGroup;
 use App\Services\OpenVpnService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class VpnManagementController extends Controller
     {
         $this->authorizeAdmin();
         $this->syncConnections();
-        $clients = VpnClient::query()->with(['connections' => fn ($query) => $query->latest('connected_at')->limit(10)])->withCount('connections')->latest()->paginate(15)->withQueryString();
+        $clients = VpnClient::query()->with(['group', 'connections' => fn ($query) => $query->latest('connected_at')->limit(10)])->withCount('connections')->latest()->paginate(15)->withQueryString();
         $onlineIds = VpnConnection::whereNull('disconnected_at')->whereNotNull('vpn_client_id')->pluck('vpn_client_id')->all();
         $days = collect(range(6, 0))->map(fn ($ago) => now()->subDays($ago));
         $connectionsChart = $days->map(fn ($day) => VpnConnection::whereBetween('connected_at', [$day->copy()->startOfDay(), $day->copy()->endOfDay()])->count());
@@ -68,7 +69,7 @@ class VpnManagementController extends Controller
         $certificate = (string) $request->query('certificate', '');
 
         $clients = VpnClient::query()
-            ->with(['connections' => fn ($query) => $query->latest('connected_at')->limit(10)])
+            ->with(['group', 'connections' => fn ($query) => $query->latest('connected_at')->limit(10)])
             ->withCount('connections')
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($query) use ($keyword) {
@@ -90,6 +91,7 @@ class VpnManagementController extends Controller
             'clients' => $clients,
             'onlineIds' => VpnConnection::whereNull('disconnected_at')->whereNotNull('vpn_client_id')->pluck('vpn_client_id')->all(),
             'filters' => compact('keyword', 'status', 'certificate'),
+            'groups' => VpnGroup::orderBy('name')->get(),
         ]);
     }
 
@@ -104,6 +106,7 @@ class VpnManagementController extends Controller
                 $data['created_by'] = auth()->id();
                 $client = VpnClient::create($data);
                 $this->openVpn->writeCcd($client);
+                $this->openVpn->syncAccessPolicy($client);
                 $this->log('client_created', $client, "Client {$client->common_name} dibuat dengan IP {$client->vpn_ip}", $request);
             });
 
@@ -130,6 +133,7 @@ class VpnManagementController extends Controller
                     $this->openVpn->deleteCcd($old);
                 }
                 $this->openVpn->writeCcd($vpnClient);
+                $this->openVpn->syncAccessPolicy($vpnClient);
                 $this->log('client_updated', $vpnClient, 'Informasi client dan CCD diperbarui', $request);
             });
 
@@ -150,6 +154,7 @@ class VpnManagementController extends Controller
             } else {
                 $this->openVpn->writeCcd($vpnClient);
             }
+            $this->openVpn->syncAccessPolicy($vpnClient);
             $this->log('client_'.$newStatus, $vpnClient, "Client diubah menjadi {$newStatus}", $request);
 
             return back()->with('success', "Client berhasil diubah menjadi {$newStatus}.");
@@ -179,6 +184,7 @@ class VpnManagementController extends Controller
             $this->openVpn->revokeCertificate($vpnClient);
             $this->openVpn->deleteCcd($vpnClient);
             $vpnClient->update(['certificate_status' => 'revoked', 'status' => 'disabled']);
+            $this->openVpn->syncAccessPolicy($vpnClient);
             $this->log('certificate_revoked', $vpnClient, 'Sertifikat direvoke dan client dinonaktifkan', $request);
 
             return back()->with('success', 'Sertifikat berhasil direvoke.');
@@ -222,6 +228,8 @@ class VpnManagementController extends Controller
                 $this->openVpn->revokeCertificate($vpnClient);
             }
             $this->openVpn->deleteCcd($vpnClient);
+            $vpnClient->status = 'disabled';
+            $this->openVpn->syncAccessPolicy($vpnClient);
             $name = $vpnClient->common_name;
             $vpnClient->delete();
             VpnAdminActivity::create(['user_id' => auth()->id(), 'action' => 'client_deleted', 'description' => "Client {$name} dihapus", 'ip_address' => $request->ip()]);
@@ -234,12 +242,14 @@ class VpnManagementController extends Controller
 
     private function validated(Request $request, ?VpnClient $client = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:100', Rule::unique('vpn_clients')->ignore($client)],
             'common_name' => ['required', 'regex:/\A[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\z/', Rule::unique('vpn_clients')->ignore($client)],
             'department' => ['nullable', 'string', 'max:255'], 'branch_office' => ['nullable', 'string', 'max:255'],
             'inventory_number' => ['nullable', 'string', 'max:100'],
+            'vpn_group_id' => ['nullable', 'integer', 'exists:vpn_groups,id'],
+            'allowed_destinations_text' => ['nullable', 'string', 'max:5000'],
             'vpn_ip' => ['nullable', 'ipv4', Rule::unique('vpn_clients')->ignore($client), function ($attribute, $value, $fail) {
                 if ($value && (! str_starts_with($value, '10.200.0.') || in_array($value, ['10.200.0.0', '10.200.0.1', '10.200.0.255']))) {
                     $fail('IP VPN harus host 10.200.0.2–10.200.0.254.');
@@ -247,6 +257,10 @@ class VpnManagementController extends Controller
             }],
             'status' => ['nullable', Rule::in(['active', 'disabled'])],
         ]);
+        $data['allowed_destinations'] = $this->parseDestinations($data['allowed_destinations_text'] ?? '');
+        unset($data['allowed_destinations_text']);
+
+        return $data;
     }
 
     private function nextIp(): string
@@ -286,6 +300,19 @@ class VpnManagementController extends Controller
     private function log(string $action, VpnClient $client, string $description, Request $request): void
     {
         VpnAdminActivity::create(['user_id' => auth()->id(), 'vpn_client_id' => $client->id, 'action' => $action, 'description' => $description, 'ip_address' => $request->ip()]);
+    }
+
+    private function parseDestinations(string $value): array
+    {
+        $items = array_values(array_unique(array_filter(preg_split('/[\s,]+/', trim($value)))));
+        foreach ($items as $item) {
+            [$ip, $prefix] = array_pad(explode('/', $item, 2), 2, null);
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || ($prefix !== null && (! ctype_digit($prefix) || (int) $prefix > 32))) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['allowed_destinations_text' => "Allowed IP/CIDR tidak valid: {$item}"]);
+            }
+        }
+
+        return $items;
     }
 
     private function authorizeAdmin(): void

@@ -32,3 +32,11 @@ it('shows vpn user management to an admin', function () {
         ->assertSee('Manajemen User VPN')
         ->assertSee('Download File Import', false);
 });
+
+it('shows vpn group management to an admin', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.vpn.groups.index'))
+        ->assertOk()
+        ->assertSee('Group &amp; Allowed IP', false)
+        ->assertSee('Allowed IP user');
+});

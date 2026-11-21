@@ -81,6 +81,7 @@ class MenuHelper
                 'subItems' => [
                     ['name' => 'Dashboard VPN', 'path' => '/admin/vpn'],
                     ['name' => 'Manajemen User VPN', 'path' => '/admin/vpn/users'],
+                    ['name' => 'Group & Allowed IP', 'path' => '/admin/vpn/groups'],
                 ],
             ];
             $items[] = [
