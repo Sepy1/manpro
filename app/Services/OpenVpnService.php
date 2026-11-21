@@ -187,8 +187,16 @@ class OpenVpnService
             return;
         }
 
-        if ($client->status !== 'active' || $destinations === []) {
+        if ($client->status !== 'active') {
             $this->remote('policy', ['clear', $client->vpn_ip]);
+
+            return;
+        }
+
+        if ($destinations === []) {
+            // A non-routable sentinel produces an effective default-deny policy
+            // with the wrapper's final REJECT rule, without granting a destination.
+            $this->remote('policy', ['apply', $client->vpn_ip, '0.0.0.0/32']);
 
             return;
         }
