@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-<div x-data="vpnUsersPage()" class="h-full min-h-0 space-y-5 overflow-y-auto overscroll-y-contain pb-8 pr-1">
+<div x-data="vpnUsersPage()" class="vpn-management-page h-full min-h-0 space-y-5 overflow-y-auto overscroll-y-contain pb-8 pr-1">
     <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:px-6">
         <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">Manajemen VPN</p>

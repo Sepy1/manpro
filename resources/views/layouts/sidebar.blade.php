@@ -210,6 +210,7 @@
                                     @if (isset($item['subItems']))
                                         <!-- Menu Item with Submenu -->
                                         <button @click="toggleSubmenu({{ $groupIndex }}, {{ $itemIndex }})"
+                                            data-menu-name="{{ Str::slug($item['name']) }}"
                                             class="menu-item group min-w-0 w-full flex-nowrap items-center overflow-hidden"
                                             :class="[
                                                 isSubmenuOpen({{ $groupIndex }}, {{ $itemIndex }}) ?
@@ -270,7 +271,7 @@
                                             x-transition:leave-start="opacity-100 translate-y-0"
                                             x-transition:leave-end="opacity-0 -translate-y-1"
                                         >
-                                            <ul class="relative mt-2 min-w-0 space-y-0.5 overflow-hidden border-l-2 border-white/25 pl-3 ml-8 dark:border-gray-700/90">
+                                            <ul data-submenu-for="{{ Str::slug($item['name']) }}" class="relative mt-2 min-w-0 space-y-0.5 overflow-hidden border-l-2 border-white/25 pl-3 ml-8 dark:border-gray-700/90">
                                                 @foreach ($item['subItems'] as $subItem)
                                                     <li>
                                                         @if (!empty($subItem['logout']))

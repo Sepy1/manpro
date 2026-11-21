@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-<div x-data="vpnGroups()" class="h-full min-h-0 space-y-5 overflow-y-auto pb-8 pr-1">
+<div x-data="vpnGroups()" class="vpn-management-page h-full min-h-0 space-y-5 overflow-y-auto pb-8 pr-1">
     <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"><div><p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">Manajemen VPN</p><h1 class="mt-1 text-2xl font-bold">Group & Allowed IP</h1><p class="mt-1 text-sm text-gray-500">Policy user khusus memiliki prioritas lebih tinggi daripada policy group.</p></div><button @click="create()" class="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white">+ Tambah Group</button></div>
     @if(session('success'))<div class="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300">{{ session('success') }}</div>@endif
     @if($errors->any())<div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{{ $errors->first() }}</div>@endif

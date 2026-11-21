@@ -364,6 +364,65 @@ html.dark[data-app-theme] .dark\:text-gray-400 {
     color: var(--app-muted) !important;
 }
 
+/* Stronger contrast for dense operational information on VPN pages. */
+.vpn-management-page {
+    color: #1f2937;
+}
+
+.vpn-management-page .text-gray-500,
+.vpn-management-page .text-gray-600 {
+    color: #4b5563 !important;
+}
+
+.vpn-management-page input,
+.vpn-management-page select,
+.vpn-management-page textarea {
+    color: #111827;
+}
+
+.vpn-management-page input::placeholder,
+.vpn-management-page textarea::placeholder {
+    color: #6b7280;
+    opacity: 1;
+}
+
+html.dark .vpn-management-page {
+    color: #e5e7eb;
+}
+
+html.dark .vpn-management-page .text-gray-500,
+html.dark .vpn-management-page .text-gray-600,
+html.dark[data-app-theme] .vpn-management-page .text-gray-500,
+html.dark[data-app-theme] .vpn-management-page .text-gray-600 {
+    color: #b6c2d1 !important;
+}
+
+html.dark .vpn-management-page input,
+html.dark .vpn-management-page select,
+html.dark .vpn-management-page textarea {
+    color: #f3f4f6;
+    background-color: rgb(17 24 39 / 0.72) !important;
+}
+
+html.dark .vpn-management-page input::placeholder,
+html.dark .vpn-management-page textarea::placeholder {
+    color: #9ca3af;
+}
+
+/* Keep the VPN parent menu and submenu labels readable on dark sidebars. */
+[data-app-sidebar] [data-menu-name="manajemen-vpn"].menu-item-inactive,
+[data-app-sidebar] [data-submenu-for="manajemen-vpn"] .menu-dropdown-item-inactive {
+    color: #dbeafe !important;
+}
+
+[data-app-sidebar] [data-menu-name="manajemen-vpn"].menu-item-active,
+[data-app-sidebar] [data-menu-name="manajemen-vpn"].menu-item-active .menu-item-text,
+[data-app-sidebar] [data-submenu-for="manajemen-vpn"] .menu-dropdown-item-active,
+[data-app-sidebar] [data-submenu-for="manajemen-vpn"] .menu-dropdown-item-active span,
+[data-app-sidebar] [data-submenu-for="manajemen-vpn"] .menu-dropdown-item-inactive:hover {
+    color: #ffffff !important;
+}
+
 [x-cloak] {
     display: none !important;
 }
