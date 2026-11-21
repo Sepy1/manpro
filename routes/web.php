@@ -132,6 +132,9 @@ Route::middleware(['auth', 'verified', 'admin.2fa', 'vendor.network.only', 'menu
 
     Route::get('/vpn', [VpnManagementController::class, 'index'])->name('vpn.index');
     Route::get('/vpn/users', [VpnManagementController::class, 'users'])->name('vpn.users.index');
+    Route::get('/vpn/users/export', [VpnManagementController::class, 'exportUsers'])->name('vpn.users.export');
+    Route::get('/vpn/users/import-template', [VpnManagementController::class, 'importTemplate'])->name('vpn.users.import-template');
+    Route::post('/vpn/users/import', [VpnManagementController::class, 'importUsers'])->name('vpn.users.import');
     Route::get('/vpn/groups', [VpnGroupController::class, 'index'])->name('vpn.groups.index');
     Route::post('/vpn/groups', [VpnGroupController::class, 'store'])->name('vpn.groups.store');
     Route::put('/vpn/groups/{vpnGroup}', [VpnGroupController::class, 'update'])->name('vpn.groups.update');

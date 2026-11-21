@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Exports\VpnClientsExport;
+use App\Exports\VpnClientsTemplateExport;
+use App\Imports\VpnClientsImport;
 use App\Models\VpnAdminActivity;
 use App\Models\VpnClient;
 use App\Models\VpnConnection;
@@ -14,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VpnManagementController extends Controller
@@ -94,6 +98,45 @@ class VpnManagementController extends Controller
             'filters' => compact('keyword', 'status', 'certificate'),
             'groups' => VpnGroup::orderBy('name')->get(),
         ]);
+    }
+
+    public function exportUsers()
+    {
+        $this->authorizeAdmin();
+
+        return Excel::download(new VpnClientsExport, 'user-vpn-'.now()->format('Ymd-His').'.xlsx');
+    }
+
+    public function importTemplate()
+    {
+        $this->authorizeAdmin();
+
+        return Excel::download(new VpnClientsTemplateExport, 'template-import-user-vpn.xlsx');
+    }
+
+    public function importUsers(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin();
+        $request->validate(['import_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120']]);
+
+        try {
+            $import = new VpnClientsImport($this->openVpn, (int) auth()->id());
+            Excel::import($import, $request->file('import_file'));
+            VpnAdminActivity::create([
+                'user_id' => auth()->id(), 'action' => 'clients_bulk_imported',
+                'description' => "Import bulk selesai: {$import->imported} berhasil, ".count($import->errors).' gagal',
+                'ip_address' => $request->ip(),
+            ]);
+
+            $response = back()->with('success', "Import selesai: {$import->imported} user berhasil dibuat.");
+            if ($import->errors !== []) {
+                $response->with('import_errors', $import->errors);
+            }
+
+            return $response;
+        } catch (\Throwable $e) {
+            return back()->withErrors(['import_file' => $e->getMessage()]);
+        }
     }
 
     public function store(Request $request): RedirectResponse

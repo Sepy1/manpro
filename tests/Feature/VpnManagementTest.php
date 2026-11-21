@@ -78,3 +78,15 @@ it('disables vpn MFA and marks the client as unenrolled', function () {
 
     expect($client->fresh()->mfa_enabled_at)->toBeNull();
 });
+
+it('exports vpn users and provides a bulk import template', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)->get(route('admin.vpn.users.export'))
+        ->assertOk()
+        ->assertHeader('content-disposition');
+
+    $this->actingAs($admin)->get(route('admin.vpn.users.import-template'))
+        ->assertOk()
+        ->assertHeader('content-disposition');
+});
