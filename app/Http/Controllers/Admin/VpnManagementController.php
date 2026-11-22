@@ -11,6 +11,7 @@ use App\Models\VpnClient;
 use App\Models\VpnConnection;
 use App\Models\VpnGroup;
 use App\Services\OpenVpnService;
+use App\Services\VpnConnectionSyncService;
 use Endroid\QrCode\Builder\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VpnManagementController extends Controller
 {
-    public function __construct(private readonly OpenVpnService $openVpn) {}
+    public function __construct(
+        private readonly OpenVpnService $openVpn,
+        private readonly VpnConnectionSyncService $connectionSync,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -381,21 +385,7 @@ class VpnManagementController extends Controller
     private function syncConnections(): void
     {
         try {
-            $seen = [];
-            foreach ($this->openVpn->connectedClients() as $row) {
-                $client = VpnClient::where('common_name', $row['common_name'])->first();
-                $connection = VpnConnection::where('common_name', $row['common_name'])->whereNull('disconnected_at')->first();
-                if (! $connection) {
-                    $connection = VpnConnection::create(array_merge($row, ['vpn_client_id' => $client?->id]));
-                } else {
-                    $connection->update(['real_ip' => $row['real_ip'], 'vpn_ip' => $row['vpn_ip'], 'bytes_received' => $row['bytes_received'], 'bytes_sent' => $row['bytes_sent']]);
-                }
-                if ($client) {
-                    $client->update(['last_connected_at' => now()]);
-                }
-                $seen[] = $connection->id;
-            }
-            VpnConnection::whereNull('disconnected_at')->when($seen, fn ($query) => $query->whereNotIn('id', $seen))->update(['disconnected_at' => now(), 'disconnect_reason' => 'status_sync']);
+            $this->connectionSync->sync();
         } catch (\Throwable) {
             // Dashboard tetap tersedia ketika status log belum dapat dibaca.
         }

@@ -20,6 +20,10 @@ Schedule::command('vpn:sync-policies --apply')
     ->everyMinute()
     ->withoutOverlapping();
 
+Schedule::command('vpn:sync-connections')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Artisan::command(
     'extern-cr:api-key:create {name : Nama unik untuk API key}',
     function (string $name): int {

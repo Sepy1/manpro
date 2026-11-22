@@ -3,6 +3,9 @@
 use App\Exports\UserAccessLogsExport;
 use App\Models\User;
 use App\Models\UserAccessLog;
+use App\Models\VpnClient;
+use App\Services\OpenVpnService;
+use App\Services\VpnConnectionSyncService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Maatwebsite\Excel\Facades\Excel;
@@ -119,4 +122,31 @@ it('restricts the user access log page to admins', function () {
 
     $this->get('/admin/log-access-user')->assertForbidden();
     $this->get('/admin/log-access-user/export')->assertForbidden();
+});
+
+it('records OpenVPN login and logout once in user access logs', function () {
+    VpnClient::create([
+        'name' => 'Erik VPN', 'username' => 'erik', 'common_name' => 'erik-laptop',
+        'vpn_ip' => '10.200.0.5', 'status' => 'active',
+    ]);
+    $openVpn = Mockery::mock(OpenVpnService::class);
+    $openVpn->shouldReceive('connectedClients')->once()->andReturn([[
+        'common_name' => 'erik-laptop', 'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5',
+        'bytes_received' => 1024, 'bytes_sent' => 2048, 'connected_at' => now(),
+    ]]);
+    $openVpn->shouldReceive('connectedClients')->once()->andReturn([]);
+    $sync = new VpnConnectionSyncService($openVpn);
+
+    expect($sync->sync())->toBe(['connected' => 1, 'disconnected' => 0]);
+    expect($sync->sync())->toBe(['connected' => 0, 'disconnected' => 1]);
+
+    $this->assertDatabaseHas('user_access_logs', [
+        'vendor' => 'OpenVPN', 'username' => 'erik', 'action' => 'login',
+        'source_ip' => '36.80.1.2', 'tunnel_ip' => '10.200.0.5',
+    ]);
+    $this->assertDatabaseHas('user_access_logs', [
+        'vendor' => 'OpenVPN', 'username' => 'erik', 'action' => 'logout',
+        'tunnel_ip' => '10.200.0.5', 'reason' => 'status_sync',
+    ]);
+    expect(UserAccessLog::where('vendor', 'OpenVPN')->count())->toBe(2);
 });
