@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\VpnClient;
+use App\Models\VpnGroup;
 use App\Services\OpenVpnService;
 use Mockery\MockInterface;
 
@@ -40,6 +41,23 @@ it('shows vpn group management to an admin', function () {
         ->assertOk()
         ->assertSee('Group &amp; Allowed IP', false)
         ->assertSee('Allowed IP user');
+});
+
+it('stores an access schedule on a vpn group', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->post(route('admin.vpn.groups.store'), [
+            'name' => 'Jam Kantor',
+            'allowed_destinations_text' => '192.168.10.0/24',
+            'schedule_enabled' => '1',
+            'schedule_days' => ['1', '2', '3', '4', '5'],
+            'schedule_start' => '08:00',
+            'schedule_end' => '17:00',
+        ])
+        ->assertRedirect();
+
+    expect(VpnGroup::where('name', 'Jam Kantor')->firstOrFail()->access_schedule)->toBe([
+        'days' => [1, 2, 3, 4, 5], 'start' => '08:00', 'end' => '17:00',
+    ]);
 });
 
 it('enrolls vpn MFA and only flashes the QR payload', function () {

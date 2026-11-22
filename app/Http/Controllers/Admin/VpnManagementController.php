@@ -334,6 +334,11 @@ class VpnManagementController extends Controller
             'inventory_number' => ['nullable', 'string', 'max:100'],
             'vpn_group_id' => ['nullable', 'integer', 'exists:vpn_groups,id'],
             'allowed_destinations_text' => ['nullable', 'string', 'max:5000'],
+            'schedule_enabled' => ['nullable', 'boolean'],
+            'schedule_days' => ['nullable', 'array', 'min:1'],
+            'schedule_days.*' => ['integer', 'between:1,7'],
+            'schedule_start' => ['nullable', 'date_format:H:i'],
+            'schedule_end' => ['nullable', 'date_format:H:i', 'different:schedule_start'],
             'vpn_ip' => ['nullable', 'ipv4', Rule::unique('vpn_clients')->ignore($client), function ($attribute, $value, $fail) {
                 if ($value && (! str_starts_with($value, '10.200.0.') || in_array($value, ['10.200.0.0', '10.200.0.1', '10.200.0.255']))) {
                     $fail('IP VPN harus host 10.200.0.2–10.200.0.254.');
@@ -342,7 +347,22 @@ class VpnManagementController extends Controller
             'status' => ['nullable', Rule::in(['active', 'disabled'])],
         ]);
         $data['allowed_destinations'] = $this->parseDestinations($data['allowed_destinations_text'] ?? '');
-        unset($data['allowed_destinations_text']);
+        $scheduleEnabled = (bool) ($data['schedule_enabled'] ?? false);
+        if ($scheduleEnabled) {
+            validator($data, [
+                'schedule_days' => ['required', 'array', 'min:1'],
+                'schedule_start' => ['required', 'date_format:H:i'],
+                'schedule_end' => ['required', 'date_format:H:i', 'different:schedule_start'],
+            ])->validate();
+            $data['access_schedule'] = [
+                'days' => array_values(array_unique(array_map('intval', $data['schedule_days']))),
+                'start' => $data['schedule_start'],
+                'end' => $data['schedule_end'],
+            ];
+        } else {
+            $data['access_schedule'] = null;
+        }
+        unset($data['allowed_destinations_text'], $data['schedule_enabled'], $data['schedule_days'], $data['schedule_start'], $data['schedule_end']);
 
         return $data;
     }

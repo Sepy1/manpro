@@ -249,7 +249,7 @@ class OpenVpnService
             return;
         }
 
-        if ($client->status !== 'active') {
+        if ($client->status !== 'active' || ! $client->isWithinAccessSchedule()) {
             $this->remote('policy', ['clear', $client->vpn_ip]);
 
             return;

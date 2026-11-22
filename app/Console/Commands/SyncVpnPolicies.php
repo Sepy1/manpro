@@ -28,11 +28,12 @@ class SyncVpnPolicies extends Command
                 $client->name,
                 $client->vpn_ip,
                 $client->status,
+                $client->isWithinAccessSchedule() ? 'diizinkan' : 'di luar jadwal',
                 ! empty($client->allowed_destinations) ? 'user' : (! empty($client->group?->allowed_destinations) ? 'group' : 'default-deny'),
                 $destinations === [] ? 'BLOCK ALL' : implode(', ', $destinations),
             ];
         });
-        $this->table(['User', 'IP VPN', 'Status', 'Sumber', 'Allowed destination'], $rows);
+        $this->table(['User', 'IP VPN', 'Status', 'Jadwal', 'Sumber', 'Allowed destination'], $rows);
 
         if (! $this->option('apply')) {
             $this->warn('Mode audit saja. Gunakan --apply untuk menerapkan policy.');

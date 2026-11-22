@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VpnGroup extends Model
 {
-    protected $fillable = ['name', 'description', 'allowed_destinations'];
+    protected $fillable = ['name', 'description', 'allowed_destinations', 'access_schedule'];
 
     protected function casts(): array
     {
-        return ['allowed_destinations' => 'array'];
+        return ['allowed_destinations' => 'array', 'access_schedule' => 'array'];
     }
 
     public function clients(): HasMany
