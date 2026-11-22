@@ -22,12 +22,31 @@
             ['Total Client',$summary['total'],'text-blue-600'], ['Online',$summary['online'],'text-green-600'], ['Offline',$summary['offline'],'text-gray-600'], ['Koneksi Hari Ini',$summary['today'],'text-violet-600'],
             ['Sertifikat Aktif',$summary['certActive'],'text-emerald-600'], ['Sertifikat Revoked',$summary['certRevoked'],'text-red-600'], ['Firewall Rules',$summary['firewall'],'text-amber-600'], ['Server',$serverStatus['active'] ? 'Aktif' : ucfirst($serverStatus['label']),$serverStatus['active'] ? 'text-green-600' : 'text-red-600']
         ] as [$label,$value,$color])
-        <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+        <div @if($label === 'Firewall Rules') role="button" tabindex="0" @click="firewallModal=true" @keydown.enter.prevent="firewallModal=true" @keydown.space.prevent="firewallModal=true" title="Klik untuk melihat daftar firewall VPN" @endif class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 {{ $label === 'Firewall Rules' ? 'cursor-pointer ring-amber-400/0 hover:ring-2 hover:ring-amber-400/40' : '' }}">
             <span class="absolute inset-y-0 left-0 w-1 bg-current opacity-70 {{ $color }}"></span>
             <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{{ $label }}</p>
             <p class="mt-2 truncate text-2xl font-bold {{ $color }}">{{ $value }}</p>
         </div>
         @endforeach
+    </div>
+
+    <div x-show="firewallModal" x-cloak class="fixed inset-0 z-[100000] flex items-center justify-center bg-black/60 p-4" @keydown.escape.window="firewallModal=false">
+        <section @click.outside="firewallModal=false" class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+            <header class="flex items-start justify-between border-b border-gray-200 p-5 dark:border-gray-800">
+                <div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Daftar Firewall VPN</h3><p class="mt-1 text-xs text-gray-500">Policy terdaftar berdasarkan konfigurasi user, group, status, dan jadwal akses saat ini.</p></div>
+                <button type="button" @click="firewallModal=false" class="rounded-lg px-3 py-1.5 text-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Tutup">&times;</button>
+            </header>
+            <div class="overflow-auto">
+                <table class="w-full min-w-[850px] text-left text-sm">
+                    <thead class="sticky top-0 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500 dark:bg-gray-950"><tr><th class="px-4 py-3">Client</th><th class="px-4 py-3">IP VPN</th><th class="px-4 py-3">Sumber</th><th class="px-4 py-3">Allowed Destination</th><th class="px-4 py-3">Jadwal</th><th class="px-4 py-3">Kondisi</th></tr></thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @forelse($firewallPolicies as $policy)
+                        <tr class="align-top"><td class="px-4 py-3"><p class="font-semibold text-gray-900 dark:text-white">{{ $policy['name'] }}</p><p class="text-xs text-gray-500">CN: {{ $policy['common_name'] }}</p></td><td class="px-4 py-3 font-mono text-xs">{{ $policy['vpn_ip'] }}</td><td class="px-4 py-3 text-xs">{{ $policy['source'] }}</td><td class="px-4 py-3">@forelse($policy['destinations'] as $destination)<code class="mb-1 mr-1 inline-block rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">{{ $destination }}</code>@empty<span class="text-xs font-medium text-red-600">BLOCK ALL</span>@endforelse</td><td class="px-4 py-3 text-xs">@if($policy['schedule']){{ implode(', ', array_map(fn($day) => [1=>'Sen',2=>'Sel',3=>'Rab',4=>'Kam',5=>'Jum',6=>'Sab',7=>'Min'][$day] ?? $day, $policy['schedule']['days'])) }}<br><span class="font-mono">{{ $policy['schedule']['start'] }}–{{ $policy['schedule']['end'] }}</span>@else<span class="text-gray-500">Setiap saat</span>@endif</td><td class="px-4 py-3"><span @class(['inline-flex rounded-full px-2.5 py-1 text-xs font-semibold','bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300'=>$policy['effective_status']==='Diizinkan','bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'=>$policy['effective_status']==='Di luar jadwal','bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300'=>in_array($policy['effective_status'],['Blokir semua','Nonaktif'])])>{{ $policy['effective_status'] }}</span></td></tr>
+                        @empty<tr><td colspan="6" class="px-4 py-12 text-center text-gray-500">Belum ada policy firewall VPN terdaftar.</td></tr>@endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
     <div class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.8fr)]">
@@ -71,7 +90,7 @@
 
 @push('scripts')
 <script>
-function vpnPage(){return{modal:false,historyModal:false,editing:false,form:{},historyClient:{connections:[]},openCreate(){this.editing=false;this.form={status:'active'};this.modal=true},openEdit(client){this.editing=true;this.form={...client};this.modal=true},openHistory(client){this.historyClient=client;this.historyModal=true},formatDate(value){return new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))},formatBytes(value){if(value<1024)return value+' B';if(value<1048576)return(value/1024).toFixed(1)+' KB';if(value<1073741824)return(value/1048576).toFixed(1)+' MB';return(value/1073741824).toFixed(1)+' GB'}}}
+function vpnPage(){return{modal:false,historyModal:false,firewallModal:false,editing:false,form:{},historyClient:{connections:[]},openCreate(){this.editing=false;this.form={status:'active'};this.modal=true},openEdit(client){this.editing=true;this.form={...client};this.modal=true},openHistory(client){this.historyClient=client;this.historyModal=true},formatDate(value){return new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))},formatBytes(value){if(value<1024)return value+' B';if(value<1048576)return(value/1024).toFixed(1)+' KB';if(value<1073741824)return(value/1048576).toFixed(1)+' MB';return(value/1073741824).toFixed(1)+' GB'}}}
 document.addEventListener('DOMContentLoaded', () => {
     const element = document.querySelector('#vpnActivityChart');
     if (!window.ApexCharts || !element) return;

@@ -20,7 +20,8 @@ it('shows the vpn dashboard to an admin', function () {
     });
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('admin.vpn.index'))
-        ->assertOk()->assertSee('Manajemen VPN')->assertSee('10.200.0.0/24');
+        ->assertOk()->assertSee('Manajemen VPN')->assertSee('10.200.0.0/24')
+        ->assertSee('Daftar Firewall VPN');
 });
 
 it('shows vpn user management to an admin', function () {

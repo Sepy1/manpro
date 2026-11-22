@@ -65,6 +65,26 @@ class VpnManagementController extends Controller
             'topologyError' => $topologyError ?? null,
             'activities' => VpnAdminActivity::with(['user', 'client'])->latest()->limit(8)->get(),
             'chart' => ['labels' => $days->map->format('d M'), 'connections' => $connectionsChart, 'durations' => $durationChart],
+            'firewallPolicies' => VpnClient::with('group')->orderBy('vpn_ip')->get()->map(function (VpnClient $client): array {
+                $destinations = $client->effectiveAllowedDestinations();
+                $withinSchedule = $client->isWithinAccessSchedule();
+
+                return [
+                    'name' => $client->name,
+                    'common_name' => $client->common_name,
+                    'vpn_ip' => $client->vpn_ip,
+                    'source' => ! empty($client->allowed_destinations)
+                        ? 'User'
+                        : (! empty($client->group?->allowed_destinations) ? 'Group: '.$client->group->name : 'Default deny'),
+                    'destinations' => $destinations,
+                    'client_status' => $client->status,
+                    'within_schedule' => $withinSchedule,
+                    'schedule' => $client->effectiveAccessSchedule(),
+                    'effective_status' => $client->status !== 'active'
+                        ? 'Nonaktif'
+                        : ($withinSchedule ? ($destinations === [] ? 'Blokir semua' : 'Diizinkan') : 'Di luar jadwal'),
+                ];
+            }),
         ]);
     }
 
