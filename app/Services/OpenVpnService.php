@@ -249,8 +249,16 @@ class OpenVpnService
             return;
         }
 
-        if ($client->status !== 'active' || ! $client->isWithinAccessSchedule()) {
+        if ($client->status !== 'active') {
             $this->remote('policy', ['clear', $client->vpn_ip]);
+
+            return;
+        }
+
+        if (! $client->isWithinAccessSchedule()) {
+            // Keep an explicit per-client deny chain outside the allowed window.
+            // Merely clearing the chain can fall through to a permissive FORWARD rule.
+            $this->remote('policy', ['apply', $client->vpn_ip, '0.0.0.0/32']);
 
             return;
         }
