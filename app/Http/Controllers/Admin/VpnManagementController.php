@@ -336,7 +336,7 @@ class VpnManagementController extends Controller
             'allowed_destinations_text' => ['nullable', 'string', 'max:5000'],
             'schedule_enabled' => ['nullable', 'boolean'],
             'schedule_days' => ['nullable', 'array', 'min:1'],
-            'schedule_days.*' => ['integer', 'between:1,7'],
+            'schedule_days.*' => [Rule::in(['1', '2', '3', '4', '5', '6', '7'])],
             'schedule_start' => ['nullable', 'date_format:H:i'],
             'schedule_end' => ['nullable', 'date_format:H:i', 'different:schedule_start'],
             'vpn_ip' => ['nullable', 'ipv4', Rule::unique('vpn_clients')->ignore($client), function ($attribute, $value, $fail) {
