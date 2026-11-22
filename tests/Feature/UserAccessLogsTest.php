@@ -159,12 +159,14 @@ it('backfills a login log for an existing active OpenVPN session', function () {
     ]);
     $connection = VpnConnection::create([
         'vpn_client_id' => $client->id, 'common_name' => 'erik-laptop',
-        'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5', 'connected_at' => now(),
+        'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5',
+        'connected_at' => Carbon::parse('2026-11-22 15:58:23', 'Asia/Jakarta'),
     ]);
     $openVpn = Mockery::mock(OpenVpnService::class);
     $openVpn->shouldReceive('connectedClients')->twice()->andReturn([[
         'common_name' => 'erik-laptop', 'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5',
-        'bytes_received' => 2048, 'bytes_sent' => 4096, 'connected_at' => $connection->connected_at,
+        'bytes_received' => 2048, 'bytes_sent' => 4096,
+        'connected_at' => Carbon::parse('2026-11-22 22:58:23', 'Asia/Jakarta'),
     ]]);
     $sync = new VpnConnectionSyncService($openVpn);
 
@@ -172,4 +174,7 @@ it('backfills a login log for an existing active OpenVPN session', function () {
     $sync->sync();
 
     expect(UserAccessLog::where('log_id', "openvpn-login-{$connection->id}")->count())->toBe(1);
+    $this->assertDatabaseHas('user_access_logs', [
+        'log_id' => "openvpn-login-{$connection->id}", 'event_clock' => '22:58:23', 'timezone' => '+0700',
+    ]);
 });

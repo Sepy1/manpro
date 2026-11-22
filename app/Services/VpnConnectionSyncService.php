@@ -30,6 +30,7 @@ class VpnConnectionSyncService
                 $connection->update([
                     'real_ip' => $row['real_ip'], 'vpn_ip' => $row['vpn_ip'],
                     'bytes_received' => $row['bytes_received'], 'bytes_sent' => $row['bytes_sent'],
+                    'connected_at' => $row['connected_at'],
                 ]);
                 // Backfill login logs for sessions created before access-log integration.
                 // firstOrCreate keeps subsequent scheduler runs idempotent.
@@ -60,7 +61,7 @@ class VpnConnectionSyncService
         $username = $client?->username ?: $connection->common_name;
         $logId = "openvpn-{$action}-{$connection->id}";
 
-        UserAccessLog::firstOrCreate(['log_id' => $logId], [
+        UserAccessLog::updateOrCreate(['log_id' => $logId], [
             'vendor' => 'OpenVPN',
             'device_name' => 'OpenVPN Server',
             'device_id' => 'openvpn-server',

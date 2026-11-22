@@ -305,7 +305,9 @@ class OpenVpnService
                 'common_name' => $fields[1], 'real_ip' => filter_var($real, FILTER_VALIDATE_IP) ? $real : null,
                 'vpn_ip' => filter_var($fields[3] ?? null, FILTER_VALIDATE_IP) ? $fields[3] : null,
                 'bytes_received' => (int) ($fields[5] ?? 0), 'bytes_sent' => (int) ($fields[6] ?? 0),
-                'connected_at' => $timestamp ? \Illuminate\Support\Carbon::createFromTimestamp($timestamp) : now(),
+                'connected_at' => $timestamp
+                    ? \Illuminate\Support\Carbon::createFromTimestamp($timestamp, config('app.timezone'))
+                    : now(),
             ];
         }
 
