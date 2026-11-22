@@ -4,6 +4,7 @@ use App\Exports\UserAccessLogsExport;
 use App\Models\User;
 use App\Models\UserAccessLog;
 use App\Models\VpnClient;
+use App\Models\VpnConnection;
 use App\Services\OpenVpnService;
 use App\Services\VpnConnectionSyncService;
 use Carbon\Carbon;
@@ -137,8 +138,8 @@ it('records OpenVPN login and logout once in user access logs', function () {
     $openVpn->shouldReceive('connectedClients')->once()->andReturn([]);
     $sync = new VpnConnectionSyncService($openVpn);
 
-    expect($sync->sync())->toBe(['connected' => 1, 'disconnected' => 0]);
-    expect($sync->sync())->toBe(['connected' => 0, 'disconnected' => 1]);
+    expect($sync->sync())->toBe(['active' => 1, 'connected' => 1, 'disconnected' => 0]);
+    expect($sync->sync())->toBe(['active' => 0, 'connected' => 0, 'disconnected' => 1]);
 
     $this->assertDatabaseHas('user_access_logs', [
         'vendor' => 'OpenVPN', 'username' => 'erik', 'action' => 'login',
@@ -149,4 +150,26 @@ it('records OpenVPN login and logout once in user access logs', function () {
         'tunnel_ip' => '10.200.0.5', 'reason' => 'status_sync',
     ]);
     expect(UserAccessLog::where('vendor', 'OpenVPN')->count())->toBe(2);
+});
+
+it('backfills a login log for an existing active OpenVPN session', function () {
+    $client = VpnClient::create([
+        'name' => 'Erik VPN', 'username' => 'erik', 'common_name' => 'erik-laptop',
+        'vpn_ip' => '10.200.0.5', 'status' => 'active',
+    ]);
+    $connection = VpnConnection::create([
+        'vpn_client_id' => $client->id, 'common_name' => 'erik-laptop',
+        'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5', 'connected_at' => now(),
+    ]);
+    $openVpn = Mockery::mock(OpenVpnService::class);
+    $openVpn->shouldReceive('connectedClients')->twice()->andReturn([[
+        'common_name' => 'erik-laptop', 'real_ip' => '36.80.1.2', 'vpn_ip' => '10.200.0.5',
+        'bytes_received' => 2048, 'bytes_sent' => 4096, 'connected_at' => $connection->connected_at,
+    ]]);
+    $sync = new VpnConnectionSyncService($openVpn);
+
+    $sync->sync();
+    $sync->sync();
+
+    expect(UserAccessLog::where('log_id', "openvpn-login-{$connection->id}")->count())->toBe(1);
 });

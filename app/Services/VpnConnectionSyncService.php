@@ -11,7 +11,7 @@ class VpnConnectionSyncService
 {
     public function __construct(private readonly OpenVpnService $openVpn) {}
 
-    /** @return array{connected:int,disconnected:int} */
+    /** @return array{active:int,connected:int,disconnected:int} */
     public function sync(): array
     {
         $seen = [];
@@ -31,6 +31,9 @@ class VpnConnectionSyncService
                     'real_ip' => $row['real_ip'], 'vpn_ip' => $row['vpn_ip'],
                     'bytes_received' => $row['bytes_received'], 'bytes_sent' => $row['bytes_sent'],
                 ]);
+                // Backfill login logs for sessions created before access-log integration.
+                // firstOrCreate keeps subsequent scheduler runs idempotent.
+                $this->writeAccessLog($connection, $client, 'login');
             }
 
             $client?->update(['last_connected_at' => now()]);
@@ -46,7 +49,7 @@ class VpnConnectionSyncService
                 $disconnected++;
             });
 
-        return compact('connected', 'disconnected');
+        return ['active' => count($seen), 'connected' => $connected, 'disconnected' => $disconnected];
     }
 
     private function writeAccessLog(VpnConnection $connection, ?VpnClient $client, string $action): void

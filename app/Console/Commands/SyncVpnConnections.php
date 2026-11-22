@@ -15,7 +15,7 @@ class SyncVpnConnections extends Command
     {
         try {
             $result = $syncService->sync();
-            $this->info("Sinkronisasi selesai: {$result['connected']} login, {$result['disconnected']} logout.");
+            $this->info("Sinkronisasi selesai: {$result['active']} sesi aktif, {$result['connected']} login baru, {$result['disconnected']} logout.");
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
