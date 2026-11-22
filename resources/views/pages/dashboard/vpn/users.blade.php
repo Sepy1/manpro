@@ -92,5 +92,25 @@ document.addEventListener('submit', function (event) {
         input.value = String(index + 1);
     });
 }, true);
+document.addEventListener('click', function (event) {
+    if (!event.target.closest('button')) return;
+    setTimeout(function () {
+        const root = document.querySelector('[x-data="vpnUsersPage()"]');
+        const formElement = root?.querySelector('[x-show="modal"] form');
+        const state = root && window.Alpine ? Alpine.$data(root) : null;
+        if (!formElement || !state?.modal) return;
+        const enabled = formElement.querySelector('input[name="schedule_enabled"]');
+        if (enabled) enabled.checked = Boolean(state.form.schedule_enabled);
+        const selectedDays = (state.form.schedule_days || []).map(String);
+        formElement.querySelectorAll('input[name="schedule_days[]"]').forEach(function (input, index) {
+            input.value = String(index + 1);
+            input.checked = selectedDays.includes(String(index + 1));
+        });
+        const start = formElement.querySelector('input[name="schedule_start"]');
+        const end = formElement.querySelector('input[name="schedule_end"]');
+        if (start) start.value = state.form.schedule_start || '08:00';
+        if (end) end.value = state.form.schedule_end || '17:00';
+    }, 0);
+});
 </script>
 @endpush
