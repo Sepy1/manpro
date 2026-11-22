@@ -19,5 +19,14 @@ document.addEventListener('change', function (event) {
         event.stopImmediatePropagation();
     }
 }, true);
+document.addEventListener('submit', function (event) {
+    const form = event.target;
+    const enabled = form.querySelector('input[name="schedule_enabled"]');
+    if (!enabled) return;
+    enabled.value = '1';
+    form.querySelectorAll('input[name="schedule_days[]"]').forEach(function (input, index) {
+        input.value = String(index + 1);
+    });
+}, true);
 </script>
 @endpush
