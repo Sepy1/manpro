@@ -33,7 +33,9 @@ it('shows an attack map and maps private destinations to Semarang', function () 
         ->get(route('admin.attack-map.index'))
         ->assertOk()
         ->assertSee('Attack Map')
-        ->assertSee('Peta sumber dan tujuan serangan');
+        ->assertSee('Peta sumber dan tujuan serangan')
+        ->assertSee('maps.geoapify.com', false)
+        ->assertDontSee('tile.openstreetmap.org', false);
 
     $this->getJson(route('admin.attack-map.data', ['hours' => 24]))
         ->assertOk()

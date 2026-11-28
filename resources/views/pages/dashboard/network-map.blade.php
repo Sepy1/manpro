@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-    <div class="network-map-page flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-4" x-data="networkMap(@js($locations), @js(route('admin.map.status')), @js($highPingThresholdMs))" x-init="init()">
+    <div class="network-map-page flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-4" x-data="networkMap(@js($locations), @js(route('admin.map.status')), @js($highPingThresholdMs), @js(config('services.map_tiles.geoapify_api_key')))" x-init="init()">
         <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
             <div>
                 <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 sm:text-xs sm:tracking-[0.2em]">Monitoring jaringan</p>
@@ -135,7 +135,7 @@
         }
     </style>
     <script>
-        function networkMap(locations, statusEndpoint, highPingThreshold) {
+        function networkMap(locations, statusEndpoint, highPingThreshold, geoapifyApiKey = '') {
             return {
                 locations,
                 statusEndpoint,
@@ -157,6 +157,10 @@
                 showKas: true,
                 init() {
                     if (typeof L === 'undefined') return;
+                    if (!geoapifyApiKey) {
+                        console.error('Geoapify API key belum dikonfigurasi. Isi GEOAPIFY_API_KEY pada file .env.');
+                        return;
+                    }
                     const jawaTengah = [
                         [-6.74608,108.829338],[-6.799195,108.854889],[-6.83733,108.952652],[-6.774646,109.027512],
                         [-6.849453,109.116945],[-6.873732,109.284729],[-6.783483,109.525772],[-6.837207,109.574196],
@@ -197,12 +201,12 @@
                         maxBounds: provinceBounds.pad(0.35),
                         maxBoundsViscosity: 1
                     });
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${encodeURIComponent(geoapifyApiKey)}`, {
                         maxZoom: 19,
                         updateWhenZooming: false,
                         updateWhenIdle: true,
                         keepBuffer: 1,
-                        attribution: '&copy; OpenStreetMap contributors'
+                        attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
                     }).addTo(this.map);
 
                     const world = [[-90,-180],[-90,180],[90,180],[90,-180]];

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('admin-content')
-    <div class="flex h-full min-h-0 flex-col gap-4" x-data="attackMap(@js(route('admin.attack-map.data')), @js($initialFilters))" x-init="init()">
+    <div class="flex h-full min-h-0 flex-col gap-4" x-data="attackMap(@js(route('admin.attack-map.data')), @js($initialFilters), @js(config('services.map_tiles.geoapify_api_key')))" x-init="init()">
         <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Threat intelligence</p>
@@ -193,7 +193,7 @@
         @keyframes attack-dash { to { stroke-dashoffset:-28; } }
     </style>
     <script>
-        function attackMap(endpoint, initialFilters = {}) {
+        function attackMap(endpoint, initialFilters = {}, geoapifyApiKey = '') {
             return {
                 endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, datePicker: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
                 filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showPeriodModal: false, dateFrom: initialFilters.date_from || '', dateUntil: initialFilters.date_until || '', appliedDateFrom: initialFilters.date_from || '', appliedDateUntil: initialFilters.date_until || '', periodError: '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
@@ -231,6 +231,10 @@
                 },
                 initializeMap(attempt = 0) {
                     if (this.destroyed || this.map) return;
+                    if (!geoapifyApiKey) {
+                        this.mapError = 'Geoapify API key belum dikonfigurasi. Isi GEOAPIFY_API_KEY pada file .env.';
+                        return;
+                    }
                     if (typeof L === 'undefined') {
                         if (attempt >= 50) {
                             this.mapError = 'Library peta belum tersedia. Periksa koneksi ke unpkg.com lalu tekan Coba lagi.';
@@ -252,7 +256,10 @@
                             wheelDebounceTime: 16,
                             wheelPxPerZoomLevel: 80,
                         }).setView([12, 20], 2);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 8, attribution: '&copy; OpenStreetMap' }).addTo(this.map);
+                        L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${encodeURIComponent(geoapifyApiKey)}`, {
+                            maxZoom: 8,
+                            attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
+                        }).addTo(this.map);
                         this.canvasRenderer = L.canvas({ padding: .5, tolerance: 8 });
                         this.layer = L.layerGroup().addTo(this.map);
                         [0, 150, 400].forEach(delay => this.resizeTimers.push(setTimeout(() => this.map?.invalidateSize(false), delay)));

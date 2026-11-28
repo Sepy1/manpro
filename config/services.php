@@ -20,6 +20,10 @@ return [
         'ipdata_api_key' => env('IPDATA_API_KEY'),
     ],
 
+    'map_tiles' => [
+        'geoapify_api_key' => env('GEOAPIFY_API_KEY'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
