@@ -112,6 +112,28 @@ it('restricts the attack map to admins', function () {
     $this->getJson(route('admin.attack-map.data'))->assertForbidden();
 });
 
+it('filters attack map events using the selected date and time period', function () {
+    $admin = User::factory()->admin()->create();
+    foreach (['08:30:00', '10:30:00'] as $time) {
+        SecurityAttackLog::query()->create([
+            'device' => 'FGT-01', 'severity' => 'high', 'attack' => 'Period Test',
+            'attackid' => '1003', 'subtype' => 'ips', 'action' => 'blocked',
+            'srcip' => '10.0.0.1', 'srcport' => 443, 'dstip' => '192.168.1.10', 'dstport' => 80,
+            'service' => 'HTTP', 'method' => 'GET', 'url' => '/', 'event_time' => '2026-11-28 '.$time,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->getJson(route('admin.attack-map.data', [
+            'date_from' => '2026-11-28', 'time_from' => '08:00',
+            'date_until' => '2026-11-28', 'time_until' => '09:00',
+        ]))
+        ->assertOk()
+        ->assertJsonPath('summary.total', 1)
+        ->assertJsonPath('period.from', '2026-11-28 08:00')
+        ->assertJsonPath('period.until', '2026-11-28 09:00');
+});
+
 it('keeps seeded demo sources mapped when the geolocation cache is empty', function () {
     Cache::flush();
     Http::fake();

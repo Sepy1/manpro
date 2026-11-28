@@ -38,7 +38,8 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                            <i class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></i> Realtime
+                            <i class="h-2 w-2 rounded-full bg-emerald-500" :class="!hasCustomPeriod && 'animate-pulse'"></i>
+                            <span x-text="hasCustomPeriod ? periodLabel : 'Realtime'"></span>
                         </span>
                         <button type="button" @click="openPeriodModal()"
                             class="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"
@@ -46,9 +47,9 @@
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
                             </svg>
-                            <span x-text="appliedDateFrom || appliedDateUntil ? 'Periode aktif' : 'Periode'"></span>
+                            <span x-text="hasCustomPeriod ? periodLabel : 'Periode'"></span>
                         </button>
-                        <select x-model="hours" @change="load()" class="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-xs dark:border-gray-700 dark:text-white">
+                        <select x-show="!hasCustomPeriod" x-model="hours" @change="load()" class="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-xs dark:border-gray-700 dark:text-white">
                             <option value="1">1 jam</option><option value="6">6 jam</option><option value="12">12 jam</option>
                             <option value="24">24 jam</option><option value="72">3 hari</option><option value="168">7 hari</option>
                         </select>
@@ -134,6 +135,14 @@
                         <span x-show="dateFrom && !dateUntil"><b x-text="dateFrom"></b> — pilih tanggal akhir.</span>
                         <span x-show="dateFrom && dateUntil"><b x-text="dateFrom"></b> sampai <b x-text="dateUntil"></b></span>
                     </div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Waktu awal
+                            <input type="time" x-model="timeFrom" class="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white">
+                        </label>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Waktu akhir
+                            <input type="time" x-model="timeUntil" class="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white">
+                        </label>
+                    </div>
                 </div>
                 <p x-show="periodError" x-text="periodError" class="mt-3 text-xs font-medium text-red-600 dark:text-red-400"></p>
                 <div class="mt-5 flex justify-end gap-2">
@@ -196,7 +205,12 @@
         function attackMap(endpoint, initialFilters = {}, geoapifyApiKey = '') {
             return {
                 endpoint, map: null, layer: null, canvasRenderer: null, timer: null, mapInitTimer: null, resizeTimers: [], request: null, visibilityHandler: null, datePicker: null, destroyed: false, loading: false, mapError: '', lastFingerprint: null,
-                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showPeriodModal: false, dateFrom: initialFilters.date_from || '', dateUntil: initialFilters.date_until || '', appliedDateFrom: initialFilters.date_from || '', appliedDateUntil: initialFilters.date_until || '', periodError: '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                filters: initialFilters, hours: initialFilters.hours || '24', severity: initialFilters.severity || '', showPeriodModal: false, dateFrom: initialFilters.date_from || '', dateUntil: initialFilters.date_until || '', timeFrom: initialFilters.time_from || '00:00', timeUntil: initialFilters.time_until || '23:59', appliedDateFrom: initialFilters.date_from || '', appliedDateUntil: initialFilters.date_until || '', appliedTimeFrom: initialFilters.time_from || '00:00', appliedTimeUntil: initialFilters.time_until || '23:59', periodError: '', showSourceLabels: true, showDestinationLabels: true, countries: [], arcs: [], enabledCountries: {}, geolocation: { message: null, unresolved: 0, unresolved_ips: [] }, summary: { total: 0, sources: 0, countries: 0, blocked: 0 },
+                get hasCustomPeriod() { return Boolean(this.appliedDateFrom || this.appliedDateUntil); },
+                get periodLabel() {
+                    if (!this.hasCustomPeriod) return 'Periode';
+                    return `${this.appliedDateFrom || '...'} ${this.appliedTimeFrom} - ${this.appliedDateUntil || '...'} ${this.appliedTimeUntil}`;
+                },
                 get cards() { return [
                     { label: 'Total event', value: this.summary.total.toLocaleString('id-ID') },
                     { label: 'Source IP', value: this.summary.sources.toLocaleString('id-ID') },
@@ -332,7 +346,9 @@
                     this.periodError = '';
                     this.appliedDateFrom = this.dateFrom;
                     this.appliedDateUntil = this.dateUntil;
-                    this.filters = { ...this.filters, date_from: this.dateFrom, date_until: this.dateUntil };
+                    this.appliedTimeFrom = this.timeFrom || '00:00';
+                    this.appliedTimeUntil = this.timeUntil || '23:59';
+                    this.filters = { ...this.filters, date_from: this.dateFrom, date_until: this.dateUntil, time_from: this.appliedTimeFrom, time_until: this.appliedTimeUntil };
                     this.showPeriodModal = false;
                     this.load();
                 },
@@ -341,9 +357,13 @@
                     this.dateUntil = '';
                     this.appliedDateFrom = '';
                     this.appliedDateUntil = '';
+                    this.timeFrom = '00:00';
+                    this.timeUntil = '23:59';
+                    this.appliedTimeFrom = '00:00';
+                    this.appliedTimeUntil = '23:59';
                     this.periodError = '';
                     this.datePicker?.clear(false);
-                    this.filters = { ...this.filters, date_from: '', date_until: '' };
+                    this.filters = { ...this.filters, date_from: '', date_until: '', time_from: '', time_until: '' };
                     this.showPeriodModal = false;
                     this.load();
                 },

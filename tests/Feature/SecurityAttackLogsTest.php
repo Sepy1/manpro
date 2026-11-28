@@ -1,8 +1,8 @@
 <?php
 
+use App\Exports\SecurityAttackLogsExport;
 use App\Models\SecurityAttackLog;
 use App\Models\User;
-use App\Exports\SecurityAttackLogsExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -138,6 +138,9 @@ it('restricts security log management to admins', function () {
 
     $this->get(route('admin.log-security.export'))
         ->assertForbidden();
+
+    $this->get(route('admin.log-security.export-pdf'))
+        ->assertForbidden();
 });
 
 it('filters security logs by device action source destination and event date range', function () {
@@ -190,5 +193,23 @@ it('exports security logs matching the selected filters', function () {
         return $export->query()->get()->pluck('device')->all() === ['FGT-EDGE-01'];
     });
 
+    $this->travelBack();
+});
+
+it('exports filtered security logs as a pdf', function () {
+    SecurityAttackLog::query()->create([
+        ...array_diff_key(securityAttackLogPayload(), ['time' => true]),
+        'event_time' => '2026-11-01 21:00:00',
+    ]);
+
+    $this->travelTo(Carbon::parse('2026-11-02 09:30:00'));
+
+    $response = $this->actingAs(User::factory()->admin()->create())
+        ->get('/admin/log-security/export-pdf?device=FGT-EDGE-01&severity=high')
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertDownload('log-security-20261102-093000.pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
     $this->travelBack();
 });

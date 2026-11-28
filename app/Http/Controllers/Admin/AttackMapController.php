@@ -17,7 +17,7 @@ class AttackMapController extends Controller
 
         return view('pages.dashboard.attack-map', [
             'severities' => SecurityAttackLog::query()->distinct()->orderBy('severity')->pluck('severity'),
-            'initialFilters' => $request->only(['keyword', 'severity', 'device', 'action', 'source', 'destination', 'date_from', 'date_until']),
+            'initialFilters' => $request->only(['keyword', 'severity', 'device', 'action', 'source', 'destination', 'date_from', 'date_until', 'time_from', 'time_until']),
         ]);
     }
 
@@ -34,6 +34,8 @@ class AttackMapController extends Controller
             'destination' => ['nullable', 'string', 'max:45'],
             'date_from' => ['nullable', 'date'],
             'date_until' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'time_from' => ['nullable', 'date_format:H:i'],
+            'time_until' => ['nullable', 'date_format:H:i'],
         ]);
         $hours = (int) ($validated['hours'] ?? 24);
         $hasDateRange = ! empty($validated['date_from']) || ! empty($validated['date_until']);
@@ -45,8 +47,8 @@ class AttackMapController extends Controller
             ->when($validated['action'] ?? null, fn ($query, $action) => $query->where('action', $action))
             ->when($validated['source'] ?? null, fn ($query, $source) => $query->where('srcip', 'like', '%'.trim($source).'%'))
             ->when($validated['destination'] ?? null, fn ($query, $destination) => $query->where('dstip', 'like', '%'.trim($destination).'%'))
-            ->when($validated['date_from'] ?? null, fn ($query, $date) => $query->whereDate('event_time', '>=', $date))
-            ->when($validated['date_until'] ?? null, fn ($query, $date) => $query->whereDate('event_time', '<=', $date))
+            ->when($validated['date_from'] ?? null, fn ($query, $date) => $query->where('event_time', '>=', $date.' '.($validated['time_from'] ?? '00:00').':00'))
+            ->when($validated['date_until'] ?? null, fn ($query, $date) => $query->where('event_time', '<=', $date.' '.($validated['time_until'] ?? '23:59').':59'))
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($nested) use ($keyword) {
                     foreach (['device', 'attack', 'attackid', 'subtype', 'action', 'srcip', 'dstip', 'service', 'method', 'url', 'event_time'] as $column) {
@@ -96,6 +98,13 @@ class AttackMapController extends Controller
                 'blocked' => $logs->filter(fn ($log) => $this->isBlockedAction((string) $log->action))->count(),
             ],
             'generated_at' => now()->toIso8601String(),
+            'period' => $hasDateRange ? [
+                'from' => ($validated['date_from'] ?? null) ? $validated['date_from'].' '.($validated['time_from'] ?? '00:00') : null,
+                'until' => ($validated['date_until'] ?? null) ? $validated['date_until'].' '.($validated['time_until'] ?? '23:59') : null,
+            ] : [
+                'from' => now()->subHours($hours)->format('Y-m-d H:i'),
+                'until' => now()->format('Y-m-d H:i'),
+            ],
             'geolocation' => $geo->diagnostics(),
         ]);
     }

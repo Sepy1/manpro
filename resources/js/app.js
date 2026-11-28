@@ -69,6 +69,11 @@ document.addEventListener('alpine:init', () => {
                     this.$refs.exportLink.href = nextExport.href;
                 }
 
+                const nextPdf = documentResult.querySelector('[data-filter-pdf]');
+                if (nextPdf && this.$refs.pdfLink) {
+                    this.$refs.pdfLink.href = nextPdf.href;
+                }
+
                 const nextMapLink = documentResult.querySelector('[data-filter-attack-map]');
                 if (nextMapLink && this.$refs.mapLink) {
                     this.$refs.mapLink.href = nextMapLink.href;

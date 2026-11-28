@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Exports\SecurityAttackLogsExport;
 use App\Http\Controllers\Controller;
 use App\Models\SecurityAttackLog;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\Response;
 
 class SecurityLogController extends Controller
 {
@@ -49,6 +51,21 @@ class SecurityLogController extends Controller
         $filename = 'log-security-'.now()->format('Ymd-His').'.xlsx';
 
         return Excel::download(new SecurityAttackLogsExport($this->filteredLogsQuery($filters)), $filename);
+    }
+
+    public function exportPdf(Request $request): Response
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $filters = $this->validateFilters($request);
+        $logs = $this->filteredLogsQuery($filters)->latest('event_time')->get();
+        $pdf = Pdf::loadView('pages.dashboard.log-security-pdf', [
+            'logs' => $logs,
+            'filters' => $filters,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('log-security-'.now()->format('Ymd-His').'.pdf');
     }
 
     private function validateFilters(Request $request): array
